@@ -225,7 +225,7 @@ Here's another Aya 🙂
                
                 // send an Aya
                 sendMsg(user, response, aya, reciter);
-                bot.telegram.sendDocument(user, recitation(aya, reciter));
+                bot.telegram.sendAudio(user, recitation(aya, reciter));
                 
                 
                 // prepare recitation and quick replies
