@@ -6,8 +6,10 @@ const express = require('express')
 const expressApp = express()
 const port = process.env.PORT || 3000
 
+// main route will respond (DailyAya is UP) when requested.
+// we call it every 15 minutes using a google app script to prevent the app from sleeping.
 expressApp.get('/', (req, res) => {
-  res.send('UP!')
+  res.send('DailyAya is UP.')
 })
 expressApp.listen(port, () => {
   console.log(`Listening on port ${port}`)

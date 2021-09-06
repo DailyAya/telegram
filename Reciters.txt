@@ -1,0 +1,47 @@
+1. Alafasy
+ar.alafasy
+
+2. Maher Al Muaiqly
+ar.mahermuaiqly
+
+3. Muhammad Jibreel
+ar.muhammadjibreel
+
+4. Abu Bakr Ash-Shaatree
+ar.shaatree
+
+5. Ahmed ibn Ali al-Ajamy
+ar.ahmedajamy
+
+6. Abdullah Basfar
+ar.abdullahbasfar
+
+7. Hani Rifai
+ar.hanirifai
+
+8. Husary
+ar.husary
+
+9. Hudhaify
+ar.hudhaify
+
+10. Ibrahim Akhdar
+ar.ibrahimakhbar
+
+11. Abdurrahmaan As-Sudais
+ar.abdurrahmaansudais
+
+12. Muhammad Ayyoub
+ar.muhammadayyoub
+
+13. Abdul Samad
+ar.abdulsamad
+
+14. Saood bin Ibraaheem Ash-Shuraym
+ar.saoodshuraym
+
+15. Parhizgar
+ar.parhizgar
+
+16. Husary (Mujawwad)
+ar.husarymujawwad
