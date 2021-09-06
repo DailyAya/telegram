@@ -149,7 +149,7 @@ function prepareAya(aya, userId){
                     translatedAya = res.data.data[1].text.toString(),
                     ayaNumInSura = res.data.data[0].numberInSurah.toString(),
                     suraNum = res.data.data[0].surah.number.toString(),
-                    arName = res.data.data[0].surah.name.toString().substr(0), // substr(5) to remove the Arabic word "Sura".
+                    arName = res.data.data[0].surah.name.toString().substr(8), // substr(8) to remove the Arabic word "Sura".
                     enName = res.data.data[0].surah.englishName.toString(),
                     translatedName = res.data.data[0].surah.englishNameTranslation.toString(),
                     arSuraNum = suraNum.toAr(),
