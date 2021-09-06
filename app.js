@@ -158,9 +158,11 @@ function prepareAya(aya, userId){
                     response = `${arAya} ﴿${arAyaNumInSura}﴾٠
 "${arName}"
 ${moreUrl}
+
 ${translatedAya}
-A translation of Aya ${ayaNumInSura}
-Sura ${suraNum}: "${enName}" = ${translatedName}`;
+
+A translation of Aya ${ayaNumInSura} of Sura ${suraNum}
+"${enName}" = ${translatedName}`;
                 
                 // return function call with the formated Aya.
                 resolve(response);
@@ -260,7 +262,7 @@ Here's another Aya 🙂
 
 //Send a message to a user in telegram
 function sendMsg(user, response, lastAya, lastReciter) {
-    bot.telegram.sendMessage(user, response)
+    bot.telegram.sendMessage(user, response, Extra.webPreview(false))
     // // Construct the message body
     // let request_body = {
     //     "recipient": {
