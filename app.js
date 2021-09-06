@@ -225,6 +225,7 @@ Here's another Aya 🙂
                
                 // send an Aya
                 sendMsg(user, response, aya, reciter);
+                bot.telegram.sendDocument(user, recitation(aya, reciter));
                 
                 
                 // prepare recitation and quick replies
@@ -298,3 +299,35 @@ function sendMsg(user, response, lastAya, lastReciter) {
     //     }
     // });
 }
+
+
+// returns a URL string for the audio file of the requested aya (is a must)
+// if reciter is not requested (1 to 16), a random reciter will be provided
+function recitation(aya, reciter){
+    var recitersArray = [
+          "ar.alafasy",               // 1
+          "ar.mahermuaiqly",          // 2
+          "ar.muhammadjibreel",       // 3
+          "ar.shaatree",              // 4
+          "ar.ahmedajamy",            // 5
+          "ar.abdullahbasfar",        // 6
+          "ar.hanirifai",             // 7
+          "ar.husary",                // 8
+          "ar.hudhaify",              // 9
+          "ar.ibrahimakhbar",         // 10
+          "ar.abdurrahmaansudais",    // 11
+          "ar.muhammadayyoub",        // 12
+          "ar.abdulsamad",            // 13
+          "ar.saoodshuraym",          // 14
+          "ar.parhizgar",             // 15
+          "ar.husarymujawwad"         // 16
+          ];
+  
+      if (reciter) {
+          reciter = parseInt(reciter);
+          if (1 > reciter || reciter > 16) reciter = randomNum('reciter');
+          
+      } else reciter = randomNum('reciter');
+      
+      return 'https://cdn.alquran.cloud/media/audio/ayah/'.concat(recitersArray[reciter-1]).concat('/').concat(aya);
+  }
