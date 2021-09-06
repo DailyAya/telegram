@@ -26,7 +26,7 @@ bot.command('start', ctx => {
 
 //method for sending an aya
 bot.hears('aya', ctx => {
-    respondWith(ctx.from.userId)
+    respondWith(ctx.chat.id)
 })
 
 
