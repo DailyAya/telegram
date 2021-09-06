@@ -262,7 +262,7 @@ Here's another Aya 🙂
 
 //Send a message to a user in telegram
 function sendMsg(user, response, lastAya, lastReciter) {
-    bot.telegram.sendMessage(user, response, Extra.webPreview(false))
+    bot.telegram.sendMessage(user, response, {disable_web_page_preview: true})
     // // Construct the message body
     // let request_body = {
     //     "recipient": {
