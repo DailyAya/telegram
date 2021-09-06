@@ -1,5 +1,5 @@
 const {Telegraf} = require('telegraf')
-const bot = new Telegraf(process.env.token)
+const bot = new Telegraf(process.env.telegramToken)
 
 // just for heroku web
 const express = require('express')
