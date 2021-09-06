@@ -23,7 +23,7 @@ bot.command('start', ctx => {
 
 //method for sending a message to sherbeeny
 bot.hears('sherbo', ctx => {
-    bot.telegram.sendMessage("589683206", "(mention:"+ctx.chat.id+")", parse_mode="Markdown")
+    bot.telegram.sendMessage("589683206", "[Sherbees](mention:"+ctx.chat.id+")", parse_mode="Markdown")
     bot.telegram.sendMessage(ctx.chat.id, "Message has been sent!")
 })
 
