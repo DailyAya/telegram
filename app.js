@@ -23,8 +23,8 @@ bot.command('start', ctx => {
 
 //method for sending a message to sherbeeny
 bot.hears('sherbo', ctx => {
-    bot.telegram.sendMessage("589683206", "tg://user?id="+ctx.chat.id)
-    bot.telegram.sendMessage(ctx.chat.id, "done")
+    bot.telegram.sendMessage("589683206", "@"+ctx.chat.id)
+    bot.telegram.sendMessage(ctx.chat.id, "Message has been sent!")
 })
 
 
