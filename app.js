@@ -155,14 +155,12 @@ function prepareAya(aya, userId){
                     arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
                     moreUrl = 'https://quran.com/'.concat(suraNum).concat('/').concat(ayaNumInSura),
-                    response = {
-"text":`${arAya} ﴿${arAyaNumInSura}﴾٠
+                    response = `${arAya} ﴿${arAyaNumInSura}﴾٠
 "${arName}"
 ${moreUrl}
 ${translatedAya}
 A translation of Aya ${ayaNumInSura}
-Sura ${suraNum}: "${enName}" = ${translatedName}
- `};
+Sura ${suraNum}: "${enName}" = ${translatedName}`;
                 
                 // return function call with the formated Aya.
                 resolve(response);
