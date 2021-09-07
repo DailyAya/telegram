@@ -19,9 +19,8 @@ expressApp.listen(port, () => {
 
 //method for invoking start command
 bot.command('start', ctx => {
-    console.log(ctx.from)
-    bot.telegram.sendMessage(ctx.chat.id, 'Welcomooooz.', {
-    })
+    console.log(["command: start", ctx.from])
+    sendAya(ctx.from.id)
 })
 
 //method for sending an aya
@@ -136,9 +135,9 @@ function randomNum(type){
 
 // Prepare an Aya to be sent
 // Because returning a promise, must be called with .then().catch()
-function prepareAya(aya, userId){
+function prepareAya(ayaNum){
     return new Promise((resolve, reject) => {
-        var ayaUrl = 'https://api.alquran.cloud/ayah/'.concat(aya).concat('/editions/quran-uthmani,en.ahmedraza');
+        var ayaUrl = 'https://api.alquran.cloud/ayah/'.concat(ayaNum).concat('/editions/quran-uthmani,en.ahmedraza');
         
         // Fetching Aya data from API and formating it to be sent to user
         axios(ayaUrl)
@@ -152,10 +151,11 @@ function prepareAya(aya, userId){
                     arName = res.data.data[0].surah.name.toString().substr(8), // substr(8) to remove the Arabic word "Sura".
                     enName = res.data.data[0].surah.englishName.toString(),
                     translatedName = res.data.data[0].surah.englishNameTranslation.toString(),
-                    arSuraNum = suraNum.toAr(),
+                    // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
                     moreUrl = 'https://quran.com/'.concat(suraNum).concat('/').concat(ayaNumInSura),
-                    response = `${arAya} ﴿${arAyaNumInSura}﴾٠
+                    response =
+`${arAya} ﴿${arAyaNumInSura}﴾٠
 "${arName}"
 ${moreUrl}
 
@@ -183,7 +183,7 @@ A translation of Aya ${ayaNumInSura} of Sura ${suraNum}
 // scenario and requestAya are optional
 // if scenario = explain, requestAya is not needed
 // if scenario = request, requestedAya (1 to 6230) and requestedReciter (1 to 16) are a must 
-function respondWith(user, scenario, requestedAya, requestedReciter){
+function respondWith(userId, scenario, requestedAya, requestedReciter){
     var response, aya, reciter;
 
     switch (scenario){
@@ -194,13 +194,14 @@ function respondWith(user, scenario, requestedAya, requestedReciter){
 مثال: ٢   ٢٥٥
 أو رقم السورة فقط : ١ إلى ١١٤
 إليك آية أخرى 🙂
+
 Couldn’t find numbers of Aya (verse) and Sura (chapter) or the requested Sura or Aya doesn’t exist.
 You can request a specific Aya by sending the numbers of Aya and Sura.
 Example: 2   255
 Or Sura number only: 1 to 114
 Here's another Aya 🙂
 `};
-            aya = randomNum(); // to prepare a random aya
+            aya = randomNum('aya'); // to prepare a random aya
             reciter = randomNum('reciter'); // random reciter
             sendMsg(user, response, aya, reciter); // send explaination first (save scheduled aya and reciter instead of null)
             break;
@@ -212,50 +213,9 @@ Here's another Aya 🙂
             break;
             
         default: // default is requesting a random Aya and can be called with the user argument only, like this: respondWith(user);
-            aya = randomNum();
-            reciter = randomNum('reciter');
+            sendAya(userId);
     }
     
-    
-    // prepare an Aya then send it
-    prepareAya(aya, user)  
-            .then((prepared) => {
-                console.log('Successfully prepared an Aya... sending.');
-                response = prepared;
-               
-                // send an Aya
-                sendMsg(user, response, aya, reciter);
-                bot.telegram.sendAudio(user, recitation(aya, reciter));
-                
-                
-                // prepare recitation and quick replies
-                // response={
-                //     "attachment":{
-                //         "type":"audio", 
-                //         "payload":{
-                //             "url": recitation(aya, reciter),
-                //             "is_reusable":true
-                //         }
-                //     },
-                //     "quick_replies":[{
-                //         "content_type":"text",
-                //         "title":"Another Aya آية أخرى",
-                //         "payload":"needAya",
-                //         "image_url":"http://sherbeeny.weebly.com/uploads/1/3/4/4/13443077/anotheraya.png"
-                //     },
-                //     {
-                //         "content_type":"text",
-                //         "title": "Next Aya التالية"
-                //       ,  "payload":"nxtAya",
-                //         "image_url":"http://sherbeeny.weebly.com/uploads/1/3/4/4/13443077/nextaya.png"
-                //     }
-                //     ]    
-                // };
-                
-                // // send recitation and quick replies
-                // sendMsg(user, response, aya, reciter);
-            })
-            .catch((e) => console.error('Failed preparing an Aya.. STOPPED: ', e));
 }
 
 
@@ -331,3 +291,38 @@ function recitation(aya, reciter){
       
       return 'https://cdn.alquran.cloud/media/audio/ayah/'.concat(recitersArray[reciter-1]).concat('/').concat(aya);
   }
+
+
+// Send random Aya and random reciter if called with the userId argument only 
+function sendAya(userId, requestedAyaNum, requestedReciterNum){
+
+    var ayaNum, reciterNum;
+    
+    if(requestedAyaNum) {
+        ayaNum = requestedAyaNum;
+    } else {
+        ayaNum = randomNum('aya');
+    }
+
+    if(requestedReciterNum) {
+        reciterNum = requestedReciterNum;
+    } else {
+        reciterNum = randomNum('reciter');
+    }
+    
+    // prepare an Aya then send it
+    prepareAya(ayaNum)  
+            .then((ayaText) => {
+                console.log('Successfully prepared Aya ' +ayaNum+ ' for user '+userId);
+               
+                // send an Aya text
+                bot.telegram.sendMessage(userId, ayaText, {disable_web_page_preview: true})
+
+                // send an Aya recitation
+                bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum));
+
+                console.log('Aya '+ayaNum+' has been sent to user '+userId);
+              
+            })
+            .catch((e) => console.error('Failed preparing an Aya.. STOPPED: ', e));
+}
