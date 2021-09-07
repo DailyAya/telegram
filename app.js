@@ -319,7 +319,7 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                 bot.telegram.sendMessage(userId, ayaText, {disable_web_page_preview: true})
 
                 // send an Aya recitation
-                bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum));
+                bot.telegram.sendAudio(userId, {source: recitation(ayaNum, reciterNum)});
 
                 console.log('Aya '+ayaNum+' has been sent to user '+userId);
               
