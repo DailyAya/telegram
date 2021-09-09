@@ -188,7 +188,7 @@ function respondWith(userId, scenario, requestedAya, requestedReciter){
 
     switch (scenario){
         case 'explain': // if the user sent anything other than two numbers that match an existing Aya.
-            response={"text":
+            response=
 `لم نتعرف على أرقام السورة والآية أو تم طلب سورة أو آية غير موجودة.
 يمكنك طلب آية محددة بإرسال رقم السورة والآية.
 مثال: ٢   ٢٥٥
@@ -200,10 +200,12 @@ You can request a specific Aya by sending the numbers of Aya and Sura.
 Example: 2   255
 Or Sura number only: 1 to 114
 Here's another Aya 🙂
-`};
-            aya = randomNum('aya'); // to prepare a random aya
-            reciter = randomNum('reciter'); // random reciter
-            sendMsg(user, response, aya, reciter); // send explaination first (save scheduled aya and reciter instead of null)
+`;
+            // aya = randomNum('aya'); // to prepare a random aya
+            // reciter = randomNum('reciter'); // random reciter
+            // sendMsg(user, response, aya, reciter); // send explaination first (save scheduled aya and reciter instead of null)
+            bot.telegram.sendMessage(userId, response)
+            sendAya(userId)
             break;
             
         case 'request':
