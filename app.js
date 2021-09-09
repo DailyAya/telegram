@@ -319,7 +319,7 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                 bot.telegram.sendMessage(userId, ayaText, {disable_web_page_preview: true})
 
                 // send an Aya recitation
-                bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter"});
+                bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter"}); // title and performer tags are not working!
 
                 console.log('Aya '+ayaNum+' has been sent to user '+userId);
               
