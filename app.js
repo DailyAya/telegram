@@ -189,16 +189,16 @@ function respondWith(userId, scenario, requestedAya, requestedReciter){
     switch (scenario){
         case 'explain': // if the user sent anything other than two numbers that match an existing Aya.
             response=
-`لم نتعرف على أرقام السورة والآية أو تم طلب سورة أو آية غير موجودة.
+`لم نتعرف على أرقام أو تم طلب سورة أو آية غير موجودة.
 يمكنك طلب آية محددة بإرسال رقم السورة والآية.
 مثال: ٢   ٢٥٥
-أو رقم السورة فقط : ١ إلى ١١٤
+أو رقم السورة فقط : ٢
 إليك آية أخرى 🙂
 
-Couldn’t find numbers of Aya (verse) and Sura (chapter) or the requested Sura or Aya doesn’t exist.
+Couldn’t find numbers or the requested Sura or Aya doesn’t exist.
 You can request a specific Aya by sending the numbers of Aya and Sura.
 Example: 2   255
-Or Sura number only: 1 to 114
+Or Sura number only: 2
 Here's another Aya 🙂
 `;
             // aya = randomNum('aya'); // to prepare a random aya
