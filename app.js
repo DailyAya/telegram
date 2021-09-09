@@ -8,7 +8,7 @@ const expressApp = express()
 const port = process.env.PORT || 3000
 
 // Inform Sherbeeny that the build has been deployed and running
-bot.telegram.sendMessage("@sherbeeny", "DailyAya is UP.")
+bot.telegram.sendMessage(589683206, "DailyAya is UP.")
 
 // main route will respond (DailyAya is UP) when requested.
 // we call it every 30 minutes using a google app script to prevent the app from sleeping.
