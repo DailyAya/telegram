@@ -3,7 +3,7 @@ const inst = process.env.inst || 1
 const host = process.env.host || "Heroku"
 const totalInst = process.env.totalInst || 1
 const activeInst = process.env.activeInst || "1@Heroku"
-const instActivetUntil = process.env.activeInstUntil || "WHO KNOWS!"
+const instActivetUntil = process.env.InstActiveUntil || "WHO KNOWS!"
 
 var instStateMsg = "DailyAyaTelegram instance "+inst+ "@"+host+ " of total "+totalInst+": Current active instance is "+activeInst+" until "+instActivetUntil+"."
 
