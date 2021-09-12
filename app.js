@@ -1,24 +1,36 @@
-const {Telegraf} = require('telegraf')
-const bot = new Telegraf(process.env.telegramToken)
-const axios = require('axios')
+const telegramToken = process.env.telegramToken || "inactive"
+const inst = process.env.inst || 1
+const host = process.env.host || "Heroku"
+const totalInst = process.env.totalInst || 1
+const activeInst = process.env.activeInst || "1@Heroku"
+const instActivetUntil = process.env.activeInstUntil || "WHO KNOWS!"
 
-// just for heroku web
+var instStateMsg = "DailyAyaTelegram instance "+inst+ "@"+host+ " of total "+totalInst+": Current active instance is "+activeInst+" until "+instActivetUntil+"."
+
+
+
+// just for heroku web dyno and to manage sleep and balance between multiple instances
 const express = require('express')
 const expressApp = express()
 const port = process.env.PORT || 3000
 
-// Inform Sherbeeny that the build has been deployed and running
-bot.telegram.sendMessage(589683206, "DailyAya is UP.")
-
 // main route will respond (DailyAya is UP) when requested.
 // we call it every 30 minutes using a google app script to prevent the app from sleeping.
 expressApp.get('/', (req, res) => {
-  res.send('DailyAya is UP.')
+  res.send(instStateMsg)
 })
 expressApp.listen(port, () => {
   console.log(`Listening on port ${port}`)
 })
 
+const {Telegraf} = require('telegraf')
+const bot = new Telegraf(telegramToken)
+const axios = require('axios')
+
+// Inform Sherbeeny about the instance state
+if(telegramToken != "inactive"){
+    bot.telegram.sendMessage(589683206, instStateMsg) // 589683206 is Sherbeeny's Telegram user ID
+}
 
 //method for invoking start command
 bot.command('start', ctx => {
