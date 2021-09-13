@@ -1,10 +1,4 @@
 const telegramToken = process.env.telegramToken || "inactive"
-
-// Force Heroku dyno to sleep
-if(telegramToken == "inactive"){
-    process.exit()
-}
-
 const inst = process.env.inst || 0
 const host = process.env.host || "Host"
 const totalInst = process.env.totalInst || 0
