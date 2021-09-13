@@ -24,6 +24,7 @@ expressApp.listen(port, () => {
 })
 
 const {Telegraf} = require('telegraf')
+const Markup = require('telegraf/markup')
 const bot = new Telegraf(telegramToken)
 const axios = require('axios')
 
@@ -184,7 +185,7 @@ A translation of Aya ${ayaNumInSura} of Sura ${suraNum}
                  
             })
             .catch((e) => {
-                console.error('Preparing an Aya failed: ', e);
+                console.error('Failed to prepare an aya: ', e);
                 reject(e);
             });
     });
@@ -328,6 +329,7 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
     }
     
     // prepare an Aya then send it
+    console.log('Preparing Aya ' +ayaNum+ ' for user '+userId);
     prepareAya(ayaNum)  
             .then((ayaText) => {
                 console.log('Successfully prepared Aya ' +ayaNum+ ' for user '+userId);
@@ -336,10 +338,23 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                 bot.telegram.sendMessage(userId, ayaText, {disable_web_page_preview: true})
 
                 // send an Aya recitation
-                bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter"}); // title and performer tags are not working!
+                bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter", reply_markup: {
+                    inline_keyboard:[
+                        [{
+                            text: "🎁 Another Aya",
+                            callback_data: "anotherAya"
+                        }]
+                    ]
+                }}); // title and performer tags are not working!
 
-                console.log('Aya '+ayaNum+' has been sent to user '+userId);
+                console.log('Successfully sent Aya '+ayaNum+' has been sent to user '+userId);
               
             })
             .catch((e) => console.error('Failed preparing an Aya.. STOPPED: ', e));
 }
+
+
+// When a user presses "Another Aya" inline keyboard button
+bot.action('anotherAya', ctx => {
+    sendAya(ctx.chat.id)
+})
