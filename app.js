@@ -348,6 +348,6 @@ bot.action('anotherAya', ctx => {
 
 // When a user presses "Next Aya" inline keyboard button
 bot.action('nextAya', ctx => {
-    console.log([ctx.message, ctx.inlineMessageId])
+    console.log([JSON.stringify(ctx)])
     //sendAya(ctx.chat.id)
 })
