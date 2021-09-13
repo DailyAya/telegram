@@ -44,45 +44,6 @@ bot.hears('aya', ctx => {
 })
 
 
-//method that displays the inline keyboard buttons 
-bot.hears('animals', ctx => {
-    console.log(ctx.from)
-    let animalMessage = `great, here are pictures of animals you would love`;
-    ctx.deleteMessage();
-    bot.telegram.sendMessage(ctx.chat.id, animalMessage, {
-        reply_markup: {
-            inline_keyboard: [
-                [{
-                        text: "dog",
-                        callback_data: 'dog'
-                    },
-                    {
-                        text: "cat",
-                        callback_data: 'cat'
-                    }
-                ],
-
-            ]
-        }
-    })
-})
-
-//method that returns image of a dog
-bot.action('dog', ctx => {
-    bot.telegram.sendPhoto(ctx.chat.id, {
-        source: "res/dog.png"
-    })
-
-})
-
-//method that returns image of a cat 
-bot.action('cat', ctx => {
-    bot.telegram.sendPhoto(ctx.chat.id, {
-        source: "res/cat.png"
-    })
-
-})
-
 
 //method for requesting user's phone number
 bot.hears('phone', (ctx, next) => {
@@ -188,6 +149,26 @@ A translation of Aya ${ayaNumInSura} of Sura ${suraNum}
                 reject(e);
             });
     });
+}
+
+
+
+// Provide Aya URL of Quran.com from Aya Number
+function quranUrl(ayaNum){
+    return new Promise((resolve, reject) => {
+        var ayaUrl = 'https://api.alquran.cloud/ayah/'.concat(ayaNum).concat('/editions/quran-uthmani');
+        axios(ayaUrl)
+            .then((res) => {
+                var ayaNumInSura = res.data.data[0].numberInSurah.toString(),
+                    suraNum = res.data.data[0].surah.number.toString(),
+                    url = 'https://quran.com/'.concat(suraNum).concat('/').concat(ayaNumInSura)
+                    resolve(url)
+            })
+            .catch((e) => {
+                console.error('Failed to get Quran.com URL for aya '+ayaNum+': ', e);
+                reject(e);
+            });
+    })
 }
 
 
@@ -336,9 +317,14 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                 // send an Aya text
                 bot.telegram.sendMessage(userId, ayaText, {disable_web_page_preview: true})
 
-                // send an Aya recitation
-                bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter", reply_markup: { // title and performer tags are not working!
+                // send an Aya recitation with inline keyboard buttons
+                quranUrl(ayaNum).then((ayaQuranUrl) => {
+                    bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter", reply_markup: { // title and performer tags are not working!
                         inline_keyboard:[
+                            [{
+                                text: "📖 Open Aya",
+                                url: ayaQuranUrl
+                            }],
                             [{
                                 text: "🎁 Another Aya",
                                 callback_data: "anotherAya"
@@ -348,9 +334,10 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                 }); 
 
                 console.log('Successfully sent Aya '+ayaNum+' has been sent to user '+userId);
-              
-            })
-            .catch((e) => console.error('Failed preparing an Aya.. STOPPED: ', e));
+
+                }).catch((e) => console.error('Failed to get aya Quran.com URL: ', e))
+
+            }).catch((e) => console.error('Failed preparing an Aya.. STOPPED: ', e));
 }
 
 
