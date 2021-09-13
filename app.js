@@ -34,7 +34,7 @@ if(telegramToken != "inactive"){
 
 //method for invoking start command
 bot.command('start', ctx => {
-    console.log(["command: start", ctx])
+    console.log(["command: start", ctx.from, ctx.chat])
     sendAya(ctx.from.id)
 })
 
