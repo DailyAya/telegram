@@ -24,7 +24,6 @@ expressApp.listen(port, () => {
 })
 
 const {Telegraf} = require('telegraf')
-const Markup = require('telegraf/markup')
 const bot = new Telegraf(telegramToken)
 const axios = require('axios')
 
@@ -338,14 +337,15 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                 bot.telegram.sendMessage(userId, ayaText, {disable_web_page_preview: true})
 
                 // send an Aya recitation
-                bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter", reply_markup: {
-                    inline_keyboard:[
-                        [{
-                            text: "🎁 Another Aya",
-                            callback_data: "anotherAya"
-                        }]
-                    ]
-                }}); // title and performer tags are not working!
+                bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter", reply_markup: { // title and performer tags are not working!
+                        inline_keyboard:[
+                            [{
+                                text: "🎁 Another Aya",
+                                callback_data: "anotherAya"
+                            }]
+                        ]
+                    }
+                }); 
 
                 console.log('Successfully sent Aya '+ayaNum+' has been sent to user '+userId);
               
