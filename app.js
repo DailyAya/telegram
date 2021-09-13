@@ -29,7 +29,7 @@ const axios = require('axios')
 
 // Inform "DailyAya Dev" group about the instance state
 if(telegramToken != "inactive"){
-    bot.telegram.sendMessage(1592920692, instStateMsg) // 1592920692 is the group ID of "DailyAya Dev"
+    bot.telegram.sendMessage(-1592920692, instStateMsg) // -1592920692 is the group ID of "DailyAya Dev"
 }
 
 //method for invoking start command
