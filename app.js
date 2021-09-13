@@ -129,11 +129,9 @@ function prepareAya(ayaNum){
                     translatedName = res.data.data[0].surah.englishNameTranslation.toString(),
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
-                    moreUrl = 'https://quran.com/'.concat(suraNum).concat('/').concat(ayaNumInSura),
                     response =
 `${arAya} ﴿${arAyaNumInSura}﴾٠
 "${arName}"
-${moreUrl}
 
 ${translatedAya}
 
@@ -322,12 +320,11 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                     bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter", reply_markup: { // title and performer tags are not working!
                         inline_keyboard:[
                             [{
-                                text: "📖 Open Aya",
-                                url: ayaQuranUrl
-                            }],
-                            [{
-                                text: "🎁 Another Aya",
+                                text: "🎁 Another",
                                 callback_data: "anotherAya"
+                            },{
+                                text: "📖 Open",
+                                url: ayaQuranUrl
                             }]
                         ]
                     }
