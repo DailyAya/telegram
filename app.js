@@ -1,4 +1,10 @@
 const telegramToken = process.env.telegramToken || "inactive"
+
+// Force Heroku dyno to sleep
+if(telegramToken == "inactive"){
+    process.exit()
+}
+
 const inst = process.env.inst || 0
 const host = process.env.host || "Host"
 const totalInst = process.env.totalInst || 0
@@ -18,11 +24,6 @@ const port = process.env.PORT || 3000
 // we call it every 30 minutes using a google app script to prevent the app from sleeping.
 expressApp.get('/', (req, res) => {
   res.send(instStateMsg)
-
-  // Force Heroku dyno to sleep
-  if(telegramToken == "inactive"){
-      process.exit()
-    }
 })
 expressApp.listen(port, () => {
   console.log(`Listening on port ${port}`)
