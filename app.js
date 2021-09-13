@@ -27,9 +27,9 @@ const {Telegraf} = require('telegraf')
 const bot = new Telegraf(telegramToken)
 const axios = require('axios')
 
-// Inform Sherbeeny about the instance state
+// Inform "DailyAya Dev" group about the instance state
 if(telegramToken != "inactive"){
-    bot.telegram.sendMessage(589683206, instStateMsg) // 589683206 is Sherbeeny's Telegram user ID
+    bot.telegram.sendMessage(1592920692, instStateMsg) // 1592920692 is the group ID of "DailyAya Dev"
 }
 
 //method for invoking start command
