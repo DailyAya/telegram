@@ -327,7 +327,7 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                                 url: ayaQuranUrl
                             },{
                                 text: "⏭️ Next",
-                                callback_data: "nextAya"
+                                callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+'}'
                             }]
                         ]
                     }
@@ -347,7 +347,11 @@ bot.action('anotherAya', ctx => {
 })
 
 // When a user presses "Next Aya" inline keyboard button
-bot.action('nextAya', ctx => {
-    console.log([JSON.stringify(ctx)])
-    //sendAya(ctx.chat.id)
+bot.action(/^{"nextAyaAfter/, ctx => {
+    var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
+    var currentAyaNum = Math.floor(callbackData.nextAyaAfter)
+    var currentReciter = Math.floor(callbackData.reciter)
+    console.log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for ID "+ctx.chat.id)
+    var nextAya = currentAyaNum==6230 ? 1 : currentAyaNum+1
+    sendAya(ctx.chat.id, nextAya, currentReciter)
 })
