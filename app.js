@@ -20,7 +20,7 @@ expressApp.get('/', (req, res) => {
   res.send(instStateMsg)
 
   // Force Heroku dyno to sleep
-  if(telegramToken != "inactive"){
+  if(telegramToken == "inactive"){
       process.exit()
     }
 })
