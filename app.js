@@ -4,8 +4,9 @@ const host = process.env.host || "Host"
 const totalInst = process.env.totalInst || 0
 const activeInst = process.env.activeInst || "0@Host" //unused for now
 const instActivetUntil = process.env.instActiveUntil || "WHO KNOWS!"
+const branch = process.env.branch || "staging"
 
-var instStateMsg = "DailyAyaTelegram instance "+inst+ "@"+host+ " (of total "+totalInst+") is active until "+instActivetUntil+"."
+var instStateMsg = "DailyAyaTelegram "+ branch +" instance "+inst+ "@"+host+ " (of total "+totalInst+") is active until "+instActivetUntil+"."
 
 
 
