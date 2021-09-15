@@ -351,7 +351,8 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                         }]
                                     ]
                                // }
-                            })
+                            }).then(res => console.log(res))
+                            .catch(e => console.log(e))
                         }).catch(e => console.log(e)); 
 
                     console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
