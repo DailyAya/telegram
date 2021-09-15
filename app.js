@@ -334,7 +334,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                             
                             recitationMsgId = returned.message_id
                             console.log("recitationMsgId is "+recitationMsgId)
-                            bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId, {inline_keyboard:[
+                            bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId,'', {inline_keyboard:[
                                 [{
                                     text: "🎁",
                                     callback_data: "anotherAya"
