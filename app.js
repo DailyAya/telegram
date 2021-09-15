@@ -284,7 +284,7 @@ function recitation(aya, reciter){
 
 
 // Send random Aya and random reciter if called with the userId argument only 
-function sendAya(userId, requestedAyaNum, requestedReciterNum){
+function sendAya(chatId, requestedAyaNum, requestedReciterNum){
 
     var ayaNum, reciterNum;
     
@@ -301,37 +301,41 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
     }
     
     // prepare an Aya then send it
-    console.log('Preparing Aya ' +ayaNum+ ' for user '+userId);
+    console.log('Preparing Aya ' +ayaNum+ ' for chat '+chatId);
     prepareAya(ayaNum)  
             .then((ayaText) => {
-                console.log('Successfully prepared Aya ' +ayaNum+ ' for user '+userId);
+                console.log('Successfully prepared Aya ' +ayaNum+ ' for chat '+chatId);
                
                 // send an Aya text
-                bot.telegram.sendMessage(userId, ayaText, {disable_web_page_preview: true})
-                .then(({message_id}) => console.log("Aya Message ID: "+message_id))
-                .catch(e => console.log(e))
+                bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true})
+                .then(({message_id}) => {
+                    // send an Aya recitation with inline keyboard buttons
+                    quranUrl(ayaNum).then((ayaQuranUrl) => {
+                        // TODO: title and performer tags are not working!
+                        bot.telegram.sendAudio(chatId, recitation(ayaNum, reciterNum), {
+                            title: "Quran", performer: "Reciter", reply_markup: {
+                                inline_keyboard:[
+                                    [{
+                                        text: "🎁",
+                                        callback_data: "anotherAya"
+                                    },{
+                                        text: "📖",
+                                        url: ayaQuranUrl
+                                    },{
+                                        text: "⏭️",
+                                        callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+',"ayaMsgId":'+message_id+'}'
+                                        // ayaMsgId to be able to edit the text message later when needed (for example: change translation)
+                                    }]
+                                ]
+                            }
+                        }); 
 
-                // send an Aya recitation with inline keyboard buttons
-                quranUrl(ayaNum).then((ayaQuranUrl) => {
-                    bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter", reply_markup: { // title and performer tags are not working!
-                        inline_keyboard:[
-                            [{
-                                text: "🎁",
-                                callback_data: "anotherAya"
-                            },{
-                                text: "📖",
-                                url: ayaQuranUrl
-                            },{
-                                text: "⏭️",
-                                callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+'}'
-                            }]
-                        ]
-                    }
-                }); 
+                    console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
 
-                console.log('Successfully sent Aya '+ayaNum+' has been sent to user '+userId);
+                    }).catch((e) => console.error('Failed to get aya Quran.com URL: ', e))
+                }).catch(e => console.log(e))
 
-                }).catch((e) => console.error('Failed to get aya Quran.com URL: ', e))
+                
 
             }).catch((e) => console.error('Failed preparing an Aya.. STOPPED: ', e));
 }
