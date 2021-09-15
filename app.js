@@ -337,10 +337,10 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
 
 // When a user presses "Another Aya" inline keyboard button
 bot.action('anotherAya', ctx => {
-    sendAya(ctx.chat.id).then(res =>{
+    sendAya(ctx.chat.id).then((res) =>{
         console.log(JSON.stringify(res))
 
-    }).catch(e =>{
+    }).catch((e) =>{
         console.log(e)
     })
 })
