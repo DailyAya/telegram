@@ -312,8 +312,8 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                 .then(({message_id}) => {
                     ayaMsgId = message_id
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
-                    quranUrl(ayaNum).then((url) => {
-                        ayaQuranUrl = url
+                    quranUrl(ayaNum).then((quranUrl) => {
+                        ayaQuranUrl = quranUrl
                         // TODO: title and performer tags are not working!
                         bot.telegram.sendAudio(chatId, recitation(ayaNum, reciterNum), {
                             title: "Quran", performer: "Reciter", reply_markup: {
