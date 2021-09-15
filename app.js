@@ -347,6 +347,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                             text: "⏭️",
                                             callback_data: '{"currAya":'+ayaNum+',"r":'+reciterNum+',"aMsgId":'+ayaMsgId+',"rMsgId":'+recitationMsgId+'}'
                                             // rMsgId to be able to change the audio later when needed (for example: change reciter)
+                                            // callback_data must be between 1-64 bytes
                                         }]
                                     ]
                             }).then(res => console.log(res))
