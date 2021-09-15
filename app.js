@@ -24,6 +24,23 @@ expressApp.listen(port, () => {
   console.log(`Listening on port ${port}`)
 })
 
+
+// MongoDB is a pool and always open
+var mongoDbConn;
+const { MongoClient } = require('mongodb');
+const mongoDbCredentials = process.env.mongoDbCredentials;
+const uri = "mongodb+srv://"+mongoDbAuth+"@cluster0.acgar.mongodb.net/myFirstDatabase?retryWrites=true&w=majority&poolSize=50&keepAlive=true";
+const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+client.connect((err, db) => {
+    if (err) console.error('MongoDbConn ERROR: ', err);
+    else {
+      console.log('MongoDbConn Connected!');
+      mongoDbConn = db;
+    }
+});
+
+
+
 const {Telegraf} = require('telegraf')
 const bot = new Telegraf(telegramToken)
 const axios = require('axios')
