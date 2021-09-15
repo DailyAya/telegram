@@ -347,7 +347,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                     }]
                                 ]
                             })
-                        }); 
+                        }).catch(e => console.log(e)); 
 
                     console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
 
