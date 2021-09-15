@@ -308,6 +308,8 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                
                 // send an Aya text
                 bot.telegram.sendMessage(userId, ayaText, {disable_web_page_preview: true})
+                .then(sentMsg => console.log(sentMsg))
+                .catch(e => console.log(e))
 
                 // send an Aya recitation with inline keyboard buttons
                 quranUrl(ayaNum).then((ayaQuranUrl) => {
@@ -337,12 +339,7 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
 
 // When a user presses "Another Aya" inline keyboard button
 bot.action('anotherAya', ctx => {
-    sendAya(ctx.chat.id).then((res) =>{
-        console.log(JSON.stringify(res))
-
-    }).catch((e) =>{
-        console.log(e)
-    })
+    sendAya(ctx.chat.id)
 })
 
 // When a user presses "Next Aya" inline keyboard button
