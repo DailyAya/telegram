@@ -29,7 +29,7 @@ expressApp.listen(port, () => {
 var mongoDbConn;
 const { MongoClient } = require('mongodb');
 const mongoDbCredentials = process.env.mongoDbCredentials;
-const uri = "mongodb+srv://"+mongoDbCredentials+"@cluster0.acgar.mongodb.net/myFirstDatabase?retryWrites=true&w=majority&poolSize=50&keepAlive=true";
+const uri = "mongodb+srv://"+mongoDbCredentials+"@cluster0.acgar.mongodb.net/sample_airbnb?retryWrites=true&w=majority&poolSize=50&keepAlive=true";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect((err, db) => {
     if (err) console.error('MongoDbConn ERROR: ', err);
