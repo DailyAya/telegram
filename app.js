@@ -39,6 +39,12 @@ client.connect((err, db) => {
     }
 });
 
+// Records the last time an aya was sent to a chat so we can send again after 24 hours
+function lastAyaTime(chatId){
+    var shiftedTime = Date.now() - 300000; // To shift lastUpdate time 5 minutes to keep sending the user near the same time everyday.
+
+}
+
 
 
 const {Telegraf} = require('telegraf')
@@ -308,13 +314,13 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                     bot.telegram.sendAudio(userId, recitation(ayaNum, reciterNum), {title: "Quran", performer: "Reciter", reply_markup: { // title and performer tags are not working!
                         inline_keyboard:[
                             [{
-                                text: "🎁 Another",
+                                text: "🎁",
                                 callback_data: "anotherAya"
                             },{
-                                text: "📖 Open",
+                                text: "📖",
                                 url: ayaQuranUrl
                             },{
-                                text: "⏭️ Next",
+                                text: "⏭️",
                                 callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+'}'
                             }]
                         ]
@@ -331,7 +337,12 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
 
 // When a user presses "Another Aya" inline keyboard button
 bot.action('anotherAya', ctx => {
-    sendAya(ctx.chat.id)
+    sendAya(ctx.chat.id).then(res =>{
+        console.log(JSON.stringify(res))
+
+    }).catch(e =>{
+        console.log(e)
+    })
 })
 
 // When a user presses "Next Aya" inline keyboard button
