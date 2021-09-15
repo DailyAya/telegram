@@ -335,7 +335,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                             recitationMsgId = returned.message_id
                             console.log("recitationMsgId is "+recitationMsgId)
                             bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId,'', {
-                                reply_markup:{
+                                //reply_markup:{
                                     inline_keyboard:
                                     [
                                         [{
@@ -350,7 +350,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                             // recitationMsgId to be able to change the audio later when needed (for example: change reciter)
                                         }]
                                     ]
-                                }
+                               // }
                             })
                         }).catch(e => console.log(e)); 
 
