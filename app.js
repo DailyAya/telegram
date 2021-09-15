@@ -308,7 +308,7 @@ function sendAya(userId, requestedAyaNum, requestedReciterNum){
                
                 // send an Aya text
                 bot.telegram.sendMessage(userId, ayaText, {disable_web_page_preview: true})
-                .then(sentMsg => console.log(sentMsg))
+                .then(({message_id}) => console.log("Aya Message ID: "+message_id))
                 .catch(e => console.log(e))
 
                 // send an Aya recitation with inline keyboard buttons
