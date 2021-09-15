@@ -334,19 +334,24 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                             
                             recitationMsgId = returned.message_id
                             console.log("recitationMsgId is "+recitationMsgId)
-                            bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId,'', {inline_keyboard:[
-                                [{
-                                    text: "🎁",
-                                    callback_data: "anotherAya"
-                                },{
-                                    text: "📖",
-                                    url: ayaQuranUrl
-                                },{
-                                    text: "⏭️ Next",
-                                    callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+',"ayaMsgId":'+ayaMsgId+',"recitationMsgId":'+recitationMsgId+'}'
-                                    // recitationMsgId to be able to change the audio later when needed (for example: change reciter)
-                                }]
-                            ]})
+                            bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId,'', {
+                                reply_markup:{
+                                    inline_keyboard:
+                                    [
+                                        [{
+                                            text: "🎁",
+                                            callback_data: "anotherAya"
+                                        },{
+                                            text: "📖",
+                                            url: ayaQuranUrl
+                                        },{
+                                            text: "⏭️ Next",
+                                            callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+',"ayaMsgId":'+ayaMsgId+',"recitationMsgId":'+recitationMsgId+'}'
+                                            // recitationMsgId to be able to change the audio later when needed (for example: change reciter)
+                                        }]
+                                    ]
+                                }
+                            })
                         }).catch(e => console.log(e)); 
 
                     console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
