@@ -307,12 +307,13 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                 console.log('Successfully prepared Aya ' +ayaNum+ ' for chat '+chatId);
                
                 // send an Aya text
-                var ayaMsgId, recitationMsgId
+                var ayaMsgId, recitationMsgId, ayaQuranUrl
                 bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true})
                 .then(({message_id}) => {
                     ayaMsgId = message_id
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
-                    quranUrl(ayaNum).then((ayaQuranUrl) => {
+                    quranUrl(ayaNum).then((url) => {
+                        ayaQuranUrl = url
                         // TODO: title and performer tags are not working!
                         bot.telegram.sendAudio(chatId, recitation(ayaNum, reciterNum), {
                             title: "Quran", performer: "Reciter", reply_markup: {
@@ -335,8 +336,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                             recitationMsgId = returned.message_id
                             console.log("recitationMsgId is "+recitationMsgId)
                             bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId,'', {
-                                //reply_markup:{
-                                    inline_keyboard:JSON.stringify([
+                                    inline_keyboard:[
                                         [{
                                             text: "🎁",
                                             callback_data: "anotherAya"
@@ -348,8 +348,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                             callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+',"ayaMsgId":'+ayaMsgId+',"recitationMsgId":'+recitationMsgId+'}'
                                             // recitationMsgId to be able to change the audio later when needed (for example: change reciter)
                                         }]
-                                    ])
-                               // }
+                                    ]
                             }).then(res => console.log(res))
                             .catch(e => console.log(e))
                         }).catch(e => console.log(e)); 
