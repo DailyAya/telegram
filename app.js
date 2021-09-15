@@ -330,23 +330,24 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                     }]
                                 ]
                             }
-                        }).then(({message_id})=>{
-                            recitationMsgId = message_id
-                            bot.telegram.editMessageReplyMarkup(chatId, message_id, {
-                                inline_keyboard:[
-                                    [{
-                                        text: "🎁",
-                                        callback_data: "anotherAya"
-                                    },{
-                                        text: "📖",
-                                        url: ayaQuranUrl
-                                    },{
-                                        text: "⏭️",
-                                        callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+',"ayaMsgId":'+ayaMsgId+',"recitationMsgId":'+recitationMsgId+'}'
-                                        // recitationMsgId to be able to change the audio later when needed (for example: change reciter)
-                                    }]
-                                ]
-                            })
+                        }).then((returned)=>{
+                            console.log(returned)
+                            // recitationMsgId = message_id
+                            // bot.telegram.editMessageReplyMarkup(chatId, message_id, {
+                            //     inline_keyboard:[
+                            //         [{
+                            //             text: "🎁",
+                            //             callback_data: "anotherAya"
+                            //         },{
+                            //             text: "📖",
+                            //             url: ayaQuranUrl
+                            //         },{
+                            //             text: "⏭️",
+                            //             callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+',"ayaMsgId":'+ayaMsgId+',"recitationMsgId":'+recitationMsgId+'}'
+                            //             // recitationMsgId to be able to change the audio later when needed (for example: change reciter)
+                            //         }]
+                            //     ]
+                            // })
                         }).catch(e => console.log(e)); 
 
                     console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
