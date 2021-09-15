@@ -61,6 +61,19 @@ bot.hears('aya', ctx => {
     respondWith(ctx.chat.id)
 })
 
+// testing db
+bot.hears('db', ctx =>{
+    dbConn.db('sample_mflix').collection('users').find({email:
+        "sean_bean@gameofthron.es"}).toArray((err, res) =>{
+            if (err) console.error('DB error: ', err)
+            else {
+                console.log('Found ' + res.length + ' results.')
+                bot.telegram.sendMessage(ctx.chat.id, 'Found ' + res.length + ' results.')
+                if(res.length>=1) bot.telegram.sendMessage(ctx.chat.id, 'First name is '+ res[0].name)
+            }
+        })
+})
+
 
 
 //method to start get the script to pulling updates for telegram 
