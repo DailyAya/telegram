@@ -372,10 +372,10 @@ bot.action('anotherAya', ctx => {
 // When a user presses "Next Aya" inline keyboard button
 bot.action(/^{"currAya/, ctx => {
     var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
-    var currentAyaNum = Math.floor(callbackData.nextAyaAfter)
-    var currentReciter = Math.floor(callbackData.reciter)
+    var currentAyaNum = Math.floor(callbackData.currAya)
+    var currentReciter = Math.floor(callbackData.r)
     console.log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
-    console.log("Current ayaMsgId is "+callbackData.ayaMsgId+" and recitationMsgId is "+callbackData.recitationMsgId)
+    console.log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+callbackData.rMsgId)
     var nextAya = currentAyaNum==6230 ? 1 : currentAyaNum+1
     sendAya(ctx.chat.id, nextAya, currentReciter)
 })
