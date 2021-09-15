@@ -334,7 +334,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                             
                             recitationMsgId = returned.message_id
                             console.log("recitationMsgId is "+recitationMsgId)
-                            bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId, [
+                            bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId, {inline_keyboard:[
                                 [{
                                     text: "🎁",
                                     callback_data: "anotherAya"
@@ -346,7 +346,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                     callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+',"ayaMsgId":'+ayaMsgId+',"recitationMsgId":'+recitationMsgId+'}'
                                     // recitationMsgId to be able to change the audio later when needed (for example: change reciter)
                                 }]
-                            ])
+                            ]})
                         }).catch(e => console.log(e)); 
 
                     console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
