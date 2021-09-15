@@ -326,8 +326,8 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                         url: ayaQuranUrl
                                     },{
                                         text: "⏭️",
-                                        callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+',"ayaMsgId":'+ayaMsgId+'}'
-                                        // ayaMsgId to be able to edit the text message later when needed (for example: change translation)
+                                        callback_data: '{"currAya":'+ayaNum+',"r":'+reciterNum+',"aMsgId":'+ayaMsgId+'}'
+                                        // aMsgId to be able to edit the text message later when needed (for example: change translation)
                                     }]
                                 ]
                             }
@@ -343,13 +343,11 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                         },{
                                             text: "📖",
                                             url: ayaQuranUrl
-                                        }
-                                        // ,{
-                                        //     text: "⏭️ Next",
-                                        //     callback_data: '{"nextAyaAfter":'+ayaNum+',"reciter":'+reciterNum+',"ayaMsgId":'+ayaMsgId+',"recitationMsgId":'+recitationMsgId+'}'
-                                        //     // recitationMsgId to be able to change the audio later when needed (for example: change reciter)
-                                        // }
-                                    ]
+                                        },{
+                                            text: "⏭️",
+                                            callback_data: '{"currAya":'+ayaNum+',"r":'+reciterNum+',"aMsgId":'+ayaMsgId+',"rMsgId":'+recitationMsgId+'}'
+                                            // rMsgId to be able to change the audio later when needed (for example: change reciter)
+                                        }]
                                     ]
                             }).then(res => console.log(res))
                             .catch(e => console.log(e))
@@ -372,7 +370,7 @@ bot.action('anotherAya', ctx => {
 })
 
 // When a user presses "Next Aya" inline keyboard button
-bot.action(/^{"nextAyaAfter/, ctx => {
+bot.action(/^{"currAya/, ctx => {
     var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
     var currentAyaNum = Math.floor(callbackData.nextAyaAfter)
     var currentReciter = Math.floor(callbackData.reciter)
