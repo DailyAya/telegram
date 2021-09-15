@@ -26,7 +26,7 @@ expressApp.listen(port, () => {
 
 
 // MongoDB is a pool and always open
-var mongoDbConn;
+var dbConn;
 const { MongoClient } = require('mongodb');
 const mongoDbCredentials = process.env.mongoDbCredentials;
 const uri = "mongodb+srv://"+mongoDbCredentials+"@cluster0.acgar.mongodb.net/sample_airbnb?retryWrites=true&w=majority&maxPoolSize=50&keepAlive=true";
@@ -35,7 +35,7 @@ client.connect((err, db) => {
     if (err) console.error('MongoDbConn ERROR: ', err);
     else {
       console.log('MongoDbConn Connected!');
-      mongoDbConn = db;
+      dbConn = db;
     }
 });
 
