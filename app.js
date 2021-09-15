@@ -63,6 +63,7 @@ bot.hears('aya', ctx => {
 
 // testing db
 bot.hears('db', ctx =>{
+    bot.telegram.sendMessage(ctx.chat.id, 'Querying...')
     dbConn.db('sample_mflix').collection('users').find({email:
         "sean_bean@gameofthron.es"}).toArray((err, res) =>{
             if (err) console.error('DB error: ', err)
