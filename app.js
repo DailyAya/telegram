@@ -42,11 +42,12 @@ client.connect((err, db) => {
 // Records the last time an aya was sent to a chat so we can send again after 24 hours
 function lastAyaTime(chatId, status){
     status = status || "success" // Function can be called with chatId only if not blocked
+    var blocked = status.toLowerCase().includes('block')
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
         {chat: chatId},
         {$set: {lastAyaTime: Date.now(), blocked: blocked}},
         {upsert: true}
-    ).then(console.log('Recorded Last Aya Time for chat '+chatId+' as '+ (status.toLowerCase().includes('block') ? "blocked." : "successfuly sent.")))
+    ).then(console.log('Recorded Last Aya Time for chat '+chatId+' as '+ (blocked ? "blocked." : "successfuly sent.")))
     .catch(e => console.error('Failed to record Last Aya Time for chat '+chatId+': ', e))
 }
 
