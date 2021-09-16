@@ -182,48 +182,6 @@ function quranUrl(ayaNum){
 
 
 
-// Prepares the response and use it to call sendMsg function
-// user argument is a must
-// scenario and requestAya are optional
-// if scenario = explain, requestAya is not needed
-// if scenario = request, requestedAya (1 to 6230) and requestedReciter (1 to 16) are a must 
-function respondWith(userId, scenario, requestedAya, requestedReciter){
-    var response, aya, reciter;
-
-    switch (scenario){
-        case 'explain': // if the user sent anything other than two numbers that match an existing Aya.
-            response=
-`لم نتعرف على أرقام أو تم طلب سورة أو آية غير موجودة.
-يمكنك طلب آية محددة بإرسال رقم السورة والآية.
-مثال: ٢   ٢٥٥
-أو رقم السورة فقط : ٢
-إليك آية أخرى 🙂
-
-Couldn’t find numbers or the requested Sura or Aya doesn’t exist.
-You can request a specific Aya by sending the numbers of Aya and Sura.
-Example: 2   255
-Or Sura number only: 2
-Here's another Aya 🙂
-`;
-            // aya = randomNum('aya'); // to prepare a random aya
-            // reciter = randomNum('reciter'); // random reciter
-            // sendMsg(user, response, aya, reciter); // send explaination first (save scheduled aya and reciter instead of null)
-            bot.telegram.sendMessage(userId, response)
-            sendAya(userId)
-            break;
-            
-        case 'request':
-            aya = requestedAya;
-            if (requestedReciter) reciter = requestedReciter;
-            else reciter = randomNum('reciter');
-            break;
-            
-        default: // default is requesting a random Aya and can be called with the user argument only, like this: respondWith(user);
-            sendAya(userId);
-    }
-    
-}
-
 
 
 
@@ -334,4 +292,92 @@ function nextAya(ayaNum){
 }
 
 
-bot.hears('test', ctx => sendAya(589683206))
+
+
+
+// Sends an explaination about how to request an aya then sends a random aya
+function explain(chatId){
+    var explaination =
+    `لم نتعرف على أرقام أو تم طلب سورة أو آية غير موجودة.
+    يمكنك طلب آية محددة بإرسال رقم السورة والآية.
+    مثل: ٢   ٢٥٥
+    أو رقم السورة فقط مثل : ٢
+    إليك آية أخرى 🙂
+
+    Couldn’t find numbers or the requested Sura or Aya doesn’t exist.
+    You can request a specific Aya by sending the numbers of Aya and Sura.
+    Example: 2   255
+    Or Sura number only: 2
+    Here's another Aya 🙂`
+
+    bot.telegram.sendMessage(chatId, explaination)
+    .then(sendAya(chatId))
+    .catch(e=>console.error('Failed to send explaination to chat ${chatId}: ', e))
+}
+
+
+
+
+// Converting input arabic number into english one
+function numArabicToEnglish(string) {
+    return string.replace(/[\u0660-\u0669]/g, function (c) {
+        return c.charCodeAt(0) - 0x0660;
+    });
+}
+
+
+
+// Check if the requested Aya is valid or not
+// returns Aya number (1 to 6230) if valid, or 0 if not valid.
+// Because returning a promise, must be called with .then().catch()
+function ayaCheck(sura, aya){
+    return new Promise((resolve, reject) => {
+        var url = 'http://api.alquran.cloud/ayah/'+sura+':'+aya;
+      	    axios(url)
+      	        .then(function (res) {
+      	            resolve(res.data.data.number);
+    	        }).catch(function (e) {
+    	            console.error('ayaCheck error: ', e);
+                    if (e.response.data.data.match('surah')) resolve(0); // Aya is not valid
+                    else reject(e); // Something else is wrong!
+                });
+    });
+}
+
+
+// Responds to text messages to send the requested Aya
+bot.on('text', ctx =>{
+    var txt = ctx.message.text
+    var chatId = ctx.chat.id
+    console.log('Message from chat ' + chatId+ ': ' + txt)
+    var foundNums = numArabicToEnglish(txt).match(/\d+/g)
+    
+    // if incoming text doesn't have any valid numbers, send EXPLAIN
+    if (foundNums===null || foundNums.length === 0) explain(chatId)
+    
+    // if incoming message contains one or more numbers and the first number is between 1 to 114 (sura number)
+    else if (1 <= foundNums[0] && foundNums[0] <= 114) {
+        if (foundNums.length == 1) { // One number is Sura number only
+            ayaCheck(foundNums[0],1) // to get the Global Aya number of the first Aya in this Sura for "sendAya" function.
+            .then((validAya) => { // it's always valid here.
+                console.log('ayaCheck: ', validAya)
+                sendAya(chatId, validAya)
+            })
+            .catch((e) => console.error('ayaCheck: ', e))
+            
+        } else { // if first number is Sura and there's at least one more number (aya)
+            ayaCheck(foundNums[0], foundNums[1])
+            .then((validAya) => {
+                console.log('ayaCheck: ', validAya)
+                
+                if (validAya){ // if valid aya number, send requested Aya
+                    sendAya(chatId, validAya)
+                
+                // if second number (aya) is invalid, send EXPLAIN
+                } else explain(chatId)
+            })
+            .catch((e) => console.error('ayaCheck: ', e))
+        }
+    // if first number is not valid sura number, send EXPLAIN
+    } else explain(chatId)
+})
