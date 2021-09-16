@@ -45,7 +45,7 @@ function lastAyaTime(chatId, status){
     var blocked = status.toLowerCase().includes('block')
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
         {chat: chatId},
-        {$set: {lastAyaTime: Date.now(), blocked: blocked}},
+        {$set: {lastAyaTime: new Timestamp(), blocked: blocked}},
         {upsert: true}
     ).then(console.log('Recorded Last Aya Time for chat '+chatId+' as '+ (blocked ? "blocked." : "successfuly sent.")))
     .catch(e => console.error('Failed to record Last Aya Time for chat '+chatId+': ', e))
