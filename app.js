@@ -110,7 +110,7 @@ process.once('SIGTERM', () => bot.stop('SIGTERM'))
 // if input is "reciter": a random number representing one of the available reciters
 function randomNum(type){
     var max = 6230; // default for aya number
-    if (type == "reciter") max = 16;
+    if (type == "reciter") max = recitersData.length;
     return Math.floor(Math.random() * Math.floor(max)) + 1; // +1 because the generated numbers are between 0 and max-1
 }
 
