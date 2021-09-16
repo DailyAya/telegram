@@ -41,6 +41,7 @@ client.connect((err, db) => {
 
 // Records the last time an aya was sent to a chat so we can send again after 24 hours
 function lastAyaTime(chatId, blocked){
+    blocked = blocked || false // Function can be called with chatId only if not blocked
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
         {chat: chatId},
         {$set: {lastAyaTime: Date.now(), blocked: blocked}},
@@ -198,45 +199,6 @@ Here's another Aya 🙂
 
 
 
-//Send a message to a user in telegram
-function sendMsg(user, response, lastAya, lastReciter) {
-    bot.telegram.sendMessage(user, response, {disable_web_page_preview: true})
-    // // Construct the message body
-    // let request_body = {
-    //     "recipient": {
-    //         "id": user
-    //     },
-    //     "message": response,
-    //     "messaging_type": "MESSAGE_TAG",
-    //     "tag": "NON_PROMOTIONAL_SUBSCRIPTION"
-    // };
- 
-    // // Send the HTTP request to the Messenger Platform
-    // request({
-        
-    //   "uri": "https://graph.facebook.com/v2.6/me/messages",
-    //   "qs": {"access_token":PAGE_ACCESS_TOKEN },
-    //     "method": "POST",
-    //     "json": request_body
-    // }, (err, res, body) => {
-    //     if (!err) {
-    //         console.log('message sent!');
-            
-    //         if (res.statusCode == 200){
-    //             // Update database and set failCount to 0
-    //             updateDb(user, 0, lastAya, lastReciter);
-                
-    //         } else {
-    //             // Update database and increase failCount by 1
-    //             updateDb(user, 1, lastAya, lastReciter); 
-    //         }
-            
-    //     } else {
-    //         console.error("Unable to send message: " + err);
-    //     }
-    // });
-}
-
 
 // returns a URL string for the audio file of the requested aya (is a must)
 // if reciter is not requested (1 to 16), a random reciter will be provided
@@ -305,6 +267,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                             }
                         })
                         console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
+                        lastAyaTime(chatId)
 
                     }).catch((e) => console.error('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => console.log("Failed to send Aya "+ayaNum+" to chat "+chatId+": ", e))
