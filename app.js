@@ -245,7 +245,7 @@ axios('http://api.alquran.cloud/edition/format/audio') // Run only one time for 
 .then(res => {
     console.log('Parsing reciters list...')
     console.log(res.data)
-    recitersData=res.data.data[0].filter(i => i.language=="ar")
+    recitersData=JSON.parse(res.data.data).filter(i => i.language=="ar")
 }) // Only Arabic recitations
 .catch(e => console.error('Failed to get reciters list: ', e))
 
