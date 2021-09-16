@@ -70,8 +70,8 @@ var dailyTimer = setInterval(function(){
     dbConn.db('dailyAyaTelegram').collection('chats').find({lastAyaTime: {$lte: Date.now()-sendMillis}, blocked: false}).toArray( (err, res) => {
         if (err) console.error('Timer error: ', err);
         else {
-        console.log('Timer will send to ' + res.length + ' chats.')
-        res.forEach(chat => sendAya(chat.chatId))
+            console.log('Timer will send to ' + res.length + ' chats.')
+            res.forEach(chat => sendAya(chat.chatId))
         }
     })
 }, checkMillis)
@@ -83,16 +83,30 @@ var dailyTimer = setInterval(function(){
 // Using Telegraf NodeJS framework for Telegram bots
 const {Telegraf} = require('telegraf')
 const bot = new Telegraf(telegramToken)
+const ayaDevChatId = -1001592920692 // the group ID of "DailyAya Dev"
 
 // Inform "DailyAya Dev" group about the instance state
 if(telegramToken != "inactive"){
-    bot.telegram.sendMessage(-1001592920692, instStateMsg) // -1001592920692 is the group ID of "DailyAya Dev"
+    bot.telegram.sendMessage(ayaDevChatId, instStateMsg)
 }
 
 //method for invoking start command
 bot.command('start', ctx => {
     console.log(["command: start", ctx.from, ctx.chat])
     sendAya(ctx.chat.id)
+
+
+    // Informing "DailyAya Dev" of total active chats when /start is sent
+    var totalActiveChats
+    dbConn.db('dailyAyaTelegram').collection('chats').find({blocked: false}).toArray((err, res) =>{
+        if (err) console.error('Error getting total chats: ', err);
+        else {
+            totalActiveChats = res.length
+            var totalActiveChatsMsg = 'Total active chats: ' + res.length
+            console.log(totalActiveChatsMsg)
+            bot.telegram.sendMessage(ayaDevChatId, totalActiveChatsMsg)
+        }
+    })
 })
 
 
