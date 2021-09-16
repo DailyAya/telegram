@@ -331,33 +331,34 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                     }]
                                 ]
                             }
-                        }).then((returned)=>{
+                        })
+                        // .then((returned)=>{
                             
-                            recitationMsgId = returned.message_id
-                            console.log("recitationMsgId is "+recitationMsgId)
-                            bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId,'', {
-                                    inline_keyboard:[
-                                        [{
-                                            text: "🎁",
-                                            callback_data: "anotherAya"
-                                        },{
-                                            text: "📖",
-                                            url: ayaQuranUrl
-                                        },{
-                                            text: "⏭️",
-                                            callback_data: '{"currAya":'+ayaNum+',"r":'+reciterNum+',"aMsgId":'+ayaMsgId+',"rMsgId":'+recitationMsgId+'}'
-                                            // rMsgId to be able to change the audio later when needed (for example: change reciter)
-                                            // callback_data must be between 1-64 bytes
-                                        }]
-                                    ]
-                            }).then(res => console.log(res))
-                            .catch(e => console.log(e))
-                        }).catch(e => console.log(e)); 
+                        //     recitationMsgId = returned.message_id
+                        //     console.log("recitationMsgId is "+recitationMsgId)
+                        //     bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId,'', {
+                        //             inline_keyboard:[
+                        //                 [{
+                        //                     text: "🎁",
+                        //                     callback_data: "anotherAya"
+                        //                 },{
+                        //                     text: "📖",
+                        //                     url: ayaQuranUrl
+                        //                 },{
+                        //                     text: "⏭️",
+                        //                     callback_data: '{"currAya":'+ayaNum+',"r":'+reciterNum+',"aMsgId":'+ayaMsgId+',"rMsgId":'+recitationMsgId+'}'
+                        //                     // rMsgId to be able to change the audio later when needed (for example: change reciter)
+                        //                     // callback_data must be between 1-64 bytes
+                        //                 }]
+                        //             ]
+                        //     }).then(res => console.log(res))
+                        //     .catch(e => console.log(e))
+                        // }).catch(e => console.log(e)); 
 
                     console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
 
                     }).catch((e) => console.error('Failed to get aya Quran.com URL: ', e))
-                }).catch(e => console.log(e))
+                }).catch(e => console.log("Failed to send Aya "+ayaNum+" to chat "+chatId , e))
 
                 
 
@@ -376,8 +377,8 @@ bot.action(/^{"currAya/, ctx => {
     var currentAyaNum = Math.floor(callbackData.currAya)
     var currentReciter = Math.floor(callbackData.r)
     console.log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
-    console.log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+callbackData.rMsgId)
-    console.log(JSON.stringify(ctx))
+    console.log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
+    //console.log(JSON.stringify(ctx))
     var nextAya = currentAyaNum==6230 ? 1 : currentAyaNum+1
     sendAya(ctx.chat.id, nextAya, currentReciter)
 })
