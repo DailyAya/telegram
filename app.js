@@ -273,7 +273,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                     }).catch((e) => console.error('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => {
                     console.log("Failed to send Aya "+ayaNum+" to chat "+chatId+": ", e)
-                    if(e.includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
+                    if(JSON.stringify(e).includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
                 })
 
                 
