@@ -146,7 +146,7 @@ function prepareAya(ayaNum){
 ${translatedAya}
 
 A translation of Aya ${ayaNumInSura} of Sura ${suraNum}
-"${enName}" = ${translatedName}`;
+"${enName}" = ${translatedName}`
                 
                 // return function call with the formated Aya.
                 resolve(response);
@@ -318,14 +318,14 @@ Or Sura number only: 2`
             ]
         }
     })
-    .then(console.log('Sent explaination to chat ${chatId}.'))
-    .catch(e=>console.error('Failed to send explaination to chat ${chatId}: ', e))
+    .then(console.log('Sent explaination to chat '+chatId+'.'))
+    .catch(e=>console.error('Failed to send explaination to chat '+chatId+': ', e))
 }
 
 
 
 
-// Converting input arabic number into english one
+// Converting input arabic number into english one to easily find numbers in sent messages
 function numArabicToEnglish(string) {
     return string.replace(/[\u0660-\u0669]/g, function (c) {
         return c.charCodeAt(0) - 0x0660;
