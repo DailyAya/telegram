@@ -66,7 +66,7 @@ var sendHours = 24 // Edit this if needed, instead of editing the numbers below
 var checkMillis = 1000*5//checkMinutes * 60 * 1000
 var sendMillis = 1000*15//(sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 hours - 15 minutes) to keep each chat near the same hour, otherwise it will keep shifting
 var dailyTimer = setInterval(function(){
-    dbConn.db('dailyAyaTelegram').collection('chats').find({lastUpdate: {$lte: Date.now()-sendMillis}, blocked: false}).toArray( (err, res) => {
+    dbConn.db('dailyAyaTelegram').collection('chats').find({lastAyaTime: {$lte: Date.now()-sendMillis}, blocked: false}).toArray( (err, res) => {
         if (err) console.error('Timer error: ', err);
         else {
         console.log('Timer will send to ' + res.length + ' chats.')
