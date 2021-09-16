@@ -63,8 +63,8 @@ function lastAyaTime(chatId, status){
 //timer to fetch database every 15 minutes to send aya every 24 hours to chats who didn't block the bot.
 var checkMinutes = 15 // Edit this if needed, instead of editing the numbers below
 var sendHours = 24 // Edit this if needed, instead of editing the numbers below
-var checkMillis = 1000*5//checkMinutes * 60 * 1000
-var sendMillis = 1000*15//(sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 hours - 15 minutes) to keep each chat near the same hour, otherwise it will keep shifting
+var checkMillis = checkMinutes * 60 * 1000
+var sendMillis = (sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 hours - 15 minutes) to keep each chat near the same hour, otherwise it will keep shifting
 var dailyTimer = setInterval(function(){
     dbConn.db('dailyAyaTelegram').collection('chats').find({lastAyaTime: {$lte: Date.now()-sendMillis}, blocked: false}).toArray( (err, res) => {
         if (err) console.error('Timer error: ', err);
