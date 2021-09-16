@@ -25,6 +25,9 @@ expressApp.listen(port, () => {
 })
 
 
+
+
+
 // MongoDB is a pool and always open
 var dbConn;
 const { MongoClient } = require('mongodb');
@@ -39,13 +42,16 @@ client.connect((err, db) => {
     }
 });
 
-// Records the last time an aya was sent to a chat so we can send again after 24 hours
+
+
+
+// Records the last time an aya was sent to a chat so we can send again periodically (daily, for example)
 function lastAyaTime(chatId, status){
     status = status || "success" // Function can be called with chatId only if not blocked
     var blocked = status.toLowerCase().includes('block')
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
-        {chat: chatId},
-        {$set: {lastAyaTime: new Timestamp(), blocked: blocked}},
+        {chatId: chatId},
+        {$set: {lastAyaTime: Date.now(), blocked: blocked}},
         {upsert: true}
     ).then(console.log('Recorded Last Aya Time for chat '+chatId+' as '+ (blocked ? "blocked." : "successfuly sent.")))
     .catch(e => console.error('Failed to record Last Aya Time for chat '+chatId+': ', e))
@@ -53,6 +59,27 @@ function lastAyaTime(chatId, status){
 
 
 
+
+//timer to fetch database every 15 minutes to send aya every 24 hours to chats who didn't block the bot.
+var checkMinutes = 15 // Edit this if needed, instead of editing the numbers below
+var sendHours = 24 // Edit this if needed, instead of editing the numbers below
+var checkMillis = 1000*5//checkMinutes * 60 * 1000
+var sendMillis = 1000*15//(sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 hours - 15 minutes) to keep each chat near the same hour, otherwise it will keep shifting
+var dailyTimer = setInterval(function(){
+    dbConn.db('dailyAyaTelegram').collection('chats').find({lastUpdate: {$lte: Date.now()-sendMillis}, blocked: false}).toArray( (err, res) => {
+        if (err) console.error('Timer error: ', err);
+        else {
+        console.log('Timer will send to ' + res.length + ' chats.')
+        res.forEach(chat => sendAya(chat.chatId))
+        }
+    })
+}, checkMillis)
+
+
+
+
+
+// Using Telegraf NodeJS framework for Telegram bots
 const {Telegraf} = require('telegraf')
 const bot = new Telegraf(telegramToken)
 
