@@ -298,20 +298,27 @@ function nextAya(ayaNum){
 // Sends an explaination about how to request an aya then sends a random aya
 function explain(chatId){
     var explaination =
-    `لم نتعرف على أرقام أو تم طلب سورة أو آية غير موجودة.
-    يمكنك طلب آية محددة بإرسال رقم السورة والآية.
-    مثل: ٢   ٢٥٥
-    أو رقم السورة فقط مثل : ٢
-    إليك آية أخرى 🙂
+`لم نتعرف على أرقام أو تم طلب سورة أو آية غير موجودة.
+يمكنك طلب آية محددة بإرسال رقم السورة والآية.
+مثل: ٢   ٢٥٥
+أو رقم السورة فقط مثل : ٢
 
-    Couldn’t find numbers or the requested Sura or Aya doesn’t exist.
-    You can request a specific Aya by sending the numbers of Aya and Sura.
-    Example: 2   255
-    Or Sura number only: 2
-    Here's another Aya 🙂`
+Couldn’t find numbers or the requested Sura or Aya doesn’t exist.
+You can request a specific Aya by sending the numbers of Aya and Sura.
+Example: 2   255
+Or Sura number only: 2`
 
-    bot.telegram.sendMessage(chatId, explaination)
-    .then(sendAya(chatId))
+    bot.telegram.sendMessage(chatId, explaination, {
+        reply_markup: {
+            inline_keyboard:[
+                [{
+                    text: "🎁",
+                    callback_data: "anotherAya"
+                }]
+            ]
+        }
+    })
+    .then(console.log('Sent explaination to chat ${chatId}.'))
     .catch(e=>console.error('Failed to send explaination to chat ${chatId}: ', e))
 }
 
