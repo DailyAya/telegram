@@ -40,16 +40,19 @@ client.connect((err, db) => {
 });
 
 // Records the last time an aya was sent to a chat so we can send again after 24 hours
-function lastAyaTime(chatId){
-    var shiftedTime = Date.now() - 300000; // To shift lastUpdate time 5 minutes to keep sending the user near the same time everyday.
-
+function lastAyaTime(chatId, blocked){
+    dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
+        {chat: chatId},
+        {$set: {lastAyaTime: Date.now(), blocked: blocked}},
+        {upsert: true}
+    ).then(console.log('Recorded Last Aya Time for chat '+chatId+' as '+ blocked ? "blocked." : "passed."))
+    .catch(e => console.error('Failed to record Last Aya Time for chat '+chatId+': ', e))
 }
 
 
 
 const {Telegraf} = require('telegraf')
 const bot = new Telegraf(telegramToken)
-const axios = require('axios')
 
 // Inform "DailyAya Dev" group about the instance state
 if(telegramToken != "inactive"){
@@ -62,24 +65,6 @@ bot.command('start', ctx => {
     sendAya(ctx.chat.id)
 })
 
-//method for sending an aya
-bot.hears('aya', ctx => {
-    respondWith(ctx.chat.id)
-})
-
-// testing db
-bot.hears('db', ctx =>{
-    bot.telegram.sendMessage(ctx.chat.id, 'Querying...')
-    dbConn.db('sample_mflix').collection('users').find({email:
-        "sean_bean@gameofthron.es"}).toArray((err, res) =>{
-            if (err) console.error('DB error: ', err)
-            else {
-                console.log('Found ' + res.length + ' results.')
-                bot.telegram.sendMessage(ctx.chat.id, 'Found ' + res.length + ' results.')
-                if(res.length>=1) bot.telegram.sendMessage(ctx.chat.id, 'First name is '+ res[0].name)
-            }
-        })
-})
 
 
 
@@ -105,6 +90,8 @@ function randomNum(type){
 
 // Prepare an Aya to be sent
 // Because returning a promise, must be called with .then().catch()
+const axios = require('axios')
+
 function prepareAya(ayaNum){
     return new Promise((resolve, reject) => {
         var ayaUrl = 'https://api.alquran.cloud/ayah/'.concat(ayaNum).concat('/editions/quran-uthmani,en.ahmedraza');
@@ -253,33 +240,18 @@ function sendMsg(user, response, lastAya, lastReciter) {
 
 // returns a URL string for the audio file of the requested aya (is a must)
 // if reciter is not requested (1 to 16), a random reciter will be provided
+const recitersData
+axios('http://api.alquran.cloud/edition/format/audio') // Run only one time for each process
+.then(res => recitersData=JSON.parse(res).data.filter(i => i.language=="ar")) // Only Arabic recitations
+.catch(e => console.error('Failed to get reciters list: ', e))
+
 function recitation(aya, reciter){
-    var recitersArray = [
-          "ar.alafasy",               // 1
-          "ar.mahermuaiqly",          // 2
-          "ar.muhammadjibreel",       // 3
-          "ar.shaatree",              // 4
-          "ar.ahmedajamy",            // 5
-          "ar.abdullahbasfar",        // 6
-          "ar.hanirifai",             // 7
-          "ar.husary",                // 8
-          "ar.hudhaify",              // 9
-          "ar.ibrahimakhbar",         // 10
-          "ar.abdurrahmaansudais",    // 11
-          "ar.muhammadayyoub",        // 12
-          "ar.abdulsamad",            // 13
-          "ar.saoodshuraym",          // 14
-          "ar.parhizgar",             // 15
-          "ar.husarymujawwad"         // 16
-          ];
-  
-      if (reciter) {
-          reciter = parseInt(reciter);
-          if (1 > reciter || reciter > 16) reciter = randomNum('reciter');
-          
-      } else reciter = randomNum('reciter');
+    if (reciter) {
+        reciter = parseInt(reciter)
+        if (1 > reciter || reciter > recitersArray.length) reciter = randomNum('reciter')
+    } else reciter = randomNum('reciter')
       
-      return 'https://cdn.alquran.cloud/media/audio/ayah/'.concat(recitersArray[reciter-1]).concat('/').concat(aya);
+      return 'https://cdn.alquran.cloud/media/audio/ayah/'.concat(recitersData[reciter-1].identifier).concat('/').concat(aya)
   }
 
 
@@ -332,7 +304,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                         console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
 
                     }).catch((e) => console.error('Failed to get aya Quran.com URL: ', e))
-                }).catch(e => console.log("Failed to send Aya "+ayaNum+" to chat "+chatId , e))
+                }).catch(e => console.log("Failed to send Aya "+ayaNum+" to chat "+chatId+": ", e))
 
                 
 
@@ -363,7 +335,3 @@ bot.action(/^{"currAya/, ctx => {
 function nextAya(ayaNum){
     return ayaNum == 6230 ? 1 : ayaNum+1
 }
-
-bot.hears('test', ctx => {
-    sendAya(589683206)
-})
