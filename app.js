@@ -307,13 +307,10 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                 console.log('Successfully prepared Aya ' +ayaNum+ ' for chat '+chatId);
                
                 // send an Aya text
-                var ayaMsgId, recitationMsgId, ayaQuranUrl
                 bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true})
                 .then(({message_id}) => {
-                    ayaMsgId = message_id
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
                     quranUrl(ayaNum).then((quranUrl) => {
-                        ayaQuranUrl = quranUrl
                         // TODO: title and performer tags are not working!
                         bot.telegram.sendAudio(chatId, recitation(ayaNum, reciterNum), {
                             title: "Quran", performer: "Reciter", reply_markup: {
@@ -323,39 +320,16 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                         callback_data: "anotherAya"
                                     },{
                                         text: "📖",
-                                        url: ayaQuranUrl
+                                        url: quranUrl
                                     },{
                                         text: "⏭️",
-                                        callback_data: '{"currAya":'+ayaNum+',"r":'+reciterNum+',"aMsgId":'+ayaMsgId+'}'
+                                        callback_data: '{"currAya":'+ayaNum+',"r":'+reciterNum+',"aMsgId":'+message_id+'}'
                                         // aMsgId to be able to edit the text message later when needed (for example: change translation)
                                     }]
                                 ]
                             }
                         })
-                        // .then((returned)=>{
-                            
-                        //     recitationMsgId = returned.message_id
-                        //     console.log("recitationMsgId is "+recitationMsgId)
-                        //     bot.telegram.editMessageReplyMarkup(chatId, recitationMsgId,'', {
-                        //             inline_keyboard:[
-                        //                 [{
-                        //                     text: "🎁",
-                        //                     callback_data: "anotherAya"
-                        //                 },{
-                        //                     text: "📖",
-                        //                     url: ayaQuranUrl
-                        //                 },{
-                        //                     text: "⏭️",
-                        //                     callback_data: '{"currAya":'+ayaNum+',"r":'+reciterNum+',"aMsgId":'+ayaMsgId+',"rMsgId":'+recitationMsgId+'}'
-                        //                     // rMsgId to be able to change the audio later when needed (for example: change reciter)
-                        //                     // callback_data must be between 1-64 bytes
-                        //                 }]
-                        //             ]
-                        //     }).then(res => console.log(res))
-                        //     .catch(e => console.log(e))
-                        // }).catch(e => console.log(e)); 
-
-                    console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
+                        console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
 
                     }).catch((e) => console.error('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => console.log("Failed to send Aya "+ayaNum+" to chat "+chatId , e))
@@ -371,6 +345,8 @@ bot.action('anotherAya', ctx => {
     sendAya(ctx.chat.id)
 })
 
+
+
 // When a user presses "Next Aya" inline keyboard button
 bot.action(/^{"currAya/, ctx => {
     var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
@@ -378,7 +354,16 @@ bot.action(/^{"currAya/, ctx => {
     var currentReciter = Math.floor(callbackData.r)
     console.log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
     console.log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
-    //console.log(JSON.stringify(ctx))
-    var nextAya = currentAyaNum==6230 ? 1 : currentAyaNum+1
-    sendAya(ctx.chat.id, nextAya, currentReciter)
+    sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter)
+})
+
+
+
+
+function nextAya(ayaNum){
+    return ayaNum == 6230 ? 1 : ayaNum+1
+}
+
+bot.hears('test', ctx => {
+    sendAya(589683206)
 })
