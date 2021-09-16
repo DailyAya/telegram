@@ -46,7 +46,7 @@ function lastAyaTime(chatId, blocked){
         {chat: chatId},
         {$set: {lastAyaTime: Date.now(), blocked: blocked}},
         {upsert: true}
-    ).then(console.log('Recorded Last Aya Time for chat '+chatId+' as '+ blocked ? "blocked." : "passed."))
+    ).then(console.log('Recorded Last Aya Time for chat '+chatId+' as '+ (blocked ? "blocked." : "passed.")))
     .catch(e => console.error('Failed to record Last Aya Time for chat '+chatId+': ', e))
 }
 
