@@ -240,7 +240,7 @@ function sendMsg(user, response, lastAya, lastReciter) {
 
 // returns a URL string for the audio file of the requested aya (is a must)
 // if reciter is not requested (1 to 16), a random reciter will be provided
-const recitersData
+var recitersData
 axios('http://api.alquran.cloud/edition/format/audio') // Run only one time for each process
 .then(res => recitersData=JSON.parse(res).data.filter(i => i.language=="ar")) // Only Arabic recitations
 .catch(e => console.error('Failed to get reciters list: ', e))
