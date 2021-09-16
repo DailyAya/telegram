@@ -187,7 +187,7 @@ function quranUrl(ayaNum){
 
 
 // returns a URL string for the audio file of the requested aya (is a must)
-// if reciter is not requested (1 to 16), a random reciter will be provided
+// if reciter is not requested or not supported, a random reciter will be provided
 var recitersData
 axios('http://api.alquran.cloud/edition/format/audio') // Run only one time for each process
 .then(res => {
@@ -202,8 +202,12 @@ function recitation(aya, reciter){
         if (1 > reciter || reciter > recitersData.length) reciter = randomNum('reciter')
     } else reciter = randomNum('reciter')
       
-      return 'https://cdn.alquran.cloud/media/audio/ayah/'.concat(recitersData[reciter-1].identifier).concat('/').concat(aya)
-  }
+    return 'https://cdn.alquran.cloud/media/audio/ayah/'.concat(recitersData[reciter-1].identifier).concat('/').concat(aya)
+}
+
+
+
+
 
 
 // Send random Aya and random reciter if called with the userId argument only 
@@ -352,7 +356,7 @@ function ayaCheck(sura, aya){
 }
 
 
-// Responds to text messages to send the requested Aya
+// Responds to text messages to send the requested Aya or explain
 bot.on('text', ctx =>{
     var txt = ctx.message.text
     var chatId = ctx.chat.id
