@@ -243,8 +243,6 @@ function sendMsg(user, response, lastAya, lastReciter) {
 var recitersData
 axios('http://api.alquran.cloud/edition/format/audio') // Run only one time for each process
 .then(res => {
-    console.log('Parsing reciters list...')
-    console.log(JSON.stringify(res.data))
     recitersData=JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language=="ar")
 }) // Only Arabic recitations
 .catch(e => console.error('Failed to get reciters list: ', e))
@@ -252,7 +250,7 @@ axios('http://api.alquran.cloud/edition/format/audio') // Run only one time for 
 function recitation(aya, reciter){
     if (reciter) {
         reciter = parseInt(reciter)
-        if (1 > reciter || reciter > recitersArray.length) reciter = randomNum('reciter')
+        if (1 > reciter || reciter > recitersData.length) reciter = randomNum('reciter')
     } else reciter = randomNum('reciter')
       
       return 'https://cdn.alquran.cloud/media/audio/ayah/'.concat(recitersData[reciter-1].identifier).concat('/').concat(aya)
