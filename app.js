@@ -388,3 +388,9 @@ bot.on('text', ctx =>{
     // if first number is not valid sura number, send EXPLAIN
     } else explain(chatId)
 })
+
+
+// Responds to non text messages (stickers or anything else) to send explaination
+bot.on('message', ctx =>{
+    explain(ctx.chat.id)
+})
