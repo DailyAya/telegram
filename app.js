@@ -312,33 +312,65 @@ function nextAya(ayaNum){
 
 
 
-
-
-// Sends an explaination about how to request an aya then sends a random aya
-function explain(chatId){
-    var explaination =
-`لم نتعرف على أرقام أو تم طلب سورة أو آية غير موجودة.
-يمكنك طلب آية محددة بإرسال رقم السورة والآية.
+// Sends help message with buttons to get random aya or contact support
+function help(chatId){
+    var msg =
+`يمكنك طلب آية محددة بإرسال رقم السورة والآية.
 مثل: ٢   ٢٥٥
 أو رقم السورة فقط مثل : ٢
 
-Couldn’t find numbers or the requested Sura or Aya doesn’t exist.
 You can request a specific Aya by sending the numbers of Aya and Sura.
 Example: 2   255
 Or Sura number only: 2`
 
-    bot.telegram.sendMessage(chatId, explaination, {
+    bot.telegram.sendMessage(chatId, msg, {
         reply_markup: {
             inline_keyboard:[
                 [{
                     text: "🎁",
                     callback_data: "anotherAya"
+                },{
+                    text: "⛑️",
+                    url: "https://t.me/sherbeeny"
                 }]
             ]
         }
     })
-    .then(console.log('Sent explaination to chat '+chatId+'.'))
-    .catch(e=>console.error('Failed to send explaination to chat '+chatId+': ', e))
+    .then(console.log('Sent help message to chat '+chatId+'.'))
+    .catch(e=>console.error('Failed to send help message to chat '+chatId+': ', e))
+}
+
+
+bot.action('help', ctx => {
+    help(ctx.chat.id)
+})
+
+bot.command('help', ctx => {
+    help(ctx.chat.id)
+})
+
+// Sends an error message if unrecognized aya
+function unrecognized(chatId){
+    var msg =
+`لم نتعرف على أرقام أو تم طلب سورة أو آية غير موجودة.
+
+Couldn’t find numbers or the requested Sura or Aya doesn’t exist.`
+
+    bot.telegram.sendMessage(chatId, msg, {
+        reply_markup: {
+            inline_keyboard:[
+                [{
+                    text: "🎁",
+                    callback_data: "anotherAya"
+                },{
+                    text: "🤔",
+                    callback_data: "help"
+                }]
+            ]
+        }
+    })
+    .then(console.log('Sent an error of unrecognized message to chat '+chatId+'.'))
+    .catch(e=>console.error('Failed to send error to chat '+chatId+': ', e))
 }
 
 
@@ -371,15 +403,15 @@ function ayaCheck(sura, aya){
 }
 
 
-// Responds to text messages to send the requested Aya or explain
+// Responds to text messages to send the requested Aya or error message if unrecognized
 bot.on('text', ctx =>{
     var txt = ctx.message.text
     var chatId = ctx.chat.id
     console.log('Message from chat ' + chatId+ ': ' + txt)
     var foundNums = numArabicToEnglish(txt).match(/\d+/g)
     
-    // if incoming text doesn't have any valid numbers, send EXPLAIN
-    if (foundNums===null || foundNums.length === 0) explain(chatId)
+    // if incoming text doesn't have any valid numbers, send UNRECOGNIZED
+    if (foundNums===null || foundNums.length === 0) unrecognized(chatId)
     
     // if incoming message contains one or more numbers and the first number is between 1 to 114 (sura number)
     else if (1 <= foundNums[0] && foundNums[0] <= 114) {
@@ -399,17 +431,17 @@ bot.on('text', ctx =>{
                 if (validAya){ // if valid aya number, send requested Aya
                     sendAya(chatId, validAya)
                 
-                // if second number (aya) is invalid, send EXPLAIN
-                } else explain(chatId)
+                // if second number (aya) is invalid, send UNRECOGNIZED
+                } else unrecognized(chatId)
             })
             .catch((e) => console.error('ayaCheck: ', e))
         }
-    // if first number is not valid sura number, send EXPLAIN
-    } else explain(chatId)
+    // if first number is not valid sura number, send UNRECOGNIZED
+    } else unrecognized(chatId)
 })
 
 
-// Responds to non text messages (stickers or anything else) to send explaination
+// Responds to non text messages (stickers or anything else) to send UNRECOGNIZED
 bot.on('message', ctx =>{
-    explain(ctx.chat.id)
+    unrecognized(ctx.chat.id)
 })
