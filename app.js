@@ -377,6 +377,7 @@ bot.action(/^{"currAya/, ctx => {
     var currentReciter = Math.floor(callbackData.r)
     console.log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
     console.log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+callbackData.rMsgId)
+    console.log(JSON.stringify(ctx))
     var nextAya = currentAyaNum==6230 ? 1 : currentAyaNum+1
     sendAya(ctx.chat.id, nextAya, currentReciter)
 })
