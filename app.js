@@ -158,8 +158,8 @@ function prepareAya(ayaNum){
 
 ${translatedAya}
 
-A translation of Aya ${ayaNumInSura} of Sura ${suraNum}
-"${enName}" = ${translatedName}`
+<i>A translation of Aya ${ayaNumInSura} of Sura ${suraNum}
+"${enName}" = ${translatedName}</i>`
                 
                 // return function call with the formated Aya.
                 resolve(response);
