@@ -505,7 +505,7 @@ bot.on('message', ctx =>{
 
 //method to start get the script to pulling updates for telegram 
 bot.launch()
-.then(log('Bot launched.'))
+.then(console.log('Bot launched.')) // using console.log() to log it regardless of debugging flag
 .catch(e=>log('Failed to launch bot: ', e))
 
 // Enable graceful stop
