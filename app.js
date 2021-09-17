@@ -5,7 +5,7 @@ const totalInst = process.env.totalInst || 0
 const activeInst = process.env.activeInst || "0@Host" //unused for now
 const instActivetUntil = process.env.instActiveUntil || "WHO KNOWS!"
 const branch = process.env.branch || "staging"
-const debugging = process.env.debugging || true
+const debugging = process.env.debugging == "true"
 
 // Use log(x) instead of log(x) to control debugging mode from env variables
 // Use log(x, e) for errors
