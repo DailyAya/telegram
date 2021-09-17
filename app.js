@@ -97,11 +97,9 @@ bot.command('start', ctx => {
 
 
     // Informing "DailyAya Dev" of total active chats when /start is sent
-    var totalActiveChats
     dbConn.db('dailyAyaTelegram').collection('chats').find({blocked: false}).toArray((err, res) =>{
         if (err) console.error('Error getting total chats: ', err);
         else {
-            totalActiveChats = res.length
             var totalActiveChatsMsg = 'Total active chats: ' + res.length
             console.log(totalActiveChatsMsg)
             bot.telegram.sendMessage(ayaDevChatId, totalActiveChatsMsg)
@@ -155,7 +153,7 @@ function prepareAya(ayaNum){
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
                     response =
-`${arAya} ﴿${arAyaNumInSura}﴾
+`<b>${arAya}</b> ﴿${arAyaNumInSura}﴾
 "${arName}"
 
 ${translatedAya}
@@ -249,7 +247,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                 console.log('Successfully prepared Aya ' +ayaNum+ ' for chat '+chatId);
                
                 // send an Aya text
-                bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true})
+                bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML'})
                 .then(({message_id}) => {
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
                     quranUrl(ayaNum).then((quranUrl) => {
