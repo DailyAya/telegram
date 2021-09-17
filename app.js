@@ -5,8 +5,25 @@ const totalInst = process.env.totalInst || 0
 const activeInst = process.env.activeInst || "0@Host" //unused for now
 const instActivetUntil = process.env.instActiveUntil || "WHO KNOWS!"
 const branch = process.env.branch || "staging"
+const debugging = process.env.debugging || true
 
-var instStateMsg = "DailyAyaTelegram "+ branch +" instance "+inst+ "@"+host+ " (of total "+totalInst+") is active until "+instActivetUntil+"."
+// Use log(x) instead of log(x) to control debugging mode from env variables
+// Use log(x, e) for errors
+function log(x, e){
+    switch(log.arguments.length){
+        case 1:
+            if(debugging) console.log(x)
+            break
+        case 2:
+            console.error(x, e)
+            break
+        default:
+            log('Invalid log argument count.')
+            break
+    }
+}
+
+var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active until ${instActivetUntil}.`
 
 
 
@@ -16,12 +33,12 @@ const expressApp = express()
 const port = process.env.PORT || 3000
 
 // main route will respond (DailyAya is UP) when requested.
-// we call it every 30 minutes using a google app script to prevent the app from sleeping.
+// we call it every 15 minutes using a google app script to prevent the app from sleeping.
 expressApp.get('/', (req, res) => {
   res.send(instStateMsg)
 })
 expressApp.listen(port, () => {
-  console.log(`Listening on port ${port}`)
+  log(`Listening on port ${port}`)
 })
 
 
@@ -29,19 +46,19 @@ expressApp.listen(port, () => {
 
 
 // MongoDB is a pool and always open
-var dbConn;
-const { MongoClient } = require('mongodb');
-const mongoDbCredentials = process.env.mongoDbCredentials;
+var dbConn
+const { MongoClient } = require('mongodb')
+const mongoDbCredentials = process.env.mongoDbCredentials
 const mongoSubdomain = process.env.mongoSubdomain
-const uri = "mongodb+srv://"+mongoDbCredentials+"@cluster0."+mongoSubdomain+".mongodb.net/?retryWrites=true&w=majority&maxPoolSize=50&keepAlive=true";
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+const uri = `mongodb+srv://${mongoDbCredentials}@cluster0.${mongoSubdomain}.mongodb.net/?retryWrites=true&w=majority&maxPoolSize=50&keepAlive=true`
+const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true })
 client.connect((err, db) => {
-    if (err) console.error('MongoDbConn ERROR: ', err);
+    if (err) log('MongoDbConn ERROR: ', err)
     else {
-      console.log('MongoDbConn Connected!');
-      dbConn = db;
+      log('MongoDbConn Connected!')
+      dbConn = db
     }
-});
+})
 
 
 
@@ -54,8 +71,8 @@ function lastAyaTime(chatId, status){
         {chatId: chatId},
         {$set: {lastAyaTime: Date.now(), blocked: blocked}},
         {upsert: true}
-    ).then(console.log('Recorded Last Aya Time for chat '+chatId+' as '+ (blocked ? "blocked." : "successfuly sent.")))
-    .catch(e => console.error('Failed to record Last Aya Time for chat '+chatId+': ', e))
+    ).then(log('Recorded Last Aya Time for chat '+chatId+' as '+ (blocked ? "blocked." : "successfuly sent.")))
+    .catch(e => log('Failed to record Last Aya Time for chat '+chatId+': ', e))
 }
 
 
@@ -68,9 +85,9 @@ var checkMillis = checkMinutes * 60 * 1000
 var sendMillis = (sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 hours - 15 minutes) to keep each chat near the same hour, otherwise it will keep shifting
 var dailyTimer = setInterval(function(){
     dbConn.db('dailyAyaTelegram').collection('chats').find({lastAyaTime: {$lte: Date.now()-sendMillis}, blocked: false}).toArray( (err, res) => {
-        if (err) console.error('Timer error: ', err);
+        if (err) log('Timer error: ', err);
         else {
-            console.log('Timer will send to ' + res.length + ' chats.')
+            log('Timer will send to ' + res.length + ' chats.')
             res.forEach(chat => sendAya(chat.chatId))
         }
     })
@@ -92,16 +109,16 @@ if(telegramToken != "inactive"){
 
 //method for invoking start command
 bot.command('start', ctx => {
-    console.log(["command: start", ctx.from, ctx.chat])
+    log(["command: start", ctx.from, ctx.chat])
     sendAya(ctx.chat.id)
 
 
     // Informing "DailyAya Dev" of total active chats when /start is sent
     dbConn.db('dailyAyaTelegram').collection('chats').find({blocked: false}).toArray((err, res) =>{
-        if (err) console.error('Error getting total chats: ', err);
+        if (err) log('Error getting total chats: ', err);
         else {
             var totalActiveChatsMsg = 'Total active chats: ' + res.length
-            console.log(totalActiveChatsMsg)
+            log(totalActiveChatsMsg)
             bot.telegram.sendMessage(ayaDevChatId, totalActiveChatsMsg)
         }
     })
@@ -109,13 +126,6 @@ bot.command('start', ctx => {
 
 
 
-
-//method to start get the script to pulling updates for telegram 
-bot.launch()
-
-// Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'))
-process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 
 // Returns a random number based on input
@@ -166,7 +176,7 @@ ${translatedAya}
                  
             })
             .catch((e) => {
-                console.error('Failed to prepare an aya: ', e);
+                log('Failed to prepare an aya: ', e);
                 reject(e);
             });
     });
@@ -186,7 +196,7 @@ function quranUrl(ayaNum){
                     resolve(url)
             })
             .catch((e) => {
-                console.error('Failed to get Quran.com URL for aya '+ayaNum+': ', e);
+                log('Failed to get Quran.com URL for aya '+ayaNum+': ', e);
                 reject(e);
             });
     })
@@ -205,9 +215,9 @@ var recitersData
 axios('http://api.alquran.cloud/edition/format/audio') // Run only one time for each process
 .then(res => {
     recitersData=JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language=="ar")
-    console.log("Reciters List is ready. Total Reciters: "+recitersData.length)
+    log("Reciters List is ready. Total Reciters: "+recitersData.length)
 }) // Only Arabic recitations
-.catch(e => console.error('Failed to get reciters list: ', e))
+.catch(e => log('Failed to get reciters list: ', e))
 
 function recitation(aya, reciter){
     if (reciter) {
@@ -241,10 +251,10 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
     }
     
     // prepare an Aya then send it
-    console.log('Preparing Aya ' +ayaNum+ ' for chat '+chatId);
+    log('Preparing Aya ' +ayaNum+ ' for chat '+chatId);
     prepareAya(ayaNum)  
             .then((ayaText) => {
-                console.log('Successfully prepared Aya ' +ayaNum+ ' for chat '+chatId);
+                log('Successfully prepared Aya ' +ayaNum+ ' for chat '+chatId);
                
                 // send an Aya text
                 bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML'})
@@ -269,18 +279,18 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                 ]
                             }
                         })
-                        console.log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
+                        log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
                         lastAyaTime(chatId)
 
-                    }).catch((e) => console.error('Failed to get aya Quran.com URL: ', e))
+                    }).catch((e) => log('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => {
-                    console.log("Failed to send Aya "+ayaNum+" to chat "+chatId+": ", e)
+                    log("Failed to send Aya "+ayaNum+" to chat "+chatId+": ", e)
                     if(JSON.stringify(e).includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
                 })
 
                 
 
-            }).catch((e) => console.error('Failed preparing an Aya.. STOPPED: ', e));
+            }).catch((e) => log('Failed preparing an Aya.. STOPPED: ', e));
 }
 
 
@@ -296,8 +306,8 @@ bot.action(/^{"currAya/, ctx => {
     var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
     var currentAyaNum = Math.floor(callbackData.currAya)
     var currentReciter = Math.floor(callbackData.r)
-    console.log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
-    console.log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
+    log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
+    log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
     sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter)
 })
 
@@ -315,11 +325,49 @@ function nextAya(ayaNum){
 
 
 // Sends an error message if unrecognized aya
-function unrecognized(chatId){
-    var msg =
-`لم نتعرف على أرقام أو تم طلب سورة أو آية غير موجودة.
+function unrecognized(chatId, reason){
+    var msg 
 
-Couldn’t find numbers or the requested Sura or Aya doesn’t exist.`
+    switch (reason) {
+        case 1:
+            msg =
+`رسالتك بلا أرقام.
+رجاء إرسال رقم السورة على الأقل.
+
+Your message didn't contain numbers.
+Please send Sura number at least.`
+            break;
+            
+        case 2:
+            msg =
+`الرقم الأول ليس رقم سورة.
+يجب أن يكون من 1 إلى 114.
+
+The first number is not a Sura number.
+It must be from 1 to 114.`
+            break;
+
+        case 3:
+            msg =
+`الرقم الثاني ليس آية في السورة المطلوبة.
+
+The second number is not an Aya in the requested Sura.`
+            break;
+
+        case 4:
+            msg =
+`عفوا، نتعرف حاليا على أرقام السور والآيات في الرسائل النصية فقط.
+
+Sorry, we currently recognize numbers of Sura or Aya in text messages only.`
+            break;
+    
+        default:
+            msg =
+`خطأ غير معروف!
+
+Unknown error!`
+            break;
+    }
 
     bot.telegram.sendMessage(chatId, msg, {
         reply_markup: {
@@ -334,8 +382,8 @@ Couldn’t find numbers or the requested Sura or Aya doesn’t exist.`
             ]
         }
     })
-    .then(console.log('Sent an error of unrecognized message to chat '+chatId+'.'))
-    .catch(e=>console.error('Failed to send error to chat '+chatId+': ', e))
+    .then(log('Sent reason of unrecognized request to chat '+chatId+'.'))
+    .catch(e=>log('Failed to send reason of unrecognized request to chat '+chatId+': ', e))
 }
 
 
@@ -366,8 +414,8 @@ Or Sura number only: 2`
             ]
         }
     })
-    .then(console.log('Sent instructions message to chat '+chatId+'.'))
-    .catch(e=>console.error('Failed to send instructions message to chat '+chatId+': ', e))
+    .then(log('Sent instructions message to chat '+chatId+'.'))
+    .catch(e=>log('Failed to send instructions message to chat '+chatId+': ', e))
 }
 
 
@@ -400,7 +448,7 @@ function ayaCheck(sura, aya){
       	        .then(function (res) {
       	            resolve(res.data.data.number);
     	        }).catch(function (e) {
-    	            console.error('ayaCheck error: ', e);
+    	            log('ayaCheck error: ', e);
                     if (e.response.data.data.match('surah')) resolve(0); // Aya is not valid
                     else reject(e); // Something else is wrong!
                 });
@@ -412,41 +460,54 @@ function ayaCheck(sura, aya){
 bot.on('text', ctx =>{
     var txt = ctx.message.text
     var chatId = ctx.chat.id
-    console.log('Message from chat ' + chatId+ ': ' + txt)
+    log('Message from chat ' + chatId+ ': ' + txt)
     var foundNums = numArabicToEnglish(txt).match(/\d+/g)
     
-    // if incoming text doesn't have any valid numbers, send UNRECOGNIZED
-    if (foundNums===null || foundNums.length === 0) unrecognized(chatId)
+    // if incoming text doesn't have any valid numbers, send UNRECOGNIZED for reason 1
+    if (foundNums===null || foundNums.length === 0) unrecognized(chatId, 1)
     
     // if incoming message contains one or more numbers and the first number is between 1 to 114 (sura number)
     else if (1 <= foundNums[0] && foundNums[0] <= 114) {
         if (foundNums.length == 1) { // One number is Sura number only
             ayaCheck(foundNums[0],1) // to get the Global Aya number of the first Aya in this Sura for "sendAya" function.
             .then((validAya) => { // it's always valid here.
-                console.log('ayaCheck: ', validAya)
+                log('ayaCheck: ', validAya)
                 sendAya(chatId, validAya)
             })
-            .catch((e) => console.error('ayaCheck: ', e))
+            .catch((e) => log('ayaCheck: ', e))
             
         } else { // if first number is Sura and there's at least one more number (aya)
             ayaCheck(foundNums[0], foundNums[1])
             .then((validAya) => {
-                console.log('ayaCheck: ', validAya)
+                log('ayaCheck: ', validAya)
                 
                 if (validAya){ // if valid aya number, send requested Aya
                     sendAya(chatId, validAya)
                 
-                // if second number (aya) is invalid, send UNRECOGNIZED
-                } else unrecognized(chatId)
+                // if second number (aya) is invalid, send UNRECOGNIZED for reason 3
+                } else unrecognized(chatId, 3)
             })
-            .catch((e) => console.error('ayaCheck: ', e))
+            .catch((e) => log('ayaCheck: ', e))
         }
-    // if first number is not valid sura number, send UNRECOGNIZED
-    } else unrecognized(chatId)
+    // if first number is not valid sura number, send UNRECOGNIZED for reason 2
+    } else unrecognized(chatId, 2)
 })
 
 
-// Responds to non text messages (stickers or anything else) to send UNRECOGNIZED
+// Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
 bot.on('message', ctx =>{
-    unrecognized(ctx.chat.id)
+    unrecognized(ctx.chat.id, 4)
 })
+
+
+
+
+
+//method to start get the script to pulling updates for telegram 
+bot.launch()
+.then(log('Bot launched.'))
+.catch(e=>log('Failed to launch bot: ', e))
+
+// Enable graceful stop
+process.once('SIGINT', () => bot.stop('SIGINT'))
+process.once('SIGTERM', () => bot.stop('SIGTERM'))
