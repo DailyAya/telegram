@@ -312,8 +312,40 @@ function nextAya(ayaNum){
 
 
 
-// Sends help message with buttons to get random aya or contact support
-function help(chatId){
+
+
+
+
+// Sends an error message if unrecognized aya
+function unrecognized(chatId){
+    var msg =
+`لم نتعرف على أرقام أو تم طلب سورة أو آية غير موجودة.
+
+Couldn’t find numbers or the requested Sura or Aya doesn’t exist.`
+
+    bot.telegram.sendMessage(chatId, msg, {
+        reply_markup: {
+            inline_keyboard:[
+                [{
+                    text: "🎁",
+                    callback_data: "anotherAya"
+                },{
+                    text: "🤔",
+                    callback_data: "instructions"
+                }]
+            ]
+        }
+    })
+    .then(console.log('Sent an error of unrecognized message to chat '+chatId+'.'))
+    .catch(e=>console.error('Failed to send error to chat '+chatId+': ', e))
+}
+
+
+
+
+
+// Sends instructions message with buttons to get random aya or contact support
+function instructions(chatId){
     var msg =
 `يمكنك طلب آية محددة بإرسال رقم السورة والآية.
 مثل: ٢   ٢٥٥
@@ -336,44 +368,19 @@ Or Sura number only: 2`
             ]
         }
     })
-    .then(console.log('Sent help message to chat '+chatId+'.'))
-    .catch(e=>console.error('Failed to send help message to chat '+chatId+': ', e))
+    .then(console.log('Sent instructions message to chat '+chatId+'.'))
+    .catch(e=>console.error('Failed to send instructions message to chat '+chatId+': ', e))
 }
 
 
-bot.action('help', ctx => {
-    help(ctx.chat.id)
+
+bot.action('instructions', ctx => {
+    instructions(ctx.chat.id)
 })
 
 bot.command('help', ctx => {
-    help(ctx.chat.id)
+    instructions(ctx.chat.id)
 })
-
-// Sends an error message if unrecognized aya
-function unrecognized(chatId){
-    var msg =
-`لم نتعرف على أرقام أو تم طلب سورة أو آية غير موجودة.
-
-Couldn’t find numbers or the requested Sura or Aya doesn’t exist.`
-
-    bot.telegram.sendMessage(chatId, msg, {
-        reply_markup: {
-            inline_keyboard:[
-                [{
-                    text: "🎁",
-                    callback_data: "anotherAya"
-                },{
-                    text: "🤔",
-                    callback_data: "help"
-                }]
-            ]
-        }
-    })
-    .then(console.log('Sent an error of unrecognized message to chat '+chatId+'.'))
-    .catch(e=>console.error('Failed to send error to chat '+chatId+': ', e))
-}
-
-
 
 
 // Converting input arabic number into english one to easily find numbers in sent messages
