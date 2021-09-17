@@ -155,7 +155,7 @@ function prepareAya(ayaNum){
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
                     response =
-`${arAya} ﴿${arAyaNumInSura}﴾٠
+`${arAya} ﴿${arAyaNumInSura}﴾
 "${arName}"
 
 ${translatedAya}
@@ -264,8 +264,8 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                         text: "📖",
                                         url: quranUrl
                                     },{
-                                        text: "⏭️",
-                                        callback_data: '{"currAya":'+ayaNum+',"r":'+reciterNum+',"aMsgId":'+message_id+'}'
+                                        text: "🔽",
+                                        callback_data: `{"currAya":${ayaNum},"r":${reciterNum},"aMsgId":${message_id}}`
                                         // aMsgId to be able to edit the text message later when needed (for example: change translation)
                                     }]
                                 ]
@@ -362,7 +362,7 @@ Or Sura number only: 2`
                     text: "🎁",
                     callback_data: "anotherAya"
                 },{
-                    text: "⛑️",
+                    text: "💬",
                     url: "https://t.me/sherbeeny"
                 }]
             ]
