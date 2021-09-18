@@ -23,7 +23,7 @@ function log(x, e){
     }
 }
 
-var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active until ${instActivetUntil}.`
+var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${debugging ? 'debugging' : 'normal'} mode until ${instActivetUntil}.`
 
 
 
