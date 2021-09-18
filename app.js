@@ -110,7 +110,28 @@ if(telegramToken != "inactive"){
 //method for invoking start command
 bot.command('start', ctx => {
     log(["command: start", ctx.from, ctx.chat])
-    sendAya(ctx.chat.id)
+    start(ctx.chat.id)
+    
+})
+
+
+function start(chatId){
+    var msg =
+`دايلي آية يرسل لكم آية واحدة يوميا في نفس موعد آخر آية تطلبوها.
+
+Daily Aya sends to you one Aya daily at the same time of the last Aya you request.`
+
+    bot.telegram.sendMessage(chatId, msg, {
+        reply_markup: {
+            inline_keyboard:[
+                [{
+                    text: "👍",
+                    callback_data: "surpriseAya"
+                }]
+            ]
+        }
+
+    })
 
 
     // Informing "DailyAya Dev" of total active and blocked chats when /start is sent
@@ -124,7 +145,7 @@ bot.command('start', ctx => {
             bot.telegram.sendMessage(DailyAyaDevChatId, totalChatsMsg)
         }
     })
-})
+}
 
 
 
@@ -269,7 +290,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                 inline_keyboard:[
                                     [{
                                         text: "🎁",
-                                        callback_data: "anotherAya"
+                                        callback_data: "surpriseAya"
                                     },{
                                         text: "📖",
                                         url: quranUrl
@@ -297,7 +318,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
 
 
 // When a user presses "Another Aya" inline keyboard button
-bot.action('anotherAya', ctx => {
+bot.action('surpriseAya', ctx => {
     sendAya(ctx.chat.id)
 })
 
@@ -376,7 +397,7 @@ Unknown error!`
             inline_keyboard:[
                 [{
                     text: "🎁",
-                    callback_data: "anotherAya"
+                    callback_data: "surpriseAya"
                 },{
                     text: "🤔",
                     callback_data: "instructions"
@@ -408,7 +429,7 @@ Or Sura number only: 2`
             inline_keyboard:[
                 [{
                     text: "🎁",
-                    callback_data: "anotherAya"
+                    callback_data: "surpriseAya"
                 },{
                     text: "💬",
                     url: "https://t.me/sherbeeny"
