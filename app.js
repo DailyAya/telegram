@@ -457,10 +457,7 @@ function ayaCheck(sura, aya){
     });
 }
 
-bot.hears('who', ctx =>{
-    var msg = `<a href="tg://user?id=589683206">Block Checker</a>`
-    bot.telegram.sendMessage(DailyAyaDevChatId, msg, {parse_mode: 'HTML'})
-})
+
 
 
 // Responds to text messages to send the requested Aya or error message if unrecognized
