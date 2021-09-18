@@ -100,11 +100,11 @@ var dailyTimer = setInterval(function(){
 // Using Telegraf NodeJS framework for Telegram bots
 const {Telegraf} = require('telegraf')
 const bot = new Telegraf(telegramToken)
-const ayaDevChatId = -1001592920692 // the group ID of "DailyAya Dev"
+const DailyAyaDevChatId = -1001592920692 // the group ID of "DailyAya Dev"
 
 // Inform "DailyAya Dev" group about the instance state
 if(telegramToken != "inactive"){
-    bot.telegram.sendMessage(ayaDevChatId, instStateMsg)
+    bot.telegram.sendMessage(DailyAyaDevChatId, instStateMsg)
 }
 
 //method for invoking start command
@@ -121,7 +121,7 @@ bot.command('start', ctx => {
             var totalBlockedChatsMsg = 'Total blocked chats: ' + res.filter(i => i.blocked==true).length
             var totalChatsMsg = `${totalActiveChatsMsg}\n${totalBlockedChatsMsg}`
             log(totalChatsMsg)
-            bot.telegram.sendMessage(ayaDevChatId, totalChatsMsg)
+            bot.telegram.sendMessage(DailyAyaDevChatId, totalChatsMsg)
         }
     })
 })
@@ -499,6 +499,13 @@ bot.on('text', ctx =>{
 // Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
 bot.on('message', ctx =>{
     unrecognized(ctx.chat.id, 4)
+})
+
+
+
+bot.command('who', ctx =>{
+    var msg = `<a href="tg://user?id=1638744766">Block Checker</a>`
+    bot.telegram.sendMessage(msg, DailyAyaDevChatId, {parse_mode: 'HTML'})
 })
 
 
