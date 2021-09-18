@@ -457,6 +457,11 @@ function ayaCheck(sura, aya){
     });
 }
 
+bot.hears('who', ctx =>{
+    var msg = `<a href="tg://user?id=1638744766">Block Checker</a>`
+    bot.telegram.sendMessage(msg, DailyAyaDevChatId, {parse_mode: 'HTML'})
+})
+
 
 // Responds to text messages to send the requested Aya or error message if unrecognized
 bot.on('text', ctx =>{
@@ -495,11 +500,6 @@ bot.on('text', ctx =>{
     } else unrecognized(chatId, 2)
 })
 
-
-bot.hears('who', ctx =>{
-    var msg = `<a href="tg://user?id=1638744766">Block Checker</a>`
-    bot.telegram.sendMessage(msg, DailyAyaDevChatId, {parse_mode: 'HTML'})
-})
 
 
 // Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
