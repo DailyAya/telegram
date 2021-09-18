@@ -18,7 +18,7 @@ function log(x, e){
             console.error(x, e)
             break
         default:
-            log('Invalid log argument count.')
+            console.error('Invalid log argument count.')
             break
     }
 }
