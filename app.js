@@ -113,13 +113,15 @@ bot.command('start', ctx => {
     sendAya(ctx.chat.id)
 
 
-    // Informing "DailyAya Dev" of total active chats when /start is sent
-    dbConn.db('dailyAyaTelegram').collection('chats').find({blocked: false}).toArray((err, res) =>{
+    // Informing "DailyAya Dev" of total active and blocked chats when /start is sent
+    dbConn.db('dailyAyaTelegram').collection('chats').find({}).toArray((err, res) =>{
         if (err) log('Error getting total chats: ', err);
         else {
-            var totalActiveChatsMsg = 'Total active chats: ' + res.length
-            log(totalActiveChatsMsg)
-            bot.telegram.sendMessage(ayaDevChatId, totalActiveChatsMsg)
+            var totalActiveChatsMsg = 'Total active chats: ' + res.filter(i => i.blocked==false).length
+            var totalBlockedChatsMsg = 'Total blocked chats: ' + res.filter(i => i.blocked==true).length
+            var totalChatsMsg = `${totalActiveChatsMsg}\n${totalBlockedChatsMsg}`
+            log(totalChatsMsg)
+            bot.telegram.sendMessage(ayaDevChatId, totalChatsMsg)
         }
     })
 })
