@@ -496,16 +496,15 @@ bot.on('text', ctx =>{
 })
 
 
-// Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
-bot.on('message', ctx =>{
-    unrecognized(ctx.chat.id, 4)
-})
-
-
-
 bot.hears('who', ctx =>{
     var msg = `<a href="tg://user?id=1638744766">Block Checker</a>`
     bot.telegram.sendMessage(msg, DailyAyaDevChatId, {parse_mode: 'HTML'})
+})
+
+
+// Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
+bot.on('message', ctx =>{
+    unrecognized(ctx.chat.id, 4)
 })
 
 
