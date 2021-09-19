@@ -541,7 +541,7 @@ bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
 bot.on('my_chat_member', ctx => {
     switch (ctx.update.my_chat_member.new_chat_member.status) {
         case 'member':
-            setTimeout(() => start(ctx.chat.id), 1000) // wait because Telegram app needs a retry the first /start after unblock
+            if(ctx.chat.type != 'private') start(ctx.chat.id) // don't send to private chats as they already trigger /start
             break
 
         case 'kicked': case 'left':
