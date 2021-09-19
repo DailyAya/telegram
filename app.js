@@ -285,7 +285,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                
                 // send an Aya text
                 bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML'})
-                .then(({message_id}, {chat}) => {
+                .then((ctx) => {
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
                     quranUrl(ayaNum).then((quranUrl) => {
                         // TODO: title and performer tags are not working!
@@ -300,7 +300,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                                         url: quranUrl
                                     },{
                                         text: "🔽",
-                                        callback_data: `{"currAya":${ayaNum},"r":${reciterNum},"aMsgId":${message_id}}`
+                                        callback_data: `{"currAya":${ayaNum},"r":${reciterNum},"aMsgId":${ctx.message.message_id}}`
                                         // aMsgId to be able to edit the text message later when needed (for example: change translation)
                                     }]
                                 ]
