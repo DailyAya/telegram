@@ -192,7 +192,7 @@ function prepareAya(ayaNum){
                     arAyaNumInSura = ayaNumInSura.toAr(),
                     response =
 `<b>${arAya}</b>
-﴿<i>${arName}: ${arAyaNumInSura}</i>﴾
+﴿${arName}: ${arAyaNumInSura}﴾
 
 ${translatedAya}
 
@@ -285,7 +285,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                
                 // send an Aya text
                 bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML'})
-                .then(({message_id}) => {
+                .then(({message_id}, {chat}) => {
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
                     quranUrl(ayaNum).then((quranUrl) => {
                         // TODO: title and performer tags are not working!
@@ -308,6 +308,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                         })
                         log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
                         lastAyaTime(chatId)
+                        log(JSON.stringify(chat))
 
                     }).catch((e) => log('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => {
