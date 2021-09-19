@@ -122,9 +122,9 @@ bot.start(ctx => {
 
 function start(chatId){
     var msg =
-`دايلي آية يرسل لكم آية واحدة يوميا في نفس موعد آخر آية تطلبوها.
+`دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات.
 
-Daily Aya sends to you one Aya daily at the same time of the last Aya you request.`
+Daily Aya sends one Aya daily at the same time of the last Aya you request in private chats or groups.`
 
     bot.telegram.sendMessage(chatId, msg, {
         reply_markup: {
@@ -191,13 +191,12 @@ function prepareAya(ayaNum){
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
                     response =
-`<b>${arAya}</b> ﴿${arAyaNumInSura}﴾
-<i>${arName}</i>
+`<b>${arAya}</b>
+﴿<i>${arName}: ${arAyaNumInSura}</i>﴾
 
 ${translatedAya}
 
-<i>An interpretation of Aya ${ayaNumInSura} in Sura ${suraNum}
-${enName} (${translatedName})</i>`
+<i>An interpretation of Aya ${ayaNumInSura} in Sura ${suraNum}: ${enName} (${translatedName})</i>`
                 
                 // return function call with the formated Aya.
                 resolve(response);
