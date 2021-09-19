@@ -527,7 +527,7 @@ bot.on('left_chat_member', ctx => {}) // do nothing
 
 // Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
 bot.on('message', ctx =>{
-    log(JSON.stringify(ctx))
+    log('Unrecognized request: ', JSON.stringify(ctx))
     unrecognized(ctx.chat.id, 4)
 })
 
