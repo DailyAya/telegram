@@ -523,16 +523,24 @@ bot.on('text', ctx =>{
     } else unrecognized(chatId, 2)
 })
 
-// bot.on('new_chat_title', ctx => {}) // do nothing
-// bot.on('new_chat_photo', ctx => {}) // do nothing
-// bot.on('left_chat_member', ctx => {}) // do nothing
-// bot.on('left_chat_member', ctx => {})
 
-// // Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
-// bot.on('message', ctx =>{
-//     log('Unrecognized request: ', JSON.stringify(ctx))
-//     unrecognized(ctx.chat.id, 4)
-// })
+
+// Responds to "some" non text messages to send UNRECOGNIZED for reason 4
+bot.on('sticker', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('photo', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('location', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('document', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('audio', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('voice', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('poll', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
+
+
+
+
+bot.on('my_chat_member', ctx => {log(JSON.stringify(ctx))})
+
+
 
 
 
