@@ -544,7 +544,7 @@ bot.on('my_chat_member', ctx => {
             setTimeout(() => start(ctx.chat.id), 1000) // wait because Telegram app needs a retry the first /start after unblock
             break
 
-        case 'kicked' || 'left':
+        case ('kicked' || 'left'):
             lastAyaTime(ctx.chat.id, 'blocked')
             break
     
