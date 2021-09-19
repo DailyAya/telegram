@@ -537,8 +537,23 @@ bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
 
 
 
+// to handle when blocked/unblocked by a user or when added/removed from groups
+bot.on('my_chat_member', ctx => {
+    log(JSON.stringify(ctx))
+    switch (ctx.new_chat_member.status) {
+        case 'member':
+            start(ctx.chat.id)
+            break
 
-bot.on('my_chat_member', ctx => {log(JSON.stringify(ctx))})
+        case 'kicked':
+            lastAyaTime(ctx.chat.id, 'blocked')
+            break
+    
+        default:
+            log('Unknown my_chat_member status: ', JSON.stringify(ctx))
+            break
+    }
+})
 
 
 
