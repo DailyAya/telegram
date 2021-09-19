@@ -539,12 +539,12 @@ bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
 
 // to handle when blocked/unblocked by a user or when added/removed from groups
 bot.on('my_chat_member', ctx => {
-    switch (true) {
-        case ctx.update.my_chat_member.new_chat_member.status == 'member':
+    switch (ctx.update.my_chat_member.new_chat_member.status) {
+        case 'member':
             setTimeout(() => start(ctx.chat.id), 1000) // wait because Telegram app needs a retry the first /start after unblock
             break
 
-        case ctx.update.my_chat_member.new_chat_member.status == 'kicked' || 'left':
+        case 'kicked': case 'left':
             lastAyaTime(ctx.chat.id, 'blocked')
             break
     
