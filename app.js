@@ -192,12 +192,12 @@ function prepareAya(ayaNum){
                     arAyaNumInSura = ayaNumInSura.toAr(),
                     response =
 `<b>${arAya}</b> ﴿${arAyaNumInSura}﴾
-"${arName}"
+<i>${arName}</i>
 
 ${translatedAya}
 
-<i>A translation of Aya ${ayaNumInSura} of Sura ${suraNum}
-"${enName}" = ${translatedName}</i>`
+<i>An interpretation of Aya ${ayaNumInSura} in Sura ${suraNum}
+${enName} (${translatedName})</i>`
                 
                 // return function call with the formated Aya.
                 resolve(response);
@@ -544,7 +544,7 @@ bot.on('my_chat_member', ctx => {
             setTimeout(() => start(ctx.chat.id), 1000) // wait because Telegram app needs a retry the first /start after unblock
             break
 
-        case 'kicked':
+        case 'kicked' || 'left':
             lastAyaTime(ctx.chat.id, 'blocked')
             break
     
