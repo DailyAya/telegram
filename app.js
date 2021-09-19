@@ -100,6 +100,11 @@ var dailyTimer = setInterval(function(){
 // Using Telegraf NodeJS framework for Telegram bots
 const {Telegraf} = require('telegraf')
 const bot = new Telegraf(telegramToken)
+bot.telegram.getMe().then((botInfo) => { // for handling group commands without calling "launch"
+    bot.options.username = botInfo.username
+  })
+
+
 const DailyAyaDevChatId = -1001592920692 // the group ID of "DailyAya Dev"
 
 // Inform "DailyAya Dev" group about the instance state
@@ -108,7 +113,7 @@ if(telegramToken != "inactive"){
 }
 
 //method for invoking start command
-bot.command('start', ctx => {
+bot.start(ctx => {
     log(["command: start", ctx.from, ctx.chat])
     start(ctx.chat.id)
     
@@ -447,7 +452,7 @@ bot.action('instructions', ctx => {
     instructions(ctx.chat.id)
 })
 
-bot.command('help', ctx => {
+bot.help(ctx => {
     instructions(ctx.chat.id)
 })
 
@@ -522,6 +527,7 @@ bot.on('text', ctx =>{
 
 // Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
 bot.on('message', ctx =>{
+    log(JSON.stringify(ctx))
     unrecognized(ctx.chat.id, 4)
 })
 
