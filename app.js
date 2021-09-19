@@ -523,7 +523,8 @@ bot.on('text', ctx =>{
     } else unrecognized(chatId, 2)
 })
 
-bot.on('left_chat_member' || 'new_chat_title', ctx => {}) // do nothing
+bot.on('left_chat_member', ctx => {}) // do nothing
+bot.on('new_chat_title', ctx => {}) // do nothing
 
 // Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
 bot.on('message', ctx =>{
