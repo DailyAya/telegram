@@ -384,7 +384,7 @@ The second number is not an Aya in the requested Sura.`
 
         case 4:
             msg =
-`عفوا، حالبا نتعرف فقط على أرقام السور والآيات في الرسائل النصية.
+`عفوا، حاليا نتعرف فقط على أرقام السور والآيات في الرسائل النصية.
 
 Sorry, we currently only recognize numbers of Sura or Aya in text messages.`
             break;
@@ -523,14 +523,16 @@ bot.on('text', ctx =>{
     } else unrecognized(chatId, 2)
 })
 
-bot.on('left_chat_member', ctx => {}) // do nothing
-bot.on('new_chat_title', ctx => {}) // do nothing
+// bot.on('new_chat_title', ctx => {}) // do nothing
+// bot.on('new_chat_photo', ctx => {}) // do nothing
+// bot.on('left_chat_member', ctx => {}) // do nothing
+// bot.on('left_chat_member', ctx => {})
 
-// Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
-bot.on('message', ctx =>{
-    log('Unrecognized request: ', JSON.stringify(ctx))
-    unrecognized(ctx.chat.id, 4)
-})
+// // Responds to non text messages (stickers or anything else) to send UNRECOGNIZED for reason 4
+// bot.on('message', ctx =>{
+//     log('Unrecognized request: ', JSON.stringify(ctx))
+//     unrecognized(ctx.chat.id, 4)
+// })
 
 
 
