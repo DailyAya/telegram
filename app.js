@@ -64,12 +64,17 @@ client.connect((err, db) => {
 
 
 // Records the last time an aya was sent to a chat so we can send again periodically (daily, for example)
-function lastAyaTime(chatId, status){
+function lastAyaTime(chatId, status, chatName, lang){
+    var updateObj = {}
     status = status || "success" // Function can be called with chatId only if not blocked
-    var blocked = status.toLowerCase().includes('block')
+
+    updateObj.blocked = status.toLowerCase().includes('block')
+    updateObj.lastAyaTime = Date.now()
+    if(chatName) updateObj.name = chatName // Only update the name when it's known
+    if(lang) updateObj.language_code = lang // Only update the language_code when it's known
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
         {chatId: chatId},
-        {$set: {lastAyaTime: Date.now(), blocked: blocked}},
+        {$set: updateObj},
         {upsert: true}
     ).then(log('Recorded Last Aya Time for chat '+chatId+' as '+ (blocked ? "blocked." : "successfuly sent.")))
     .catch(e => log('Failed to record Last Aya Time for chat '+chatId+': ', e))
@@ -143,9 +148,9 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
     dbConn.db('dailyAyaTelegram').collection('chats').find({}).toArray((err, res) =>{
         if (err) log('Error getting total chats: ', err);
         else {
-            var totalActiveChatsMsg = 'Total active chats: ' + res.filter(i => i.blocked==false).length
-            var totalBlockedChatsMsg = 'Total blocked chats: ' + res.filter(i => i.blocked==true).length
-            var totalChatsMsg = `${totalActiveChatsMsg}\n${totalBlockedChatsMsg}`
+            var totalActiveChatsMsg = 'Active: ' + res.filter(i => i.blocked==false).length
+            var totalBlockedChatsMsg = 'Blocked: ' + res.filter(i => i.blocked==true).length
+            var totalChatsMsg = `${totalActiveChatsMsg}   ${totalBlockedChatsMsg}`
             log(totalChatsMsg)
             bot.telegram.sendMessage(DailyAyaDevChatId, totalChatsMsg)
         }
@@ -286,7 +291,8 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                 // send an Aya text
                 bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML'})
                 .then((ctx) => {
-                    log(ctx.chat.type == 'private' ? `To "${ctx.chat.first_name}"` : `To "${ctx.chat.title}"`)
+                    log(JSON.stringify(ctx))
+                    var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
                     quranUrl(ayaNum).then((quranUrl) => {
                         // TODO: title and performer tags are not working!
@@ -308,7 +314,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                             }
                         })
                         log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
-                        lastAyaTime(chatId)
+                        lastAyaTime(chatId, 'success', chatName)
 
                     }).catch((e) => log('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => {
