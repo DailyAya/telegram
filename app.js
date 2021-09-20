@@ -53,6 +53,7 @@ const mongoSubdomain = process.env.mongoSubdomain
 const uri = `mongodb+srv://${mongoDbCredentials}@cluster0.${mongoSubdomain}.mongodb.net/?retryWrites=true&w=majority&maxPoolSize=50&keepAlive=true`
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true })
 client.connect((err, db) => {
+    log('Connecting to MongoDB...')
     if (err) log('MongoDbConn ERROR: ', err)
     else {
       log('MongoDbConn Connected!')
