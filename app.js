@@ -65,15 +65,36 @@ client.connect((err, db) => {
 
 
 // Records the last time an aya was sent to a chat so we can send again periodically (daily, for example)
-function lastAyaTime(chatId, status, chatName, lang){
+function lastAyaTime(chatId, status, chatName, lang, trigger){
     var updateObj = {}
     status = status || "success" // Function can be called with chatId only if not blocked
     
+    updateObj.since = {$cond: [{$not: ["$since"]}, new Date(), "$since"]} // Add "Since" date only once
     updateObj.lastAyaTime = Date.now()
     updateObj.blocked = status.toLowerCase().includes('block')
-    updateObj.since = {$cond: [{$not: ["$since"]}, new Date(), "$since"]}
     if(chatName) updateObj.name = chatName // Only update the name when it's known
     if(lang) updateObj.language_code = lang // Only update the language_code when it's known
+    if(trigger){
+        updateObj.lastTrigger = trigger
+        switch (trigger) {
+            case 'surprise':
+                updateObj.surprises = {$cond:[{$not: ["$surprises"]}, 1, {$inc: {surprises: 1}}]}
+                break;
+
+            case 'next':
+                updateObj.nexts = {$cond:[{$not: ["$nexts"]}, 1, {$inc: {nexts: 1}}]}
+                break;
+
+            case 'request':
+                updateObj.requests = {$cond:[{$not: ["$requests"]}, 1, {$inc: {requests: 1}}]}
+                break;
+            
+            default:
+                log('Unknown trigger: ', trigger)
+                break;
+        }
+    }
+    
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
         {chatId: chatId},
         [{$set: updateObj}],
@@ -268,7 +289,7 @@ function recitation(aya, reciter){
 
 
 // Send random Aya and random reciter if called with the userId argument only 
-function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang){
+function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
 
     var ayaNum, reciterNum;
     
@@ -315,7 +336,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang){
                             }
                         })
                         log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
-                        lastAyaTime(chatId, 'success', chatName, lang)
+                        lastAyaTime(chatId, 'success', chatName, lang, trigger)
 
                     }).catch((e) => log('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => {
@@ -331,7 +352,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang){
 
 // When a user presses "Another Aya" inline keyboard button
 bot.action('surpriseAya', ctx => {
-    sendAya(ctx.chat.id, "", "", ctx.from.language_code)
+    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
 })
 
 
@@ -343,7 +364,7 @@ bot.action(/^{"currAya/, ctx => {
     var currentReciter = Math.floor(callbackData.r)
     log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
     log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
-    sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter, ctx.from.language_code)
+    sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter, ctx.from.language_code, 'next')
 })
 
 
@@ -509,7 +530,7 @@ bot.on('text', ctx =>{
             ayaCheck(foundNums[0],1) // to get the Global Aya number of the first Aya in this Sura for "sendAya" function.
             .then((validAya) => { // it's always valid here.
                 log('ayaCheck: ', validAya)
-                sendAya(chatId, validAya)
+                sendAya(chatId, validAya, "", ctx.from.language_code, 'request')
             })
             .catch((e) => log('ayaCheck: ', e))
             
@@ -519,7 +540,7 @@ bot.on('text', ctx =>{
                 log('ayaCheck: ', validAya)
                 
                 if (validAya){ // if valid aya number, send requested Aya
-                    sendAya(chatId, validAya)
+                    sendAya(chatId, validAya, "", ctx.from.language_code, 'request')
                 
                 // if second number (aya) is invalid, send UNRECOGNIZED for reason 3
                 } else unrecognized(chatId, 3)
