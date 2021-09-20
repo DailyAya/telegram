@@ -267,7 +267,7 @@ function recitation(aya, reciter){
 
 
 // Send random Aya and random reciter if called with the userId argument only 
-function sendAya(chatId, requestedAyaNum, requestedReciterNum){
+function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang){
 
     var ayaNum, reciterNum;
     
@@ -315,7 +315,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
                             }
                         })
                         log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
-                        lastAyaTime(chatId, 'success', chatName)
+                        lastAyaTime(chatId, 'success', chatName, lang)
 
                     }).catch((e) => log('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => {
@@ -331,7 +331,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum){
 
 // When a user presses "Another Aya" inline keyboard button
 bot.action('surpriseAya', ctx => {
-    sendAya(ctx.chat.id)
+    sendAya(ctx.chat.id, "", "", ctx.from.language_code)
 })
 
 
@@ -343,7 +343,7 @@ bot.action(/^{"currAya/, ctx => {
     var currentReciter = Math.floor(callbackData.r)
     log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
     log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
-    sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter)
+    sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter, ctx.from.language_code)
 })
 
 
