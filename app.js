@@ -85,7 +85,7 @@ function lastAyaTime(chatId, status, chatName, lang){
 
 
 //timer to fetch database every 15 minutes to send aya every 24 hours to chats who didn't block the bot.
-var checkMinutes = .25 // Edit this if needed, instead of editing the numbers below
+var checkMinutes = .5 // Edit this if needed, instead of editing the numbers below
 var sendHours = 24 // Edit this if needed, instead of editing the numbers below
 var checkMillis = checkMinutes * 60 * 1000
 var sendMillis = (sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 hours - 15 minutes) to keep each chat near the same hour, otherwise it will keep shifting
