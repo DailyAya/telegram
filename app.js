@@ -52,8 +52,8 @@ const mongoDbCredentials = process.env.mongoDbCredentials
 const mongoSubdomain = process.env.mongoSubdomain
 const uri = `mongodb+srv://${mongoDbCredentials}@cluster0.${mongoSubdomain}.mongodb.net/?retryWrites=true&w=majority&maxPoolSize=50&keepAlive=true`
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+log('Connecting to MongoDB...')
 client.connect((err, db) => {
-    log('Connecting to MongoDB...')
     if (err) log('MongoDbConn ERROR: ', err)
     else {
       log('MongoDbConn Connected!')
@@ -68,9 +68,10 @@ client.connect((err, db) => {
 function lastAyaTime(chatId, status, chatName, lang){
     var updateObj = {}
     status = status || "success" // Function can be called with chatId only if not blocked
-
-    updateObj.blocked = status.toLowerCase().includes('block')
+    
     updateObj.lastAyaTime = Date.now()
+    updateObj.blocked = status.toLowerCase().includes('block')
+    updateObj.since = {$cond: [{$not: ["$since"]}, new Date(), "$since"]}
     if(chatName) updateObj.name = chatName // Only update the name when it's known
     if(lang) updateObj.language_code = lang // Only update the language_code when it's known
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
@@ -292,7 +293,6 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang){
                 // send an Aya text
                 bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML'})
                 .then((ctx) => {
-                    log(JSON.stringify(ctx))
                     var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
                     quranUrl(ayaNum).then((quranUrl) => {
