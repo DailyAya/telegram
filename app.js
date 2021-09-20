@@ -76,7 +76,7 @@ function lastAyaTime(chatId, status, chatName, lang){
     if(lang) updateObj.language_code = lang // Only update the language_code when it's known
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
         {chatId: chatId},
-        {$set: updateObj},
+        [{$set: updateObj}],
         {upsert: true}
     ).then(log('Recorded Last Aya Time for chat '+chatId+' as '+ (updateObj.blocked ? "blocked." : "successfuly sent.")))
     .catch(e => log('Failed to record Last Aya Time for chat '+chatId+': ', e))
