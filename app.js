@@ -66,27 +66,28 @@ client.connect((err, db) => {
 
 // Records the last time an aya was sent to a chat so we can send again periodically (daily, for example)
 function lastAyaTime(chatId, status, chatName, lang, trigger){
-    var updateObj = {}
+    var setObj = {}
+    var incObj = {}
     status = status || "success" // Function can be called with chatId only if not blocked
     
-    updateObj.since = {$cond: [{$not: ["$since"]}, new Date(), "$since"]} // Add "Since" date only once
-    updateObj.lastAyaTime = Date.now()
-    updateObj.blocked = status.toLowerCase().includes('block')
-    if(chatName) updateObj.name = chatName // Only update the name when it's known
-    if(lang) updateObj.language_code = lang // Only update the language_code when it's known
+    setObj.since = {$cond: [{$not: ["$since"]}, new Date(), "$since"]} // Add "Since" date only once
+    setObj.lastAyaTime = Date.now()
+    setObj.blocked = status.toLowerCase().includes('block')
+    if(chatName) setObj.name = chatName // Only update the name when it's known
+    if(lang) setObj.language_code = lang // Only update the language_code when it's known
     if(trigger){
-        updateObj.lastTrigger = trigger
+        setObj.lastTrigger = trigger
         switch (trigger) {
             case 'surprise':
-                updateObj.surprises = {$cond:[{$not: ["$surprises"]}, 1, {$inc: {surprises: 1}}]}
+                incObj = {$inc: {surprises: 1}}
                 break;
 
             case 'next':
-                updateObj.nexts = {$cond:[{$not: ["$nexts"]}, 1, {$inc: {nexts: 1}}]}
+                incObj = {$inc: {nexts: 1}}
                 break;
 
             case 'request':
-                updateObj.requests = {$cond:[{$not: ["$requests"]}, 1, {$inc: {requests: 1}}]}
+                incObj = {$inc: {requests: 1}}
                 break;
             
             default:
@@ -94,12 +95,13 @@ function lastAyaTime(chatId, status, chatName, lang, trigger){
                 break;
         }
     }
-    
+
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
         {chatId: chatId},
-        [{$set: updateObj}],
+        [{$set: setObj}],
+        incObj,
         {upsert: true}
-    ).then(log('Recorded Last Aya Time for chat '+chatId+' as '+ (updateObj.blocked ? "blocked." : "successfuly sent.")))
+    ).then(log('Recorded Last Aya Time for chat '+chatId+' as '+ (setObj.blocked ? "blocked." : "successfuly sent.")))
     .catch(e => log('Failed to record Last Aya Time for chat '+chatId+': ', e))
 }
 
