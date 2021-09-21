@@ -347,9 +347,9 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
                         }).catch(e => {
                             log(`Error while sending recitation to chat ${chatId}: `, e)
                             if(!audioSuccess) bot.telegram.sendMessage(chatId,
-`نأسف.. لدينا مشكلة في الملفات الصوتية وسنحاول إصلاحها.
+`عذرا.. لدينا مشكلة في الملفات الصوتية ونأمل إصلاحها قريبا.
 
-Sorry.. We have an issue in audio files and we will try to fix it.`, {reply_markup: {
+Sorry.. We have an issue in audio files and we hope it gets fixed soon.`, {reply_markup: {
                                     inline_keyboard:[
                                         [{
                                             text: "🎁",
@@ -372,9 +372,9 @@ Sorry.. We have an issue in audio files and we will try to fix it.`, {reply_mark
                     log("Error while sending Aya "+ayaNum+" to chat "+chatId+": ", e)
                     if(JSON.stringify(e).includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
                     if(!textSuccess) bot.telegram.sendMessage(chatId,
-`نأسف.. لدينا مشكلة في نصوص الآيات وسنحاول إصلاحها.
+`عذرا.. لدينا مشكلة في نصوص الآيات ونأمل إصلاحها قريبا.
 
-Sorry.. We have an issue in Aya texts and we will try to fix it.`
+Sorry.. We have an issue in Aya texts and we hope it gets fixed soon.`
                         )
                 })
 
