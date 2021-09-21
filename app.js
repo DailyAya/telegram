@@ -80,15 +80,15 @@ function lastAyaTime(chatId, status, chatName, lang, trigger){
         switch (trigger) {
             case 'surprise':
                 log('Incrementing surprises for chat '+chatId)
-                incObj = {$set: {$cond: [{$not: ["$surprises"]}, 1, {$add: ["$surprises", 1]}]}}
+                setObj.surprises = {$cond: [{$not: ["$surprises"]}, 1, {$add: ["$surprises", 1]}]}
                 break;
 
             case 'next':
-                incObj = {$set: {$cond: [{$not: ["$nexts"]}, 1, {$add: ["$nexts", 1]}]}}
+                setObj.nexts = {$cond: [{$not: ["$nexts"]}, 1, {$add: ["$nexts", 1]}]}
                 break;
 
             case 'request':
-                incObj = {$set: {$cond: [{$not: ["$requests"]}, 1, {$add: ["$requests", 1]}]}}
+                setObj.requests = {$cond: [{$not: ["$requests"]}, 1, {$add: ["$requests", 1]}]}
                 break;
             
             default:
