@@ -349,8 +349,21 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
                             if(!audioSuccess) bot.telegram.sendMessage(chatId,
                                  `نأسف.. لدينا مشكلة في الملفات الصوتية وسنحاول إصلاحها.
 
-                                 Sorry.. We have an issue in audio files and we will try to fix it.`
-                                 )
+                                 Sorry.. We have an issue in audio files and we will try to fix it.`, {reply_markup: {
+                                    inline_keyboard:[
+                                        [{
+                                            text: "🎁",
+                                            callback_data: "surpriseAya"
+                                        },{
+                                            text: "📖",
+                                            url: quranUrl
+                                        },{
+                                            text: "🔽",
+                                            callback_data: `{"currAya":${ayaNum},"r":${reciterNum},"aMsgId":${ctx.message_id}}`
+                                            // aMsgId to be able to edit the text message later when needed (for example: change translation)
+                                        }]
+                                    ]
+                                }})
                         })
                         
 
