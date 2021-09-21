@@ -99,7 +99,7 @@ function lastAyaTime(chatId, status, chatName, lang, trigger){
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
         {chatId: chatId},
         [{$set: setObj}],
-        incObj,
+        [incObj],
         {upsert: true}
     ).then(log('Recorded Last Aya Time for chat '+chatId+' as '+ (setObj.blocked ? "blocked." : "successfuly sent.")))
     .catch(e => log('Failed to record Last Aya Time for chat '+chatId+': ', e))
