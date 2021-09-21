@@ -80,15 +80,15 @@ function lastAyaTime(chatId, status, chatName, lang, trigger){
         switch (trigger) {
             case 'surprise':
                 log('Incrementing surprises for chat '+chatId)
-                incObj = {$inc: {surprises: 1}}
+                incObj = {$set: {$cond: [{$not: ["$surprises"]}, 1, {$add: ["$surprises", 1]}]}}
                 break;
 
             case 'next':
-                incObj = {$inc: {nexts: 1}}
+                incObj = {$set: {$cond: [{$not: ["$nexts"]}, 1, {$add: ["$nexts", 1]}]}}
                 break;
 
             case 'request':
-                incObj = {$inc: {requests: 1}}
+                incObj = {$set: {$cond: [{$not: ["$requests"]}, 1, {$add: ["$requests", 1]}]}}
                 break;
             
             default:
@@ -99,8 +99,7 @@ function lastAyaTime(chatId, status, chatName, lang, trigger){
 
     dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
         {chatId: chatId},
-        [{$set: setObj}],
-        [incObj],
+        [{$set: setObj}, incObj],
         {upsert: true}
     ).then(log('Recorded Last Aya Time for chat '+chatId+' as '+ (setObj.blocked ? "blocked." : "successfuly sent.")))
     .catch(e => log('Failed to record Last Aya Time for chat '+chatId+': ', e))
