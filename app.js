@@ -339,9 +339,11 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
                                     }]
                                 ]
                             }
-                        })
-                        log('Successfully sent Aya '+ayaNum+' has been sent to chat '+chatId);
-                        lastAyaTime(chatId, 'success', chatName, lang, trigger)
+                        }).then(() =>{
+                            log(`Successfully sent Aya ${ayaNum} has been sent to chat ${chatId}`);
+                            lastAyaTime(chatId, 'success', chatName, lang, trigger)
+                        }).catch(e => log(`Faild to send recitation to chat ${chatId}: `, e))
+                        
 
                     }).catch((e) => log('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => {
