@@ -16,6 +16,7 @@ function log(x, e){
             break
         case 2:
             console.error(x, e)
+            if(bot) bot.telegram.sendMessage(DailyAyaDevChatId, x+JSON.stringify(e))
             break
         default:
             console.error('Invalid log argument count.')
