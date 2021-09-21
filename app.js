@@ -79,6 +79,7 @@ function lastAyaTime(chatId, status, chatName, lang, trigger){
         setObj.lastTrigger = trigger
         switch (trigger) {
             case 'surprise':
+                log('Incrementing surprises for chat '+chatId)
                 incObj = {$inc: {surprises: 1}}
                 break;
 
