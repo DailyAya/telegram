@@ -89,6 +89,10 @@ function lastAyaTime(chatId, status, chatName, lang, trigger){
             case 'request':
                 setObj.requests = {$cond: [{$not: ["$requests"]}, 1, {$add: ["$requests", 1]}]}
                 break;
+
+            case 'timer':
+                setObj.timers = {$cond: [{$not: ["$timers"]}, 1, {$add: ["$timers", 1]}]}
+                break;
             
             default:
                 log('Unknown trigger: ', trigger)
@@ -117,7 +121,7 @@ var dailyTimer = setInterval(function(){
         if (err) log('Timer error: ', err);
         else {
             log('Timer will send to ' + res.length + ' chats.')
-            res.forEach(chat => sendAya(chat.chatId))
+            res.forEach(chat => sendAya(chat.chatId, "", "", "", 'timer'))
         }
     })
 }, checkMillis)
