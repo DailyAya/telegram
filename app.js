@@ -296,7 +296,7 @@ function recitation(aya, reciter){
 // Send random Aya and random reciter if called with the userId argument only 
 function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
 
-    var ayaNum, reciterNum;
+    var ayaNum, reciterNum, textSuccess, audioSuccess;
     
     if(requestedAyaNum) {
         ayaNum = requestedAyaNum;
@@ -319,6 +319,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
                 // send an Aya text
                 bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML'})
                 .then((ctx) => {
+                    textSuccess = true
                     var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
                     quranUrl(ayaNum).then((quranUrl) => {
@@ -340,15 +341,26 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
                                 ]
                             }
                         }).then(() =>{
+                            audioSuccess = true
                             log(`Successfully sent Aya ${ayaNum} has been sent to chat ${chatId}`);
                             lastAyaTime(chatId, 'success', chatName, lang, trigger)
-                        }).catch(e => log(`Faild to send recitation to chat ${chatId}: `, e))
+                        }).catch(e => {
+                            log(`Error while sending recitation to chat ${chatId}: `, e)
+                            if(!audioSuccess) bot.telegram.sendMessage(chatId,
+                                 `نأسف.. لدينا مشكلة وسنحاول إصلاحها.
+                                 Sorry.. We have an issue and we will try to fix it.`
+                                 )
+                        })
                         
 
                     }).catch((e) => log('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => {
-                    log("Failed to send Aya "+ayaNum+" to chat "+chatId+": ", e)
+                    log("Error while sending Aya "+ayaNum+" to chat "+chatId+": ", e)
                     if(JSON.stringify(e).includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
+                    if(!textSuccess) bot.telegram.sendMessage(chatId,
+                        `نأسف.. لدينا مشكلة وسنحاول إصلاحها.
+                        Sorry.. We have an issue and we will try to fix it.`
+                        )
                 })
 
                 
