@@ -287,23 +287,16 @@ axios('http://api.alquran.cloud/edition/format/audio') // Run only once for each
 // Must be called with .then .catch
 function recitation(aya, reciter){
     return new Promise((resolve, reject) => {
-        var validReciter = false
-        for (let i = 0; !validReciter || i < recitersData.length; i++) {
-            if(recitersData[i].identifier==reciter) validReciter=true
-        }
-        reciter = validReciter ? reciter : random('reciter')
+        
+        reciter = isValidReciter(reciter) ? reciter : random('reciter')
 
         axios(`http://api.alquran.cloud/ayah/${aya}/${reciter}`)
             .then(function (res) {
-                axios.head(res.data.data.audio)
-                .then(h =>{
-                    log('Fetched audio file URL headers.')
-                    if(h.headers['content-type'] == 'audio/mpeg') resolve(res.data.data.audio)
-                })
-                .catch(e => log('Error while fetching audio file URL headers: ', e))
-
-                
-            }).catch(function (e) {
+                var allAudio = res.data.data.audio.concat(res.data.data.audioSecondary)
+                audioPicker(allAudio, 0)
+                .then(pick => resolve(pick))
+                .catch(e)
+            }).catch(e => {
                 log('Recitation Error: ', e)
                 reject(e)
             })
@@ -311,7 +304,57 @@ function recitation(aya, reciter){
 }
 
 
+function isValidReciter(reciter){
+    var validReciter = false
+    for (let i = 0; i < recitersData.length; i++) {
+        if(recitersData[i].identifier == reciter) validReciter = true
+        break
+    }
+    return validReciter
+}
 
+bot.hears('Pro', ctx =>{
+    var files = [
+        "https://cdn.islamic.network/quran/audio/128/ar.minshawi/5091.mp3",
+        "https://cdn.islamic.network/quran/audio/128/ar.muhammadjibreel/5281.mp3",
+        "https://cdn.islamic.network/quran/audio/128/ar.muhammadjibreel/130.mp3"
+    ]
+    audioPicker(files, 0)
+    .then(r => bot.telegram.sendMessage(ctx.chat.id, r))
+    .catch(e => log("ERROR", e))
+})
+
+
+function audioPicker(audioUrlArray, i){
+    return new Promise((resolve, reject) =>{
+        audioUrlCheck(audioUrlArray[i])
+            .then(isAvailable =>{
+                if(isAvailable) resolve(allAudio[i])
+                else if (i+1 < audioUrlArray.length){
+                    audioPicker(audioUrlArray, i+1)
+                    .then(pick => resolve(pick))
+                    .catch(e)
+                } else reject ('All audio files are not available.')
+            })
+            .catch(e) // Don't reject inside the loop until it finishes
+    })
+}
+
+
+function audioUrlCheck(url){
+    return new Promise((resolve, reject) =>{
+        axios.head(url)
+        .then(r =>{
+            log('Fetched audio file URL headers.')
+            if(r.headers['content-type'] == 'audio/mpeg') resolve(true)
+            else resolve(false)
+        })
+        .catch(e => {
+            log('Error while fetching audio file URL headers: ', e)
+            reject(e)
+        })
+    })
+}
 
 
 
