@@ -192,10 +192,14 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
 // Returns a random number based on input
 // if no input or input is "aya": a random aya number in the whole quran (1 to 6236)
 // if input is "reciter": a random number representing one of the available reciters
-function randomNum(type){
-    var max = 6236; // default for aya number
-    if (type == "reciter") max = recitersData.length;
-    return Math.floor(Math.random() * Math.floor(max)) + 1; // +1 because the generated numbers are between 0 and max-1
+function random(type){
+    var max = 6236 // default for aya number
+    if (type == "reciter"){
+        max = recitersData.length
+        return recitersData[Math.floor(Math.random() * Math.floor(max))].identifier
+    }
+    // +1 because the generated numbers are between 0 and max-1
+    else return Math.floor(Math.random() * Math.floor(max)) + 1  
 }
 
 
@@ -212,7 +216,8 @@ function prepareAya(ayaNum){
         // Fetching Aya data from API and formating it to be sent to user
         axios(ayaUrl)
             .then((res) => {
-                String.prototype.toAr = function() {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d]);}; // to be user to convert numbers from Egnlish to Arabic.
+                // to be user to convert numbers from Egnlish to Arabic.
+                String.prototype.toAr = function() {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d]);}; 
                     
                 var arAya = res.data.data[0].text.toString(),
                     translatedAya = res.data.data[1].text.toString(),
@@ -282,12 +287,9 @@ axios('http://api.alquran.cloud/edition/format/audio') // Run only once for each
 // Must be called with .then .catch
 function recitation(aya, reciter){
     return new Promise((resolve, reject) => {
-        if (reciter) {
-            reciter = parseInt(reciter)
-            if (1 > reciter || reciter > recitersData.length) reciter = randomNum('reciter')
-        } else reciter = randomNum('reciter')
+        reciter = recitersData.filter(i => i.identifier==reciter).length > 0 ? reciter : random('reciter')
 
-        axios(`http://api.alquran.cloud/ayah/${aya}/${recitersData[reciter-1].identifier}`)
+        axios(`http://api.alquran.cloud/ayah/${aya}/${reciter}`)
             .then(function (res) {
                 axios.head(res.data.data.audio)
                 .then(h =>{
@@ -310,20 +312,20 @@ function recitation(aya, reciter){
 
 
 // Send random Aya and random reciter if called with the userId argument only 
-function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
+function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
 
-    var ayaNum, reciterNum, textSuccess, audioSuccess;
+    var ayaNum, reciter, textSuccess, audioSuccess;
     
     if(requestedAyaNum) {
         ayaNum = requestedAyaNum;
     } else {
-        ayaNum = randomNum('aya');
+        ayaNum = random('aya');
     }
 
-    if(requestedReciterNum) {
-        reciterNum = requestedReciterNum;
+    if(requestedReciter) {
+        reciter = requestedReciter;
     } else {
-        reciterNum = randomNum('reciter');
+        reciter = random('reciter');
     }
     
     // prepare an Aya then send it
@@ -339,7 +341,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
                     var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
                     quranUrl(ayaNum).then((quranUrl) => {
-                        recitation(ayaNum, reciterNum)
+                        recitation(ayaNum, reciter)
                         .then(recitationUrl => {
                             bot.telegram.sendAudio(chatId, recitationUrl, {
                                 title: "Quran", performer: "Reciter", reply_markup: {
@@ -352,7 +354,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
                                             url: quranUrl
                                         },{
                                             text: "🔽",
-                                            callback_data: `{"currAya":${ayaNum},"r":${reciterNum},"aMsgId":${ctx.message_id}}`
+                                            callback_data: `{"currAya":${ayaNum},"r":${reciter},"aMsgId":${ctx.message_id}}`
                                             // aMsgId to be able to edit the text message later when needed (for example: change translation)
                                         }]
                                     ]
@@ -376,7 +378,7 @@ Sorry.. There's an issue in audio files and we hope it gets fixed soon.`, {reply
                                                 url: quranUrl
                                             },{
                                                 text: "🔽",
-                                                callback_data: `{"currAya":${ayaNum},"r":${reciterNum},"aMsgId":${ctx.message_id}}`
+                                                callback_data: `{"currAya":${ayaNum},"r":${reciter},"aMsgId":${ctx.message_id}}`
                                                 // aMsgId to be able to edit the text message later when needed (for example: change translation)
                                             }]
                                         ]
@@ -409,7 +411,7 @@ bot.action('surpriseAya', ctx => {
 bot.action(/^{"currAya/, ctx => {
     var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
     var currentAyaNum = Math.floor(callbackData.currAya)
-    var currentReciter = Math.floor(callbackData.r)
+    var currentReciter = callbackData.r
     log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
     log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
     sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter, ctx.from.language_code, 'next')
