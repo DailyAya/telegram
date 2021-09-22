@@ -295,7 +295,7 @@ function recitation(aya, reciter){
                 var allAudio = res.data.data.audio.concat(res.data.data.audioSecondary)
                 audioPicker(allAudio, 0)
                 .then(pick => resolve(pick))
-                .catch(e)
+                .catch(e => log("AuidoPicker Error in axios: ", e))
             }).catch(e => {
                 log('Recitation Error: ', e)
                 reject(e)
@@ -333,10 +333,10 @@ function audioPicker(audioUrlArray, i){
                 else if (i+1 < audioUrlArray.length){
                     audioPicker(audioUrlArray, i+1)
                     .then(pick => resolve(pick))
-                    .catch(e)
+                    .catch(e => log("AuidoPicker Error in audioUrlCheck: ", e))
                 } else reject ('All audio files are not available.')
             })
-            .catch(e) // Don't reject inside the loop until it finishes
+            .catch(e => log("AuidoPicker Error: ", e)) // Don't reject inside the loop until it finishes
     })
 }
 
