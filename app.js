@@ -289,7 +289,14 @@ function recitation(aya, reciter){
 
         axios(`http://api.alquran.cloud/ayah/${aya}/${recitersData[reciter-1].identifier}`)
             .then(function (res) {
-                resolve(res.data.data.audio)
+                fetch(res.data.data.audio, {method: "HEAD"})
+                .then(h =>{
+                    log('Fetched audio file URL header.')
+                    if(h.ok) resolve(res.data.data.audio)
+                })
+                .catch(e => log('Error while checking audio file URL header: ', e))
+
+                
             }).catch(function (e) {
                 log('Recitation Error: ', e)
                 reject(e)
