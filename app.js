@@ -287,7 +287,11 @@ axios('http://api.alquran.cloud/edition/format/audio') // Run only once for each
 // Must be called with .then .catch
 function recitation(aya, reciter){
     return new Promise((resolve, reject) => {
-        reciter = recitersData.filter(i => i.identifier==reciter).length > 0 ? reciter : random('reciter')
+        var validReciter = false
+        for (let i = 0; !validReciter || i < recitersData.length; i++) {
+            if(recitersData[i].identifier==reciter) validReciter=true
+        }
+        reciter = validReciter ? reciter : random('reciter')
 
         axios(`http://api.alquran.cloud/ayah/${aya}/${reciter}`)
             .then(function (res) {
