@@ -190,10 +190,10 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
 
 
 // Returns a random number based on input
-// if no input or input is "aya": a random aya number in the whole quran (1 to 6230)
+// if no input or input is "aya": a random aya number in the whole quran (1 to 6236)
 // if input is "reciter": a random number representing one of the available reciters
 function randomNum(type){
-    var max = 6230; // default for aya number
+    var max = 6236; // default for aya number
     if (type == "reciter") max = recitersData.length;
     return Math.floor(Math.random() * Math.floor(max)) + 1; // +1 because the generated numbers are between 0 and max-1
 }
@@ -272,20 +272,29 @@ function quranUrl(ayaNum){
 // returns a URL string for the audio file of the requested aya (is a must)
 // if reciter is not requested or not supported, a random reciter will be provided
 var recitersData
-axios('http://api.alquran.cloud/edition/format/audio') // Run only one time for each process
+axios('http://api.alquran.cloud/edition/format/audio') // Run only once for each process
 .then(res => {
-    recitersData=JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language=="ar")
+    recitersData=JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language=="ar") // Only Arabic recitations
     log("Reciters List is ready. Total Reciters: "+recitersData.length)
-}) // Only Arabic recitations
+})
 .catch(e => log('Failed to get reciters list: ', e))
 
+// Must be called with .then .catch
 function recitation(aya, reciter){
-    if (reciter) {
-        reciter = parseInt(reciter)
-        if (1 > reciter || reciter > recitersData.length) reciter = randomNum('reciter')
-    } else reciter = randomNum('reciter')
-      
-    return 'https://cdn.alquran.cloud/media/audio/ayah/'.concat(recitersData[reciter-1].identifier).concat('/').concat(aya)
+    return new Promise((resolve, reject) => {
+        if (reciter) {
+            reciter = parseInt(reciter)
+            if (1 > reciter || reciter > recitersData.length) reciter = randomNum('reciter')
+        } else reciter = randomNum('reciter')
+
+        axios(`http://api.alquran.cloud/ayah/${aya}/${recitersData[reciter-1].identifier}`)
+            .then(function (res) {
+                resolve(res.data.data.audio)
+            }).catch(function (e) {
+                log('Recitation Error: ', e)
+                reject(e)
+            })
+    })
 }
 
 
@@ -323,33 +332,10 @@ function sendAya(chatId, requestedAyaNum, requestedReciterNum, lang, trigger){
                     var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
                     // send an Aya recitation with inline keyboard buttons after getting Aya URL
                     quranUrl(ayaNum).then((quranUrl) => {
-                        // TODO: title and performer tags are not working!
-                        bot.telegram.sendAudio(chatId, recitation(ayaNum, reciterNum), {
-                            title: "Quran", performer: "Reciter", reply_markup: {
-                                inline_keyboard:[
-                                    [{
-                                        text: "🎁",
-                                        callback_data: "surpriseAya"
-                                    },{
-                                        text: "📖",
-                                        url: quranUrl
-                                    },{
-                                        text: "🔽",
-                                        callback_data: `{"currAya":${ayaNum},"r":${reciterNum},"aMsgId":${ctx.message_id}}`
-                                        // aMsgId to be able to edit the text message later when needed (for example: change translation)
-                                    }]
-                                ]
-                            }
-                        }).then(() =>{
-                            audioSuccess = true
-                            log(`Successfully sent Aya ${ayaNum} has been sent to chat ${chatId}`);
-                            lastAyaTime(chatId, 'success', chatName, lang, trigger)
-                        }).catch(e => {
-                            log(`Error while sending recitation to chat ${chatId}: `, e)
-                            if(!audioSuccess) bot.telegram.sendMessage(chatId,
-`عذرا.. نواجه مشكلة في الملفات الصوتية ونأمل إصلاحها قريبا.
-
-Sorry.. There's an issue in audio files and we hope it gets fixed soon.`, {reply_markup: {
+                        recitation(ayaNum, reciterNum)
+                        .then(recitationUrl => {
+                            bot.telegram.sendAudio(chatId, recitationUrl, {
+                                title: "Quran", performer: "Reciter", reply_markup: {
                                     inline_keyboard:[
                                         [{
                                             text: "🎁",
@@ -363,10 +349,34 @@ Sorry.. There's an issue in audio files and we hope it gets fixed soon.`, {reply
                                             // aMsgId to be able to edit the text message later when needed (for example: change translation)
                                         }]
                                     ]
-                                }})
-                        })
-                        
+                                }
+                            }).then(() =>{
+                                audioSuccess = true
+                                log(`Successfully sent Aya ${ayaNum} has been sent to chat ${chatId}`);
+                                lastAyaTime(chatId, 'success', chatName, lang, trigger)
+                            }).catch(e => {
+                                log(`Error while sending recitation to chat ${chatId}: `, e)
+                                if(!audioSuccess) bot.telegram.sendMessage(chatId,
+`عذرا.. نواجه مشكلة في الملفات الصوتية ونأمل إصلاحها قريبا.
 
+Sorry.. There's an issue in audio files and we hope it gets fixed soon.`, {reply_markup: {
+                                        inline_keyboard:[
+                                            [{
+                                                text: "🎁",
+                                                callback_data: "surpriseAya"
+                                            },{
+                                                text: "📖",
+                                                url: quranUrl
+                                            },{
+                                                text: "🔽",
+                                                callback_data: `{"currAya":${ayaNum},"r":${reciterNum},"aMsgId":${ctx.message_id}}`
+                                                // aMsgId to be able to edit the text message later when needed (for example: change translation)
+                                            }]
+                                        ]
+                                    }})
+                            })
+                        })
+                        .catch(e => log('Error while getting recitation URL: ', e))
                     }).catch((e) => log('Failed to get aya Quran.com URL: ', e))
                 }).catch(e => {
                     log("Error while sending Aya "+ayaNum+" to chat "+chatId+": ", e)
@@ -377,9 +387,6 @@ Sorry.. There's an issue in audio files and we hope it gets fixed soon.`, {reply
 Sorry.. There's an issue in Aya texts and we hope it gets fixed soon.`
                         )
                 })
-
-                
-
             }).catch((e) => log('Failed preparing an Aya.. STOPPED: ', e));
 }
 
@@ -405,7 +412,7 @@ bot.action(/^{"currAya/, ctx => {
 
 
 function nextAya(ayaNum){
-    return ayaNum == 6230 ? 1 : ayaNum+1
+    return ayaNum == 6236 ? 1 : ayaNum+1
 }
 
 
@@ -529,7 +536,7 @@ function numArabicToEnglish(string) {
 
 
 // Check if the requested Aya is valid or not
-// returns Aya number (1 to 6230) if valid, or 0 if not valid.
+// returns Aya number (1 to 6236) if valid, or 0 if not valid.
 // Because returning a promise, must be called with .then().catch()
 function ayaCheck(sura, aya){
     return new Promise((resolve, reject) => {
@@ -563,15 +570,15 @@ bot.on('text', ctx =>{
         if (foundNums.length == 1) { // One number is Sura number only
             ayaCheck(foundNums[0],1) // to get the Global Aya number of the first Aya in this Sura for "sendAya" function.
             .then((validAya) => { // it's always valid here.
-                log('ayaCheck: ', validAya)
+                log('ayaCheck: '+ validAya)
                 sendAya(chatId, validAya, "", ctx.from.language_code, 'request')
             })
-            .catch((e) => log('ayaCheck: ', e))
+            .catch((e) => log('ayaCheck Error: ', e))
             
         } else { // if first number is Sura and there's at least one more number (aya)
             ayaCheck(foundNums[0], foundNums[1])
             .then((validAya) => {
-                log('ayaCheck: ', validAya)
+                log('ayaCheck: '+ validAya)
                 
                 if (validAya){ // if valid aya number, send requested Aya
                     sendAya(chatId, validAya, "", ctx.from.language_code, 'request')
@@ -579,7 +586,7 @@ bot.on('text', ctx =>{
                 // if second number (aya) is invalid, send UNRECOGNIZED for reason 3
                 } else unrecognized(chatId, 3)
             })
-            .catch((e) => log('ayaCheck: ', e))
+            .catch((e) => log('ayaCheck Error: ', e))
         }
     // if first number is not valid sura number, send UNRECOGNIZED for reason 2
     } else unrecognized(chatId, 2)
