@@ -291,8 +291,8 @@ function recitation(aya, reciter){
             .then(function (res) {
                 axios.head(res.data.data.audio)
                 .then(h =>{
-                    log('Fetched audio file URL header: '+JSON.stringify(JSON.parse(h)))
-                    if(h.statusCode==200) resolve(res.data.data.audio)
+                    log('Fetched audio file URL header: '+h.headers)
+                    if(h.status==200) resolve(res.data.data.audio)
                 })
                 .catch(e => log('Error while fetching audio file URL header: ', e))
 
