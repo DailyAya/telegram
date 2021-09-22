@@ -316,7 +316,7 @@ function isValidReciter(reciter){
 bot.hears('Pro', ctx =>{
     var files = [
         "https://cdn.islamic.network/quran/audio/128/ar.minsawi/5091.mp3",
-        "https://cdn.islamic.network/quran/audio/128/ar.muhammadjibreel/5281.mp3",
+        "https://cdn.islamic.network/quran/audio/128/ar.muhammadjibeel/5281.mp3",
         "https://cdn.islamic.network/quran/audio/128/ar.muhammadjibreel/130.mp3"
     ]
     audioPicker(files, 0)
