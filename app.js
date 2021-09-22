@@ -333,7 +333,7 @@ function audioPicker(audioUrlArray, i){
                 else if (i+1 < audioUrlArray.length){
                     audioPicker(audioUrlArray, i+1)
                     .then(pick => resolve(pick))
-                    .catch(e => log("AuidoPicker Error in audioUrlCheck: ", e))
+                    .catch(e => reject(e))
                 } else reject ('All audio files are not available.')
             })
             .catch(e => log("AuidoPicker Error: ", e)) // Don't reject inside the loop until it finishes
