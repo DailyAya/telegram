@@ -350,8 +350,7 @@ function audioUrlCheck(url){
             else resolve(false)
         })
         .catch(e => {
-            log('Error while fetching audio file URL headers: ', e)
-            reject(e)
+            resolve(false) // No reject if Url request failed
         })
     })
 }
