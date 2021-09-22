@@ -329,7 +329,7 @@ function audioPicker(audioUrlArray, i){
     return new Promise((resolve, reject) =>{
         audioUrlCheck(audioUrlArray[i])
             .then(isAvailable =>{
-                if(isAvailable) resolve(allAudio[i])
+                if(isAvailable) resolve(audioUrlArray[i])
                 else if (i+1 < audioUrlArray.length){
                     audioPicker(audioUrlArray, i+1)
                     .then(pick => resolve(pick))
