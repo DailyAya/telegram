@@ -317,7 +317,7 @@ bot.hears('Pro', ctx =>{
     var files = [
         "https://cdn.islamic.network/quran/audio/128/ar.minsawi/5091.mp3",
         "https://cdn.islamic.network/quran/audio/128/ar.muhammadjibeel/5281.mp3",
-        "https://cdn.islamic.network/quran/audio/128/ar.muhammadjibreel/130.mp3"
+        "https://cdn.islamic.network/quran/audio/128/ar.muhammadjireel/130.mp3"
     ]
     audioPicker(files, 0)
     .then(r => bot.telegram.sendMessage(ctx.chat.id, r))
