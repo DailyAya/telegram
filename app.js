@@ -229,12 +229,12 @@ function prepareAya(ayaNum){
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
                     response =
-`<b>${arAya}</b>
+`<a href="tg://user?id=1845699681"><b>${arAya}</b>
 ﴿${arName}: ${arAyaNumInSura}﴾
 
 ${translatedAya}
 
-<i>An interpretation of Aya ${ayaNumInSura} in Sura ${suraNum}: ${enName} (${translatedName})</i>`
+<i>An interpretation of Aya ${ayaNumInSura} in Sura ${suraNum}: ${enName} (${translatedName})</i></a>`
                 
                 // return function call with the formated Aya.
                 resolve(response);
@@ -369,7 +369,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
                 log('Successfully prepared Aya ' +ayaNum+ ' for chat '+chatId);
                
                 // send an Aya text
-                bot.telegram.sendMessage(chatId, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML'})
+                bot.telegram.sendMessage(chatId, ayaText, {parse_mode: 'HTML'})
                 .then((ctx) => {
                     textSuccess = true
                     var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
