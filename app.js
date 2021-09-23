@@ -706,8 +706,8 @@ bot.on('my_chat_member', ctx => {
 
 // set the bot menu
 bot.telegram.setMyCommands([
-    {'command':'surpriseme', 'description': '🎁 ꓢurprise Ꮇe فاجئني'},
-    {'command':'help', 'description': '🤔 Ꮖnstructions إرشادات'}
+    {'command':'surpriseme', 'description': '🎁 ꓢurprise ꓟe فاجئني'},
+    {'command':'help', 'description': '🤔 Ⅰnstructions إرشادات'}
 ])
 
 
