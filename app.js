@@ -378,7 +378,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
                         recitation(ayaNum, reciter)
                         .then(recitationUrl => {
                             bot.telegram.sendAudio(chatId, recitationUrl, {
-                                title: "Quran", performer: "Reciter", reply_markup: {
+                                title: "Quran", performer: "Reciter", caption: ayaText, parse_mode: 'HTML', reply_markup: {
                                     inline_keyboard:[
                                         [{
                                             text: "🎁",
