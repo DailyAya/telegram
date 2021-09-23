@@ -293,7 +293,6 @@ function recitation(aya, reciter){
         axios(`http://api.alquran.cloud/ayah/${aya}/${reciter}`)
             .then(function (res) {
                 var allAudio = [res.data.data.audio].concat(res.data.data.audioSecondary)
-                log(allAudio)
                 audioPicker(allAudio, 0)
                 .then(pick => resolve(pick))
                 .catch(e => reject(e))
@@ -340,9 +339,7 @@ function audioUrlCheck(url){
             if(r.headers['content-type'] == 'audio/mpeg') resolve(true)
             else resolve(false)
         })
-        .catch(e => {
-            resolve(false) // No reject if Url request failed
-        })
+        .catch(e => resolve(false)) // No reject if URL request failed
     })
 }
 
