@@ -402,16 +402,16 @@ function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
                                 lastAyaTime(chatId, 'success', chatName, lang, trigger)
                             }).catch(e => {
                                 log(`Error while sending recitation to chat ${chatId}: `, e)
-                                if(!audioSuccess) sendSorry(chatId, 'audio', quranUrl, ayaNum, ctx.message_id)
+                                if(!audioSuccess) sendSorry(chatId, 'audio', quranUrl, ayaNum, reciter, ctx.message_id)
                             })
                         })
                         .catch(e => {
                             log('Error while getting recitation URL: ', e)
-                            sendSorry(chatId, 'audio', quranUrl, ayaNum, ctx.message_id)
+                            sendSorry(chatId, 'audio', quranUrl, ayaNum, reciter, ctx.message_id)
                         })
                     }).catch((e) => {
                         log('Failed to get aya Quran.com URL: ', e)
-                        sendSorry(chatId, 'audio', quranUrl, ayaNum, ctx.message_id) // quranUrl button is sent with audio
+                        sendSorry(chatId, 'audio', quranUrl, ayaNum, reciter, ctx.message_id) // quranUrl button is sent with audio
                     })
                 }).catch(e => {
                     log("Error while sending Aya "+ayaNum+" to chat "+chatId+": ", e)
@@ -422,7 +422,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
 }
 
 
-function sendSorry(chatId, reason, quranUrl, ayaNum, messageId){
+function sendSorry(chatId, reason, quranUrl, ayaNum, reciter, messageId){
     var msg
     var options = {}
     switch (reason) {
