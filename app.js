@@ -314,16 +314,6 @@ function isValidReciter(reciter){
     return validReciter
 }
 
-bot.hears('Pro', ctx =>{
-    var files = [
-        "https://cdn.islamic.network/quran/audio/128/ar.minsawi/5091.mp3",
-        "https://cdn.islamic.network/quran/audio/128/ar.muhammadjibeel/5281.mp3",
-        "https://cdn.islamic.network/quran/audio/128/ar.muhammadjireel/130.mp3"
-    ]
-    audioPicker(files, 0)
-    .then(r => bot.telegram.sendMessage(ctx.chat.id, r))
-    .catch(e => log("ERROR", e))
-})
 
 
 function audioPicker(audioUrlArray, i){
@@ -412,38 +402,69 @@ function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
                                 lastAyaTime(chatId, 'success', chatName, lang, trigger)
                             }).catch(e => {
                                 log(`Error while sending recitation to chat ${chatId}: `, e)
-                                if(!audioSuccess) bot.telegram.sendMessage(chatId,
-`عذرا.. نواجه مشكلة في الملفات الصوتية ونأمل إصلاحها قريبا.
-
-Sorry.. There's an issue in audio files and we hope it gets fixed soon.`, {reply_markup: {
-                                        inline_keyboard:[
-                                            [{
-                                                text: "🎁",
-                                                callback_data: "surpriseAya"
-                                            },{
-                                                text: "📖",
-                                                url: quranUrl
-                                            },{
-                                                text: "🔽",
-                                                callback_data: `{"currAya":${ayaNum},"r":${reciter},"aMsgId":${ctx.message_id}}`
-                                                // aMsgId to be able to edit the text message later when needed (for example: change translation)
-                                            }]
-                                        ]
-                                    }})
+                                if(!audioSuccess) sendSorry(chatId, 'audio', quranUrl, ayaNum, ctx.message_id)
                             })
                         })
-                        .catch(e => log('Error while getting recitation URL: ', e))
-                    }).catch((e) => log('Failed to get aya Quran.com URL: ', e))
+                        .catch(e => {
+                            log('Error while getting recitation URL: ', e)
+                            sendSorry(chatId, 'audio', quranUrl, ayaNum, ctx.message_id)
+                        })
+                    }).catch((e) => {
+                        log('Failed to get aya Quran.com URL: ', e)
+                        sendSorry(chatId, 'audio', quranUrl, ayaNum, ctx.message_id) // quranUrl button is sent with audio
+                    })
                 }).catch(e => {
                     log("Error while sending Aya "+ayaNum+" to chat "+chatId+": ", e)
                     if(JSON.stringify(e).includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
-                    if(!textSuccess) bot.telegram.sendMessage(chatId,
+                    if(!textSuccess) sendSorry(chatId, 'text')
+                })
+            }).catch((e) => log('Failed preparing an Aya.. STOPPED: ', e));
+}
+
+
+function sendSorry(chatId, reason, quranUrl, ayaNum, messageId){
+    var msg
+    var options = {}
+    switch (reason) {
+        case 'audio':
+            msg =
+`عذرا.. نواجه مشكلة في الملفات الصوتية ونأمل إصلاحها قريبا.
+    
+Sorry.. There's an issue in audio files and we hope it gets fixed soon.`
+            options = {
+                reply_markup: {
+                    inline_keyboard:[
+                        [{
+                            text: "🎁",
+                            callback_data: "surpriseAya"
+                        },{
+                            text: "📖",
+                            url: quranUrl
+                        },{
+                            text: "🔽",
+                            callback_data: `{"currAya":${ayaNum},"r":${reciter},"aMsgId":${messageId}}`
+                            // aMsgId to be able to edit the text message later when needed (for example: change translation)
+                        }]
+                    ]
+                }
+            }
+            break
+
+            case 'text':
+                msg =
 `عذرا.. نواجه مشكلة في نصوص الآيات ونأمل إصلاحها قريبا.
 
 Sorry.. There's an issue in Aya texts and we hope it gets fixed soon.`
-                        )
-                })
-            }).catch((e) => log('Failed preparing an Aya.. STOPPED: ', e));
+                break
+    
+        default:
+            msg =
+`عذرا.. حدثت مشكلة غير معروفة.
+    
+Sorry.. An unknown issue happened.`
+            break
+    }
+    bot.telegram.sendMessage(chatId, msg, options)
 }
 
 
