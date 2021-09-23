@@ -292,7 +292,7 @@ function recitation(aya, reciter){
 
         axios(`http://api.alquran.cloud/ayah/${aya}/${reciter}`)
             .then(function (res) {
-                var allAudio = res.data.data.audio.concat(res.data.data.audioSecondary)
+                var allAudio = [res.data.data.audio].concat(res.data.data.audioSecondary)
                 log(allAudio)
                 audioPicker(allAudio, 0)
                 .then(pick => resolve(pick))
