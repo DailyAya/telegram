@@ -470,6 +470,11 @@ bot.action('surpriseAya', ctx => {
     sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
 })
 
+// When a user presses "Surprise Me" in menu
+bot.command('surpriseme', ctx => {
+    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
+})
+
 
 
 // When a user presses "Next Aya" inline keyboard button
@@ -699,6 +704,11 @@ bot.on('my_chat_member', ctx => {
 
 
 
+// set the bot menu
+bot.telegram.setMyCommands([
+    {'command':'surpriseme', 'description': '🎁 Surprise Me فاجئني'},
+    {'command':'help', 'description': '🤔 Instructions إرشادات'}
+])
 
 
 
