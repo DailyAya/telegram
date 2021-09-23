@@ -293,9 +293,10 @@ function recitation(aya, reciter){
         axios(`http://api.alquran.cloud/ayah/${aya}/${reciter}`)
             .then(function (res) {
                 var allAudio = res.data.data.audio.concat(res.data.data.audioSecondary)
+                log(allAudio)
                 audioPicker(allAudio, 0)
                 .then(pick => resolve(pick))
-                .catch(e => log("AuidoPicker Error in axios: ", e))
+                .catch(e => reject(e))
             }).catch(e => {
                 log('Recitation Error: ', e)
                 reject(e)
