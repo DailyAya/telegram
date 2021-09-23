@@ -391,7 +391,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
                                             url: quranUrl
                                         },{
                                             text: "🔽",
-                                            callback_data: `{"currAya":${ayaNum},"r":${reciter},"aMsgId":${ctx.message_id}}`
+                                            callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":${ctx.message_id}}`
                                             // aMsgId to be able to edit the text message later when needed (for example: change translation)
                                         }]
                                     ]
@@ -442,7 +442,7 @@ Sorry.. There's an issue in audio files and we hope it gets fixed soon.`
                             url: quranUrl
                         },{
                             text: "🔽",
-                            callback_data: `{"currAya":${ayaNum},"r":${reciter},"aMsgId":${messageId}}`
+                            callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":${messageId}}`
                             // aMsgId to be able to edit the text message later when needed (for example: change translation)
                         }]
                     ]
