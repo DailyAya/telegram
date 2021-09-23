@@ -229,7 +229,7 @@ function prepareAya(ayaNum){
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
                     response =
-`<a href="tg://user?id=1845699681"><b>${arAya}</b>
+`<a href="t.me/DailyAyaBot"><b>${arAya}</b>
 ﴿${arName}: ${arAyaNumInSura}﴾
 
 ${translatedAya}
