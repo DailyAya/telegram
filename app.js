@@ -228,8 +228,8 @@ function prepareAya(ayaNum){
                     translatedName = res.data.data[0].surah.englishNameTranslation.toString(),
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
-                    arIndex = `﴿<a href="t.me/DailyAyaBot?start=${suraNum}-${ayaNumInSura}">${arName}: ${arAyaNumInSura}</a>﴾`,
-                    trIndex = `<a href="t.me/DailyAyaBot?request=${suraNum}-${ayaNumInSura}">Aya ${ayaNumInSura} in Sura ${suraNum}</a>: ${enName} (${translatedName})`,
+                    arIndex = `﴿<a href="t.me/DailyAyaStagingBot?start=${suraNum}-${ayaNumInSura}">${arName}: ${arAyaNumInSura}</a>﴾`,
+                    trIndex = `<a href="t.me/DailyAyaStagingBot?request=${suraNum}-${ayaNumInSura}">Aya ${ayaNumInSura} in Sura ${suraNum}</a>: ${enName} (${translatedName})`,
                     arText =
 `<b>${arAya}</b>
 ﴿${arIndex}`,
