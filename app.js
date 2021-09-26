@@ -398,7 +398,7 @@ function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
                         url: quranUrl
                     },{
                         text: "🔽",
-                        callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":${ctx.message_id}}`
+                        callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":'unknown'}`
                         // aMsgId to be able to edit the text message later when needed (for example: change translation)
                     }]
                 ]
