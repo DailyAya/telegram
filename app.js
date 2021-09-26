@@ -147,7 +147,7 @@ if(telegramToken != "inactive"){
 
 //method for invoking start command
 bot.start(ctx => {
-    log(["command: start", ctx.from, ctx.chat])
+    log(["command: start", JSON.stringify(ctx)])
     start(ctx.chat.id)
     
 })
