@@ -208,7 +208,6 @@ function random(type){
 // Prepare an Aya to be sent
 // Because returning a promise, must be called with .then().catch()
 const axios = require('axios')
-const { response } = require('express')
 
 function prepareAya(ayaNum){
     return new Promise((resolve, reject) => {
@@ -229,8 +228,8 @@ function prepareAya(ayaNum){
                     translatedName = res.data.data[0].surah.englishNameTranslation.toString(),
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
-                    arIndex = `﴿<a href="t.me/DailyAyaBot?Request=${suraNum}-${ayaNumInSura}">${arName}: ${arAyaNumInSura}</a>﴾`,
-                    trIndex = `<a href="t.me/DailyAyaBot?Request=${suraNum}-${ayaNumInSura}">Aya ${ayaNumInSura} in Sura ${suraNum}</a>: ${enName} (${translatedName})`,
+                    arIndex = `﴿<a href="t.me/DailyAyaBot?start=${suraNum}-${ayaNumInSura}">${arName}: ${arAyaNumInSura}</a>﴾`,
+                    trIndex = `<a href="t.me/DailyAyaBot?request=${suraNum}-${ayaNumInSura}">Aya ${ayaNumInSura} in Sura ${suraNum}</a>: ${enName} (${translatedName})`,
                     arText =
 `<b>${arAya}</b>
 ﴿${arIndex}`,
@@ -700,10 +699,6 @@ function ayaCheck(sura, aya){
 }
 
 
-bot.hears('Boo', ctx => {
-    bot.telegram.editMessageMedia(589683206, 590, undefined,
-        {type: "audio", media: "CQACAgQAAxkDAAICTmFQ0p1kPtLUVYODYc-goX8JtwUHAAIhAwACRuqEUukuPQFWtVu2IQQ", performer: "Reciter", title: "Quran"})
-})
 
 // Responds to text messages to send the requested Aya or error message if unrecognized
 bot.on('text', ctx =>{
