@@ -778,6 +778,11 @@ bot.telegram.setMyCommands([
     {'command':'help', 'description': '🤔 𝐈nstructions إرشادات'}
 ])
 
+bot.hears('Boo', ctx => {
+    bot.telegram.editMessageMedia(589683206, 590, undefined,
+        {file_id: "CQACAgQAAxkDAAICTmFQ0p1kPtLUVYODYc-goX8JtwUHAAIhAwACRuqEUukuPQFWtVu2IQQ", performer: "Reciter", title: "Quran"})
+})
+
 
 
 
