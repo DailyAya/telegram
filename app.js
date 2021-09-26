@@ -701,7 +701,7 @@ function ayaCheck(sura, aya){
 
 
 bot.hears('Boo', ctx => {
-    bot.telegram.editMessageMedia(589683206, 590, undefined,
+    bot.telegram.editMessageMedia(589683206, 590,
         {type: "audio", file_id: "CQACAgQAAxkDAAICTmFQ0p1kPtLUVYODYc-goX8JtwUHAAIhAwACRuqEUukuPQFWtVu2IQQ", performer: "Reciter", title: "Quran"})
 })
 
