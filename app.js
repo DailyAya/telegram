@@ -208,6 +208,7 @@ function random(type){
 // Prepare an Aya to be sent
 // Because returning a promise, must be called with .then().catch()
 const axios = require('axios')
+const { response } = require('express')
 
 function prepareAya(ayaNum){
     return new Promise((resolve, reject) => {
@@ -228,16 +229,35 @@ function prepareAya(ayaNum){
                     translatedName = res.data.data[0].surah.englishNameTranslation.toString(),
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
-                    response =
-`<a href="t.me/DailyAyaBot">'1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901'</a>`
-                
-                // return function call with the formated Aya.
-                resolve(response);
-                 
+                    arIndex = `﴿<a href="t.me/DailyAyaBot?Request=${suraNum}-${ayaNumInSura}">${arName}: ${arAyaNumInSura}</a>﴾`,
+                    trIndex = `<a href="t.me/DailyAyaBot?Request=${suraNum}-${ayaNumInSura}">Aya ${ayaNumInSura} in Sura ${suraNum}</a>: ${enName} (${translatedName})`,
+                    arText =
+`<b>${arAya}</b>
+﴿${arIndex}`,
+
+                    trText =
+`${translatedAya}
+
+<i>An interpretation of ${trIndex}</i>`,
+
+                    minCaption =
+`${arIndex}
+
+${trIndex}`
+                    
+
+                    allText =
+`${arText}
+
+${trText}`
+
+                if (allText <= 1024) resolve([allText]) // All text fits in audio capiton
+                else if (arText <= 1024) resolve([arText, trText]) // Only Arabic text fits in audio caption
+                else resolve ([minCaption, allText, '']) // Arabic text is too long for audio caption
             })
             .catch((e) => {
-                log('Failed to prepare an aya: ', e);
-                reject(e);
+                log(`Failed to prepare Aya ${ayaNum}: `, e);
+                reject(`Failed to prepare Aya ${ayaNum}: `+ e);
             });
     });
 }
@@ -343,120 +363,173 @@ function audioUrlCheck(url){
 // Send random Aya and random reciter if called with the userId argument only 
 function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
 
-    var ayaNum, reciter, textSuccess, audioSuccess;
+    var ayaNum, reciter, textSuccess, audioSuccess
     
     if(requestedAyaNum) {
-        ayaNum = requestedAyaNum;
+        ayaNum = requestedAyaNum
     } else {
-        ayaNum = random('aya');
+        ayaNum = random('aya')
     }
 
     if(requestedReciter) {
-        reciter = requestedReciter;
+        reciter = requestedReciter
     } else {
-        reciter = random('reciter');
+        reciter = random('reciter')
     }
     
-    // prepare an Aya then send it
-    log('Preparing Aya ' +ayaNum+ ' for chat '+chatId);
-    prepareAya(ayaNum)  
-            .then((ayaText) => {
-                log('Successfully prepared Aya ' +ayaNum+ ' for chat '+chatId);
-               
-                // send an Aya text
-                bot.telegram.sendMessage(chatId, ayaText, {parse_mode: 'HTML'})
-                .then((ctx) => {
-                    textSuccess = true
-                    var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
-                    // send an Aya recitation with inline keyboard buttons after getting Aya URL
-                    quranUrl(ayaNum).then((quranUrl) => {
-                        recitation(ayaNum, reciter)
-                        .then(recitationUrl => {
-                            bot.telegram.sendAudio(chatId, recitationUrl, {
-                                title: "Quran", performer: "Reciter", caption: ayaText, parse_mode: 'HTML', reply_markup: {
-                                    inline_keyboard:[
-                                        [{
-                                            text: "🎁",
-                                            callback_data: "surpriseAya"
-                                        },{
-                                            text: "📖",
-                                            url: quranUrl
-                                        },{
-                                            text: "🔽",
-                                            callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":${ctx.message_id}}`
-                                            // aMsgId to be able to edit the text message later when needed (for example: change translation)
-                                        }]
-                                    ]
-                                }
-                            }).then(() =>{
-                                audioSuccess = true
-                                log(`Successfully sent Aya ${ayaNum} has been sent to chat ${chatId}`);
-                                lastAyaTime(chatId, 'success', chatName, lang, trigger)
-                            }).catch(e => {
-                                log(`Error while sending recitation to chat ${chatId}: `, e)
-                                if(!audioSuccess) sendSorry(chatId, 'audio', quranUrl, ayaNum, reciter, ctx.message_id)
-                            })
-                        })
-                        .catch(e => {
-                            log('Error while getting recitation URL: ', e)
-                            sendSorry(chatId, 'audio', quranUrl, ayaNum, reciter, ctx.message_id)
-                        })
-                    }).catch((e) => {
-                        log('Failed to get aya Quran.com URL: ', e)
-                        sendSorry(chatId, 'audio', quranUrl, ayaNum, reciter, ctx.message_id) // quranUrl button is sent with audio
-                    })
-                }).catch(e => {
-                    log("Error while sending Aya "+ayaNum+" to chat "+chatId+": ", e)
-                    if(JSON.stringify(e).includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
-                    if(!textSuccess) sendSorry(chatId, 'text')
+    // prepare the Aya
+    log('Preparing Aya ' +ayaNum+ ' for chat '+chatId)
+    prepareAya(ayaNum)
+    .then(ayaText => {
+        var isCaptionFit = ayaText.length == 1
+        log('Successfully prepared Aya ' +ayaNum+ ' for chat '+chatId)
+      
+        // Prepare the Aya URL for open button
+        // send an Aya recitation with inline keyboard buttons after getting Aya URL
+        quranUrl(ayaNum)
+        .then((quranUrl) => {
+            var markup = {
+                inline_keyboard:[
+                    [{
+                        text: "🎁",
+                        callback_data: "surpriseAya"
+                    },{
+                        text: "📖",
+                        url: quranUrl
+                    },{
+                        text: "🔽",
+                        callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":${ctx.message_id}}`
+                        // aMsgId to be able to edit the text message later when needed (for example: change translation)
+                    }]
+                ]
+            }
+            // Prepare recitation URL
+            recitation(ayaNum, reciter)
+            .then(recitationUrl => {
+                bot.telegram.sendAudio(chatId, recitationUrl, {
+                    caption: ayaText[0], parse_mode: 'HTML', reply_markup: (isCaptionFit ? markup : {})
                 })
-            }).catch((e) => log('Failed preparing an Aya.. STOPPED: ', e));
+                .then((ctx) =>{
+                    audioSuccess = true
+                    log(JSON.stringify(ctx))
+                    if (isCaptionFit) successSend(ctx, ayaNum, lang, trigger)
+                    else {// send the remaining text and inline buttons
+                        sendAyaText(chatId, ayaText[1], markup, ayaNum, lang, trigger, quranUrl, reciter, ctx.message_id)
+                    }
+                })
+                .catch(e => {
+                    log(`Error while sending recitation to chat ${chatId}: `, e)
+                    if(JSON.stringify(e).includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
+                    if(!audioSuccess) {
+                        sendSorry(chatId, 'audio')
+                        .then(ctx =>{
+                            var allAyaText = ayaText.length == 3 ? ayaText[1] : `${ayaText[0]}\n\n${ayaText[1]}`
+                            sendAyaText(chatId, allAyaText, markup, ayaNum, lang, trigger, quranUrl, reciter, 'No_Audio')
+                        })
+                        .catch(e => log('Error while sending sorry for no audio: ', e))
+                    }
+                })
+            })
+            .catch(e => {
+                log('Error while getting recitation URL: ', e)
+                sendSorry(chatId, 'audio')
+                .then(ctx =>{
+                    var allAyaText = ayaText.length == 3 ? ayaText[1] : `${ayaText[0]}\n\n${ayaText[1]}`
+                    sendAyaText(chatId, allAyaText, markup, ayaNum, lang, trigger, quranUrl, reciter, 'No_Audio')
+                })
+                .catch(e => log('Error while sending sorry for no audio: ', e))
+            })
+        }).catch((e) => {
+            log('Failed to get aya Quran.com URL: ', e)
+            sendSorry(chatId, 'audio') // Won't send anything without "Open Aya" button
+        })
+
+
+
+
+               
+                
+    })
+    .catch((e) => log('Failed preparing an Aya.. STOPPED: ', e))
+}
+
+
+function sendAyaText(chatId, ayaText, markup, ayaNum, lang, trigger, quranUrl, reciter, audioMessageId){
+    bot.telegram.sendMessage(chatId, ayaText, {
+        disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: markup
+    })
+    .then((ctx) => {
+        textSuccess = true
+        successSend(ctx, ayaNum, lang, trigger)
+    })
+    .catch(e => {
+        log("Error while sending Aya "+ayaNum+" text to chat "+chatId+": ", e)
+        if(!textSuccess) sendSorry(chatId, 'text', quranUrl, ayaNum, reciter, audioMessageId)
+    })
+}
+
+
+function successSend(ctx, ayaNum, lang, trigger){
+    var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
+    log(`Successfully sent Aya ${ayaNum} has been sent to chat ${ctx.chat.id}`)
+    lastAyaTime(ctx.chat.id, 'success', chatName, lang, trigger)
 }
 
 
 function sendSorry(chatId, reason, quranUrl, ayaNum, reciter, messageId){
-    var msg
-    var options = {}
-    switch (reason) {
-        case 'audio':
-            msg =
+    return new Promise((resolve, reject) =>{
+        var msg
+        var options = {}
+        switch (reason) {
+            case 'audio':
+                msg =
 `عذرا.. نواجه مشكلة في الملفات الصوتية ونأمل إصلاحها قريبا.
     
 Sorry.. There's an issue in audio files and we hope it gets fixed soon.`
-            options = {
-                reply_markup: {
-                    inline_keyboard:[
-                        [{
-                            text: "🎁",
-                            callback_data: "surpriseAya"
-                        },{
-                            text: "📖",
-                            url: quranUrl
-                        },{
-                            text: "🔽",
-                            callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":${messageId}}`
-                            // aMsgId to be able to edit the text message later when needed (for example: change translation)
-                        }]
-                    ]
+                options = {
+                    reply_markup: {
+                        inline_keyboard:[
+                            [{
+                                text: "🎁",
+                                callback_data: "surpriseAya"
+                            },{
+                                text: "📖",
+                                url: quranUrl
+                            },{
+                                text: "🔽",
+                                callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":${messageId}}`
+                                // aMsgId to be able to edit the text message later when needed (for example: change translation)
+                            }]
+                        ]
+                    }
                 }
-            }
-            break
+                break
 
-            case 'text':
-                msg =
+                case 'text':
+                    msg =
 `عذرا.. نواجه مشكلة في نصوص الآيات ونأمل إصلاحها قريبا.
 
 Sorry.. There's an issue in Aya texts and we hope it gets fixed soon.`
-                break
-    
-        default:
-            msg =
+                    break
+        
+            default:
+                msg =
 `عذرا.. حدثت مشكلة غير معروفة.
     
 Sorry.. An unknown issue happened.`
-            break
-    }
-    bot.telegram.sendMessage(chatId, msg, options)
+                break
+        }
+        bot.telegram.sendMessage(chatId, msg, options)
+        .then(ctx => {
+            log(`Sorry message sent to ${chatId} due to ${reason}.`)
+            resolve(ctx)
+        })
+        .catch(e => {
+            log(`Failed to send sorry message to ${chatId}: `, e)
+            reject(e)
+        })
+
+    })
 }
 
 
