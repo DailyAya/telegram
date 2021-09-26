@@ -717,9 +717,8 @@ function handleText(ctx){
 
 //method for invoking start command
 bot.start(ctx => {
-    log(["command: start", ctx.startPayload.length])
-    start(ctx.chat.id)
-    
+    if(ctx.startPayload.length) handleText(ctx)
+    else start(ctx.chat.id)
 })
 
 
