@@ -700,7 +700,10 @@ function ayaCheck(sura, aya){
 }
 
 
-
+bot.hears('Boo', ctx => {
+    bot.telegram.editMessageMedia(589683206, 590, undefined,
+        {file_id: "CQACAgQAAxkDAAICTmFQ0p1kPtLUVYODYc-goX8JtwUHAAIhAwACRuqEUukuPQFWtVu2IQQ", performer: "Reciter", title: "Quran"})
+})
 
 // Responds to text messages to send the requested Aya or error message if unrecognized
 bot.on('text', ctx =>{
@@ -778,10 +781,7 @@ bot.telegram.setMyCommands([
     {'command':'help', 'description': '🤔 𝐈nstructions إرشادات'}
 ])
 
-bot.hears('Boo', ctx => {
-    bot.telegram.editMessageMedia(589683206, 590, undefined,
-        {file_id: "CQACAgQAAxkDAAICTmFQ0p1kPtLUVYODYc-goX8JtwUHAAIhAwACRuqEUukuPQFWtVu2IQQ", performer: "Reciter", title: "Quran"})
-})
+
 
 
 
