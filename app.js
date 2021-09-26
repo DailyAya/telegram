@@ -145,12 +145,7 @@ if(telegramToken != "inactive"){
     bot.telegram.sendMessage(DailyAyaDevChatId, instStateMsg)
 }
 
-//method for invoking start command
-bot.start(ctx => {
-    log(["command: start", JSON.stringify(ctx)])
-    start(ctx.chat.id)
-    
-})
+
 
 
 function start(chatId){
@@ -532,27 +527,7 @@ Sorry.. An unknown issue happened.`
 }
 
 
-// When a user presses "Another Aya" inline keyboard button
-bot.action('surpriseAya', ctx => {
-    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
-})
 
-// When a user presses "Surprise Me" in menu
-bot.command('surpriseme', ctx => {
-    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
-})
-
-
-
-// When a user presses "Next Aya" inline keyboard button
-bot.action(/^{"currAya/, ctx => {
-    var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
-    var currentAyaNum = Math.floor(callbackData.currAya)
-    var currentReciter = callbackData.r
-    log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
-    log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
-    sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter, ctx.from.language_code, 'next')
-})
 
 
 
@@ -663,13 +638,7 @@ Or Sura number only: 2`
 
 
 
-bot.action('instructions', ctx => {
-    instructions(ctx.chat.id)
-})
 
-bot.help(ctx => {
-    instructions(ctx.chat.id)
-})
 
 
 // Converting input arabic number into english one to easily find numbers in sent messages
@@ -701,7 +670,7 @@ function ayaCheck(sura, aya){
 
 
 // Responds to text messages to send the requested Aya or error message if unrecognized
-bot.on('text', ctx =>{
+function handleText(ctx){
     var txt = ctx.message.text
     var chatId = ctx.chat.id
     log('Message from chat ' + chatId+ ': ' + txt)
@@ -735,8 +704,59 @@ bot.on('text', ctx =>{
         }
     // if first number is not valid sura number, send UNRECOGNIZED for reason 2
     } else unrecognized(chatId, 2)
+}
+
+
+
+
+
+
+
+
+
+
+//method for invoking start command
+bot.start(ctx => {
+    log(["command: start", JSON.stringify(ctx.startPayload)])
+    start(ctx.chat.id)
+    
 })
 
+
+bot.action('instructions', ctx => {
+    instructions(ctx.chat.id)
+})
+
+bot.help(ctx => {
+    instructions(ctx.chat.id)
+})
+
+
+// When a user presses "Another Aya" inline keyboard button
+bot.action('surpriseAya', ctx => {
+    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
+})
+
+// When a user presses "Surprise Me" in menu
+bot.command('surpriseme', ctx => {
+    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
+})
+
+
+
+// When a user presses "Next Aya" inline keyboard button
+bot.action(/^{"currAya/, ctx => {
+    var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
+    var currentAyaNum = Math.floor(callbackData.currAya)
+    var currentReciter = callbackData.r
+    log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
+    log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
+    sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter, ctx.from.language_code, 'next')
+})
+
+
+
+bot.on('text', ctx => handleText(ctx))
 
 
 // Responds to "some" non text messages to send UNRECOGNIZED for reason 4
@@ -748,6 +768,7 @@ bot.on('audio', ctx => unrecognized(ctx.chat.id, 4))
 bot.on('voice', ctx => unrecognized(ctx.chat.id, 4))
 bot.on('poll', ctx => unrecognized(ctx.chat.id, 4))
 bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
+
 
 
 
