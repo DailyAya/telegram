@@ -378,7 +378,16 @@ ${ayaText[2]}`
             bot.telegram.sendAudio(chatId, recitationUrl, {caption: ayaText[0], parse_mode: 'HTML'})
             .then(ctx =>{
                 audioSuccess = true
-                sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)               
+                sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)
+                if(trigger == 'surprise' || 'timer'){
+                    var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
+                    var personalizedCaption =
+`${ayaText[0]}
+To (${chatName}) إلى`
+                    bot.telegram.editMessageMedia(chatId, ctx.message_id, {
+                        type: 'audio', media:ctx.audio.file_id, caption: personalizedCaption, parse_mode: 'HTML'
+                    })
+                }
             })
             .catch(e => {
                 log(`Error while sending recitation for aya ${ayaNum} by ${reciter} to chat ${chatId}: `, e)
