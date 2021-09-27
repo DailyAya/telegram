@@ -381,7 +381,7 @@ ${ayaText[2]}`
                 if(trigger == 'surprise' || trigger == 'timer'){
                     var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
                     var personalizedCaption =
-`${ayaText[0]}
+`${ctx.caption}
 To (${chatName}) إلى`
                     bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
                         type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, parse_mode: 'HTML'
