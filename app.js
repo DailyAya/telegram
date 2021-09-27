@@ -382,7 +382,7 @@ ${ayaText[2]}`
             bot.telegram.sendAudio(chatId, recitationUrl, {caption: ayaText[0], parse_mode: 'HTML'})
             .then((ctx) =>{
                 audioSuccess = true
-                sendAyaText(ctx, dualText, ayaNum, lang, trigger)
+                sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)
 
                               
             })
@@ -392,7 +392,7 @@ ${ayaText[2]}`
                 else if(!audioSuccess) {
                     sendSorry(chatId, 'audio')
                     .then(ctx =>{
-                        sendAyaText(ctx, dualText, ayaNum, lang, trigger)
+                        sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)
                     })
                     .catch(e => log('Error while sending sorry for no audio: ', e))
                 }
@@ -403,7 +403,7 @@ ${ayaText[2]}`
             if(!recitationReady) {
                 sendSorry(chatId, 'audio')
                 .then(ctx =>{
-                    sendAyaText(ctx, dualText, ayaNum, lang, trigger)
+                    sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)
                 })
                 .catch(e => log('Error while sending sorry for no audio: ', e))
             }
@@ -416,7 +416,7 @@ ${ayaText[2]}`
 }
 
 
-function sendAyaText(ctx, ayaText, ayaNum, lang, trigger){
+function sendAyaText(ctx, ayaText, ayaNum, reciter, lang, trigger){
     var urlSuccess
     log(ctx.audio ? 'After Audio Message': 'No Audio Message')
 
