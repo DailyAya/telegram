@@ -370,7 +370,6 @@ ${ayaText[2]}`
         // Prepare recitation URL
         var recitationReady
         reciter = requestedReciter || random('reciter')
-        log(`${reciter} =? ${requestedReciter}`)
 
         recitation(ayaNum, reciter)
         .then(recitationUrl => {
@@ -379,13 +378,13 @@ ${ayaText[2]}`
             .then(ctx =>{
                 audioSuccess = true
                 sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)
-                if(trigger == 'surprise' || 'timer'){
+                if(trigger == 'surprise' || trigger == 'timer'){
                     var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
                     var personalizedCaption =
 `${ayaText[0]}
 To (${chatName}) إلى`
-                    bot.telegram.editMessageMedia(chatId, ctx.message_id, {
-                        type: 'audio', media:ctx.audio.file_id, caption: personalizedCaption, parse_mode: 'HTML'
+                    bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
+                        type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, parse_mode: 'HTML'
                     })
                 }
             })
