@@ -348,19 +348,10 @@ function audioUrlCheck(url){
 // Send random Aya and random reciter if called with the userId argument only 
 function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
 
-    var ayaNum, reciter, textSuccess, audioSuccess, urlSuccess
+    var ayaNum, reciter, audioSuccess
     
-    if(requestedAyaNum) {
-        ayaNum = requestedAyaNum
-    } else {
-        ayaNum = random('aya')
-    }
+    ayaNum = requestedAyaNum || random('aya')
 
-    if(requestedReciter) {
-        reciter = requestedReciter
-    } else {
-        reciter = random('reciter')
-    }
     
     // prepare the Aya
     var textReady
@@ -376,41 +367,37 @@ ${ayaText[2]}`
 
         // Prepare recitation URL
         var recitationReady
+        reciter = requestedReciter || random('reciter')
+
         recitation(ayaNum, reciter)
         .then(recitationUrl => {
             recitationReady = true
             bot.telegram.sendAudio(chatId, recitationUrl, {caption: ayaText[0], parse_mode: 'HTML'})
-            .then((ctx) =>{
+            .then(ctx =>{
                 audioSuccess = true
-                sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)
-
-                              
+                sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)               
             })
             .catch(e => {
-                log(`Error while sending recitation to chat ${chatId}: `, e)
+                log(`Error while sending recitation for aya ${ayaNum} by ${reciter} to chat ${chatId}: `, e)
                 if(JSON.stringify(e).includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
                 else if(!audioSuccess) {
                     sendSorry(chatId, 'audio')
-                    .then(ctx =>{
-                        sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)
-                    })
-                    .catch(e => log('Error while sending sorry for no audio: ', e))
+                    .then(ctx => sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger))
+                    .catch(e => log(`Error while sending SORRY for failed recitation send for aya ${ayaNum} by ${reciter} to chat ${chatId}: `, e))
                 }
             })
         })
         .catch(e => {
-            log('Error while getting recitation URL: ', e)
+            log(`Error while getting recitation URL for aya ${ayaNum} by ${reciter} for chat ${chatId}: `, e)
             if(!recitationReady) {
                 sendSorry(chatId, 'audio')
-                .then(ctx =>{
-                    sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)
-                })
-                .catch(e => log('Error while sending sorry for no audio: ', e))
+                .then(ctx => sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger))
+                .catch(e => log(`Error while sending SORRY for no recitation for aya ${ayaNum} by ${reciter} to chat ${chatId}: `, e))
             }
         })       
     })
     .catch(e => {
-        log(`Error while preparing Aya ${ayaNum}: `, e)
+        log(`Error while preparing aya ${ayaNum} by ${reciter} for chat ${chatId}: `, e)
         if(!textReady) sendSorry(chatId, 'text')
     })
 }
@@ -418,7 +405,7 @@ ${ayaText[2]}`
 
 function sendAyaText(ctx, ayaText, ayaNum, reciter, lang, trigger){
     var urlSuccess
-    log(ctx.audio ? 'After Audio Message': 'No Audio Message')
+    aMsgId = ctx.audio ? ctx.message_id : 0 // To be able to handle cases of audio issues
 
     // Prepare buttons to be sent with Aya text
     var markup = {
@@ -428,7 +415,7 @@ function sendAyaText(ctx, ayaText, ayaNum, reciter, lang, trigger){
                 callback_data: "surpriseAya"
             },{
                 text: "🔽",
-                callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":${ctx.message_id}}`
+                callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":${aMsgId}}`
                 // aMsgId to be able to change the audio later when needed (for example: change recitation)
             }]
         ]
@@ -458,12 +445,7 @@ function sendAyaText(ctx, ayaText, ayaNum, reciter, lang, trigger){
             .then(c => successSend(c, ayaNum, lang, trigger))
             .catch(e => log("Error while sending Aya "+ayaNum+" text to chat "+ctx.chat.id+": ", e))
         }
-    })  
-
-
-
-
-    
+    })
 }
 
 
