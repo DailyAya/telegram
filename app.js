@@ -227,7 +227,7 @@ function prepareAya(ayaNum){
                     trIndex = `<a href="t.me/DailyAyaBot?start=${suraNum}-${ayaNumInSura}">Aya ${ayaNumInSura} in Sura ${suraNum}</a>: ${enName} (${translatedName})`,
                     arText =
 `<b>${arAya}</b>
-﴿${arIndex}`,
+${arIndex}`,
 
                     trText =
 `${translatedAya}
