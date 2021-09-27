@@ -384,7 +384,7 @@ ${ayaText[2]}`
 `${ctx.caption}
 To (${chatName}) إلى`
                     bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
-                        type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, parse_mode: 'HTML'
+                        type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, caption_entities: ctx.caption_entities
                     })
                 }
             })
