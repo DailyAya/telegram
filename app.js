@@ -307,8 +307,10 @@ function recitation(aya, reciter){
 function isValidReciter(reciter){
     var validReciter = false
     for (let i = 0; i < recitersData.length; i++) {
-        if(recitersData[i].identifier == reciter) validReciter = true
-        break
+        if(recitersData[i].identifier == reciter) {
+            validReciter = true
+            break
+        }
     }
     return validReciter
 }
@@ -367,7 +369,7 @@ ${ayaText[2]}`
 
         // Prepare recitation URL
         var recitationReady
-        reciter = requestedReciter || random('reciter')
+        reciter = requestedReciter || random('reciter')???
         log(`${reciter} =? ${requestedReciter}`)
 
         recitation(ayaNum, reciter)
