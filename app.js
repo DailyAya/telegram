@@ -294,7 +294,7 @@ getReciters()
 
 
 // Must be called with .then .catch
-var recitationTries = [] // [{'aya/reciter'}]
+var recitationTries = [] // ['aya/reciter']
 function recitation(aya, reciter){
     return new Promise((resolve, reject) => {
         
