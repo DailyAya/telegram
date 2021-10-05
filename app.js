@@ -137,10 +137,9 @@ const {Telegraf} = require('telegraf')
 const bot = new Telegraf(telegramToken)
 bot.telegram.getMe().then((botInfo) => { // for handling group commands without calling "launch"
     bot.options.username = botInfo.username
-  })
+})
 
 
-const devChatId = -1001592920692 // the group ID of "DailyAya Dev"
 
 // Inform "DailyAya Dev" group about the instance state
 if(telegramToken){
