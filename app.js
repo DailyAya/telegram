@@ -1,4 +1,4 @@
-const telegramToken = process.env.telegramToken || "inactive"
+const telegramToken = process.env.telegramToken || 0
 const inst = process.env.inst || 0
 const host = process.env.host || "Host"
 const totalInst = process.env.totalInst || 0
@@ -6,6 +6,8 @@ const activeInst = process.env.activeInst || "0@Host" //unused for now
 const instActivetUntil = process.env.instActiveUntil || "WHO KNOWS!"
 const branch = process.env.branch || "staging"
 const debugging = process.env.debugging == "true"
+const devChatId = process.env.devChatId  // the group ID of development team on Telegram
+
 
 // Use log(x) instead of log(x) to control debugging mode from env variables
 // Use log(x, e) for errors
@@ -16,7 +18,7 @@ function log(x, e){
             break
         case 2:
             console.error(x, e)
-            if(bot) bot.telegram.sendMessage(DailyAyaDevChatId, x+JSON.stringify(e))
+            if(bot) bot.telegram.sendMessage(devChatId, x+JSON.stringify(e))
             break
         default:
             console.error('Invalid log argument count.')
@@ -33,7 +35,7 @@ const express = require('express')
 const expressApp = express()
 const port = process.env.PORT || 3000
 
-// main route will respond (DailyAya is UP) when requested.
+// main route will respond instStateMsg when requested.
 // we call it every 15 minutes using a google app script to prevent the app from sleeping.
 expressApp.get('/', (req, res) => {
   res.send(instStateMsg)
@@ -138,11 +140,11 @@ bot.telegram.getMe().then((botInfo) => { // for handling group commands without 
   })
 
 
-const DailyAyaDevChatId = -1001592920692 // the group ID of "DailyAya Dev"
+const devChatId = -1001592920692 // the group ID of "DailyAya Dev"
 
 // Inform "DailyAya Dev" group about the instance state
-if(telegramToken != "inactive"){
-    bot.telegram.sendMessage(DailyAyaDevChatId, instStateMsg)
+if(telegramToken){
+    bot.telegram.sendMessage(devChatId, instStateMsg)
 }
 
 
@@ -163,7 +165,6 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
                 }]
             ]
         }
-
     })
 
 
@@ -171,11 +172,11 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
     dbConn.db('dailyAyaTelegram').collection('chats').find({}).toArray((err, res) =>{
         if (err) log('Error getting total chats: ', err);
         else {
-            var totalActiveChatsMsg = 'Active: ' + res.filter(i => i.blocked==false).length
-            var totalBlockedChatsMsg = 'Blocked: ' + res.filter(i => i.blocked==true).length
+            var totalActiveChatsMsg = 'Active: ' + res.filter(i => i.blocked == false).length
+            var totalBlockedChatsMsg = 'Blocked: ' + res.filter(i => i.blocked == true).length
             var totalChatsMsg = `${totalActiveChatsMsg}   ${totalBlockedChatsMsg}`
             log(totalChatsMsg)
-            bot.telegram.sendMessage(DailyAyaDevChatId, totalChatsMsg)
+            bot.telegram.sendMessage(devChatId, totalChatsMsg)
         }
     })
 }
@@ -277,28 +278,48 @@ function quranUrl(ayaNum){
 // returns a URL string for the audio file of the requested aya (is a must)
 // if reciter is not requested or not supported, a random reciter will be provided
 var recitersData
-axios('http://api.alquran.cloud/edition/format/audio') // Run only once for each process
-.then(res => {
-    recitersData=JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language=="ar") // Only Arabic recitations
-    log("Reciters List is ready. Total Reciters: "+recitersData.length)
-})
-.catch(e => log('Failed to get reciters list: ', e))
+
+function getReciters() {
+    axios('http://api.alquran.cloud/edition/format/audio') // Run only once for each process
+    .then(res => {
+        recitersData = JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language == "ar") // Only Arabic recitations
+        log("Reciters List is ready. Total Reciters: " + recitersData.length)
+    })
+    .catch(e => {
+        log('Error while getting reciters list and will try again after 1 sec: ', e)
+        setTimeout(getReciters(), 1000) // wait 1 sec before trying again due to api.alquran.cloud requests limit
+    })
+}
+getReciters()
+
 
 // Must be called with .then .catch
+var recitationTries = [] // [{'aya/reciter'}]
 function recitation(aya, reciter){
     return new Promise((resolve, reject) => {
         
         reciter = isValidReciter(reciter) ? reciter : random('reciter')
 
         axios(`http://api.alquran.cloud/ayah/${aya}/${reciter}`)
-            .then(function (res) {
+            .then(res => {
+                recitationTries = recitationTries.filter(i => i != `${aya}/${reciter}`) // Remove from tries due to success
                 var allAudio = [res.data.data.audio].concat(res.data.data.audioSecondary)
                 audioPicker(allAudio, 0)
                 .then(pick => resolve(pick))
                 .catch(e => reject(e))
             }).catch(e => {
                 log('Recitation Error: ', e)
-                reject(e)
+                recitationTries.push(`${aya}/${reciter}`)
+                if (recitationTries.filter(`${aya}/${reciter}`).length <= 3) {
+                    setTimeout(
+                        recitation(aya, reciter)
+                        .then(r => resolve(r))
+                        .catch(e => log("Recitattion Try Error: ", e)), // Don't reject inside loop
+                        1000);
+                } else {
+                    recitationTries = recitationTries.filter(i => i != `${aya}/${reciter}`) // Remove from tries due to max tries
+                    reject(e)
+                }
             })
     })
 }
