@@ -804,8 +804,14 @@ bot.telegram.setMyCommands([
 //method to start get the script to pulling updates for telegram 
 bot.launch()
 .then(console.log('Bot launched.')) // using console.log() to log it regardless of debugging flag
-.catch(e=>log('Failed to launch bot: ', e))
+.catch(e => log('Failed to launch bot: ', e))
 
 // Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'))
-process.once('SIGTERM', () => bot.stop('SIGTERM'))
+process.once('SIGINT', () => {
+    bot.telegram.sendMessage(devChatId, 'Stopping due to SIGINT.')
+    bot.stop('SIGINT')
+})
+process.once('SIGTERM', () => {
+    bot.telegram.sendMessage(devChatId, 'Stopping due to SIGTERM.')
+    bot.stop('SIGTERM')
+})
