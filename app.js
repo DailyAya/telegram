@@ -807,15 +807,10 @@ bot.launch()
 .catch(e => log('Failed to launch bot: ', e))
 
 
-
-
-function shutdown(sig) {
-    log(`Stopping after ${+(process.uptime()/60).toFixed(2)} minutes due to: `, sig)
-    bot.stop(sig)
-}
-
 // Enable graceful stop
+
 process
-  .on('SIGTERM', shutdown('SIGTERM'))
-  .on('SIGINT', shutdown('SIGINT'))
-  .on('uncaughtException', shutdown('uncaughtException'))
+    .on('beforeExit', code => log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} minutes with code: `, code))
+    .on('SIGTERM', bot.stop('SIGTERM'))
+    .on('SIGINT', bot.stop('SIGINT'))
+    .on('uncaughtException', bot.stop('uncaughtException'))
