@@ -810,13 +810,13 @@ bot.launch()
 .then(console.log('Bot launched.')) // using console.log() to log it regardless of debugging flag
 .catch(e => log('Failed to launch bot: ', e))
 
+function sigHandle(sig){
+    log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours with code: `, code)
+    bot.stop(sig)
+}
 
 // Enable graceful stop
 process
-    .on('beforeExit', code => {
-    log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours with code: `, code)
-    setTimeout(process.exit(code), 100)
-    })
-    .on('SIGTERM', () => bot.stop('SIGTERM'))
-    .on('SIGINT', () => bot.stop('SIGINT'))
-    .on('uncaughtException', () => bot.stop('uncaughtException'))
+    .on('SIGTERM', sigHandle('SIGTERM'))
+    .on('SIGINT', sigHandle('SIGINT'))
+    .on('uncaughtException', sigHandle('uncaughtException'))
