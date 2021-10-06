@@ -61,6 +61,7 @@ client.connect((err, db) => {
     else {
       log('MongoDbConn Connected!')
       dbConn = db
+      timerSend()
     }
 })
 
@@ -121,7 +122,7 @@ var sendMillis = (sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 ho
 
 function timerSend(){
     dbConn.db('dailyAyaTelegram').collection('chats').find({lastAyaTime: {$lte: Date.now()-sendMillis}, blocked: false}).toArray( (err, res) => {
-        if (err) log('Timer error: ', err);
+        if (err) log('Timer error: ', err)
         else {
             log(`Used memory: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`)
             log('Timer will send to ' + res.length + ' chats.')
@@ -130,7 +131,6 @@ function timerSend(){
     })
 }
 var dailyTimer = setInterval(timerSend, checkMillis)
-timerSend()
 
 
 
