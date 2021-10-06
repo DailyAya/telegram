@@ -811,7 +811,7 @@ bot.launch()
 .catch(e => log('Failed to launch bot: ', e))
 
 function sigHandle(sig){
-    log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours with code: `, code)
+    log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours due to: `, sig)
     bot.stop(sig)
 }
 
