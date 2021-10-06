@@ -810,6 +810,6 @@ bot.launch()
 // Enable graceful stop
 
 // process.on('beforeExit', code => log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours with code: `, code))
-process.on('SIGTERM', bot.stop('SIGTERM'))
-process.on('SIGINT', bot.stop('SIGINT'))
+process.once('SIGTERM', bot.stop('SIGTERM'))
+process.once('SIGINT', bot.stop('SIGINT'))
     // .on('uncaughtException', bot.stop('uncaughtException'))
