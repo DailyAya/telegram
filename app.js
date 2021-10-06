@@ -817,6 +817,6 @@ function sigHandle(sig){
 
 // Enable graceful stop
 process
-    .on('SIGTERM', sigHandle('SIGTERM'))
-    .on('SIGINT', sigHandle('SIGINT'))
-    .on('uncaughtException', sigHandle('uncaughtException'))
+    .on('SIGTERM', () => sigHandle('SIGTERM'))
+    .on('SIGINT', () => sigHandle('SIGINT'))
+    .on('uncaughtException', () => sigHandle('uncaughtException'))
