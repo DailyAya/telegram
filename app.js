@@ -122,6 +122,7 @@ var dailyTimer = setInterval(function(){
     dbConn.db('dailyAyaTelegram').collection('chats').find({lastAyaTime: {$lte: Date.now()-sendMillis}, blocked: false}).toArray( (err, res) => {
         if (err) log('Timer error: ', err);
         else {
+            log(`Used memory: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`)
             log('Timer will send to ' + res.length + ' chats.')
             res.forEach(chat => sendAya(chat.chatId, "", "", "", 'timer'))
         }
@@ -809,8 +810,7 @@ bot.launch()
 
 // Enable graceful stop
 
-process
-    .on('beforeExit', code => log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours with code: `, code))
+process.on('beforeExit', code => log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours with code: `, code))
     // .on('SIGTERM', bot.stop('SIGTERM'))
     // .on('SIGINT', bot.stop('SIGINT'))
-    .on('uncaughtException', bot.stop('uncaughtException'))
+    // .on('uncaughtException', bot.stop('uncaughtException'))
