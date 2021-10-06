@@ -813,4 +813,4 @@ bot.launch()
 process
     .on('SIGTERM', bot.stop('SIGTERM'))
     .on('SIGINT', bot.stop('SIGINT'))
-    .on('uncaughtException', bot.stop('uncaughtException'))
+    // .on('uncaughtException', bot.stop('uncaughtException'))
