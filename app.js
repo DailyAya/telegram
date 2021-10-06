@@ -806,22 +806,15 @@ bot.launch()
 .then(console.log('Bot launched.')) // using console.log() to log it regardless of debugging flag
 .catch(e => log('Failed to launch bot: ', e))
 
-// Enable graceful stop
-process.once('SIGINT', () => {
-    bot.telegram.sendMessage(devChatId, 'Stopping due to SIGINT.')
-    bot.stop('SIGINT')
-})
-process.once('SIGTERM', () => {
-    bot.telegram.sendMessage(devChatId, 'Stopping due to SIGTERM.')
-    bot.stop('SIGTERM')
-})
+
 
 
 function shutdown(sig) {
-    log('Stopping due to: ', sig)
+    log(`Stopping after ${+(process.uptime()/60).toFixed(2)} minutes due to: `, sig)
     bot.stop(sig)
 }
 
+// Enable graceful stop
 process
   .on('SIGTERM', shutdown('SIGTERM'))
   .on('SIGINT', shutdown('SIGINT'))
