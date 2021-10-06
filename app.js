@@ -815,3 +815,14 @@ process.once('SIGTERM', () => {
     bot.telegram.sendMessage(devChatId, 'Stopping due to SIGTERM.')
     bot.stop('SIGTERM')
 })
+
+
+function shutdown(sig) {
+    log('Stopping due to: ', sig)
+    bot.stop(sig)
+}
+
+process
+  .on('SIGTERM', shutdown('SIGTERM'))
+  .on('SIGINT', shutdown('SIGINT'))
+  .on('uncaughtException', shutdown('uncaughtException'))
