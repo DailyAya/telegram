@@ -26,7 +26,8 @@ function log(x, e){
     }
 }
 
-var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${debugging ? 'debugging' : 'normal'} mode until ${instActivetUntil}.`
+var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${debugging ? 'debugging' : 'normal'} mode until ${instActivetUntil}.
+Memory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`
 
 
 
@@ -810,13 +811,13 @@ bot.launch()
 .then(console.log('Bot launched.')) // using console.log() to log it regardless of debugging flag
 .catch(e => log('Failed to launch bot: ', e))
 
-function sigHandle(sig){
-    log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours due to: `, sig)
+function sigHandler(sig){
+    log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours and Used Memory ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB due to: `, sig)
     bot.stop(sig)
 }
 
 // Enable graceful stop
 process
-    .on('SIGTERM', () => sigHandle('SIGTERM'))
-    .on('SIGINT', () => sigHandle('SIGINT'))
-    .on('uncaughtException', () => sigHandle('uncaughtException'))
+    .on('SIGTERM', () => sigHandler('SIGTERM'))
+    .on('SIGINT', () => sigHandler('SIGINT'))
+    .on('uncaughtException', () => sigHandler('uncaughtException'))
