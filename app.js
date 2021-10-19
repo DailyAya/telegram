@@ -364,7 +364,10 @@ function audioUrlCheck(url){
         .then(r =>{
             log('Fetched audio file URL headers.')
             if(r.headers['content-type'] == 'audio/mpeg') resolve(true)
-            else resolve(false)
+            else {
+                log(`Error in audio file "${url}" header: `, r.headers)
+                resolve(false)
+            }
         })
         .catch(e => resolve(false)) // No reject if URL request failed
     })
