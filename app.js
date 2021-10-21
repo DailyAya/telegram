@@ -229,7 +229,7 @@ function prepareAya(ayaNum){
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
                     arIndex = `﴿<a href="t.me/DailyAyaBot?start=${suraNum}-${ayaNumInSura}">${arName}: ${arAyaNumInSura}</a>﴾`,
-                    trIndex = `<a href="t.me/DailyAyaBot?start=${suraNum}-${ayaNumInSura}">Aya ${ayaNumInSura} in Sura ${suraNum}</a>: ${enName} (${translatedName})`,
+                    trIndex = `"${enName}: ${translatedName}", <a href="t.me/DailyAyaBot?start=${suraNum}-${ayaNumInSura}">Sura ${suraNum} Aya ${ayaNumInSura}</a>`,
                     arText =
 `<b>${arAya}</b>
 ${arIndex}`,
@@ -408,9 +408,7 @@ ${ayaText[2]}`
                 sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)
                 if(trigger == 'surprise' || trigger == 'timer'){
                     var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
-                    var personalizedCaption =
-`${ctx.caption}
-To (${chatName}) إلى`
+                    var personalizedCaption = `${ctx.caption} → ${chatName}`
                     bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
                         type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, caption_entities: ctx.caption_entities
                     })
