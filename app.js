@@ -415,7 +415,7 @@ ${ayaText[2]}`
                 }
             })
             .catch(e => {
-                log(`Error while sending recitation for aya ${ayaNum} by ${reciter} to chat ${chatId}: `, e)
+                log(`Error while sending recitation for aya ${ayaNum} by ${reciter} to chat ${chatId} (${ayaText[0]}): `, e)
                 if(JSON.stringify(e).includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
                 else if(!audioSuccess) {
                     sendSorry(chatId, 'audio')
