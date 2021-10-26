@@ -769,6 +769,45 @@ Support you or support us?`
 })
 
 
+// When a user presses "set_fav_reciter" in menu
+bot.command('set_reciter', ctx => {
+    var msg =
+`من هو القارئ المفضل لك؟
+
+Who is your favorite Reciter?`
+    bot.telegram.sendMessage(ctx.chat.id, msg, {
+        reply_markup: {
+            ReplyKeyboardMarkup: {
+                resize_keyboard: true,
+                one_time_keyboard: true,
+                keyboard: [
+                    [{text: 'reciter 1'}],
+                    [{text: 'reciter 2'}],
+                    [{text: 'reciter 3'}],
+                    [{text: 'reciter 4'}],
+                    [{text: 'reciter 5'}],
+                    [{text: 'reciter 6'}],
+                    [{text: 'reciter 7'}],
+                    [{text: 'reciter 8'}],
+                    [{text: 'reciter 9'}],
+                    [{text: 'reciter 10'}],
+                    [{text: 'reciter 11'}],
+                    [{text: 'reciter 12'}],
+                    [{text: 'reciter 13'}],
+                    [{text: 'reciter 14'}],
+                    [{text: 'reciter 15'}],
+                    [{text: 'reciter 16'}],
+                    [{text: 'reciter 17'}],
+                    [{text: 'reciter 18'}],
+                    [{text: 'reciter 19'}],
+                    [{text: 'reciter 20'}]
+                ]
+            }
+        }
+    })
+})
+
+
 
 // When a user presses "Next Aya" inline keyboard button
 bot.action(/^{"currAya/, ctx => {
@@ -821,7 +860,8 @@ bot.on('my_chat_member', ctx => {
 bot.telegram.setMyCommands([
     {'command':'surpriseme', 'description': '🎁 ꓢurprise ꓟe فاجئني'},
     {'command':'help', 'description': '🤔 𝐈nstructions إرشادات'},
-    {'command':'support', 'description': '🤗 ꓢupport دعم'}
+    {'command':'support', 'description': '🤗 ꓢupport دعم'},
+    {'command':'set_reciter', 'description': '🗣️ ꓢet Reciter اختيار القارئ'}
 ])
 
 
