@@ -298,12 +298,7 @@ function getReciters() {
 getReciters()
 
 // For inline keyboard when setting favorite reciter
-var recitersInlineButtons = [
-    [{
-        text: `Surprise me each time فاجئني كل مرة`,
-        callback_data: `setReciter: "surprise"`
-    }]
-]
+var recitersInlineButtons = []
 function recitersButtons(recitersData){
     recitersData.forEach(reciter => {
         recitersInlineButtons.push([{
@@ -732,12 +727,6 @@ function handleText(ctx){
 
 
 
-
-
-
-
-
-
 //method for invoking start command
 bot.start(ctx => {
     if(ctx.startPayload.length) handleText(ctx)
@@ -749,56 +738,10 @@ bot.action('instructions', ctx => {
     instructions(ctx.chat.id)
 })
 
-bot.help(ctx => {
-    instructions(ctx.chat.id)
-})
-
 
 // When a user presses "Another Aya" inline keyboard button
 bot.action('surpriseAya', ctx => {
     sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
-})
-
-// When a user presses "Surprise Me" in menu
-bot.command('surpriseme', ctx => {
-    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
-})
-
-// When a user presses "Support" in menu
-bot.command('support', ctx => {
-    var msg =
-`ندعمك أم تدعمنا؟
-
-Support you or support us?`
-    bot.telegram.sendMessage(ctx.chat.id, msg, {
-        reply_markup: {
-            inline_keyboard:[
-                [{
-                    text: "💰",
-                    url: "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=sherbeeny@me.com&lc=US&item_name=Support+DailyAya&no_note=0&cn=&currency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted"
-                },{
-                    text: "💬",
-                    url: "https://t.me/sherbeeny"
-                }]
-            ]
-        }
-    })
-})
-
-
-
-// When a user presses "set_fav_reciter" in menu
-bot.command('set_reciter', ctx => {
-    log(recitersData)
-    var msg =
-`من هو القارئ المفضل لك؟
-
-Who is your favorite Reciter?`
-    bot.telegram.sendMessage(ctx.chat.id, msg, {
-        reply_markup: {
-            inline_keyboard: recitersInlineButtons
-        }
-    })
 })
 
 
@@ -850,6 +793,7 @@ bot.on('my_chat_member', ctx => {
 
 
 
+
 // set the bot menu
 bot.telegram.setMyCommands([
     {'command':'surpriseme', 'description': '🎁 ꓢurprise ꓟe فاجئني'},
@@ -858,6 +802,77 @@ bot.telegram.setMyCommands([
     {'command':'set_reciter', 'description': '🗣️ ꓢet Reciter اختيار القارئ'}
 ])
 
+
+
+// When a user presses "Surprise Me" in menu
+bot.command('surpriseme', ctx => {
+    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
+})
+
+
+bot.help(ctx => {
+    instructions(ctx.chat.id)
+})
+
+// When a user presses "Support" in menu
+bot.command('support', ctx => {
+    var msg =
+`ندعمك أم تدعمنا؟
+
+Support you or support us?`
+    bot.telegram.sendMessage(ctx.chat.id, msg, {
+        reply_markup: {
+            inline_keyboard:[
+                [{
+                    text: "💰",
+                    url: "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=sherbeeny@me.com&lc=US&item_name=Support+DailyAya&no_note=0&cn=&currency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted"
+                },{
+                    text: "💬",
+                    url: "https://t.me/sherbeeny"
+                }]
+            ]
+        }
+    })
+})
+
+
+
+// When a user presses "set_fav_reciter" in menu
+bot.command('set_reciter', ctx => {
+    var msg =
+`من هو قارئك المفضل؟
+
+Who is your favorite Reciter?`
+    bot.telegram.sendMessage(ctx.chat.id, msg, {
+        reply_markup: {
+            inline_keyboard: recitersNavPage(1)
+        }
+    })
+})
+
+function recitersNavPage(page){
+    var buttons = recitersInlineButtons.slice((page-1)*5, (page*5)-1)
+    var navRow = []
+    if (page != 1) navRow.push({
+        text: `⏮️`,
+        callback_data: `{"recitersNavPage": ${page-1}}`
+    })
+    navRow.push({
+        text: `Always Surprise مفاجأة دائما`,
+        callback_data: `setReciter: "surprise"`
+    })
+    if (page != Math.ceil(recitersInlineButtons.length/5)) navRow.push({
+        text: `⏭️`,
+        callback_data: `{"recitersNavPage": ${page+1}}`
+    })
+    buttons.push(navRow)
+
+    return buttons
+}
+
+bot.action(/^{"recitersNavPage/ , ctx =>{
+    log(JSON.stringify(ctx))
+})
 
 
 
