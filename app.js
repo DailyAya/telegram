@@ -804,9 +804,9 @@ function recitersNavPage(page){
 bot.action(/^{"recitersNavPage/ , ctx =>{
     var callbackData = JSON.parse(ctx.update.callback_query.data)
     var requestedRecitersNavPage = callbackData.recitersNavPage
-    bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, {reply_markup:{
+    bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, {
         inline_keyboard: recitersNavPage(requestedRecitersNavPage)
-    }})
+    })
 })
 
 
