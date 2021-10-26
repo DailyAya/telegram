@@ -786,21 +786,7 @@ Who is your favorite Reciter?`
                     [{text: 'reciter 3'}],
                     [{text: 'reciter 4'}],
                     [{text: 'reciter 5'}],
-                    [{text: 'reciter 6'}],
-                    [{text: 'reciter 7'}],
-                    [{text: 'reciter 8'}],
-                    [{text: 'reciter 9'}],
-                    [{text: 'reciter 10'}],
-                    [{text: 'reciter 11'}],
-                    [{text: 'reciter 12'}],
-                    [{text: 'reciter 13'}],
-                    [{text: 'reciter 14'}],
-                    [{text: 'reciter 15'}],
-                    [{text: 'reciter 16'}],
-                    [{text: 'reciter 17'}],
-                    [{text: 'reciter 18'}],
-                    [{text: 'reciter 19'}],
-                    [{text: 'reciter 20'}]
+                    [{text: 'reciter 6'}]
                 ]
             }
         }
