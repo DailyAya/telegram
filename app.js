@@ -747,6 +747,27 @@ bot.command('surpriseme', ctx => {
     sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
 })
 
+// When a user presses "Support" in menu
+bot.command('support', ctx => {
+    var msg =
+`ندعمك أم تدعمنا؟
+
+Support you or support us?`
+    bot.telegram.sendMessage(ctx.chat.id, msg, {
+        reply_markup: {
+            inline_keyboard:[
+                [{
+                    text: "🪙",
+                    url: "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=sherbeeny@me.com&lc=US&item_name=Support+DailyAya&no_note=0&cn=&currency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted"
+                },{
+                    text: "💬",
+                    url: "https://t.me/sherbeeny"
+                }]
+            ]
+        }
+    })
+})
+
 
 
 // When a user presses "Next Aya" inline keyboard button
@@ -799,7 +820,8 @@ bot.on('my_chat_member', ctx => {
 // set the bot menu
 bot.telegram.setMyCommands([
     {'command':'surpriseme', 'description': '🎁 ꓢurprise ꓟe فاجئني'},
-    {'command':'help', 'description': '🤔 𝐈nstructions إرشادات'}
+    {'command':'help', 'description': '🤔 𝐈nstructions إرشادات'},
+    {'command':'support', 'description': '🤗 ꓢupport دعم'}
 ])
 
 
