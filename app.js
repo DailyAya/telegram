@@ -771,17 +771,75 @@ Support you or support us?`
 
 // When a user presses "set_fav_reciter" in menu
 bot.command('set_reciter', ctx => {
+    log(recitersData)
     var msg =
 `من هو القارئ المفضل لك؟
 
 Who is your favorite Reciter?`
     bot.telegram.sendMessage(ctx.chat.id, msg, {
         reply_markup: {
-            resize_keyboard: true,
-            one_time_keyboard: true,
-            keyboard: [
-                ['reciter 1'],
-                ['reciter 2']
+            inline_keyboard:[
+                [{
+                    text: "1",
+                    url: "http://google.com"
+                }],[{
+                    text: "2",
+                    url: "http://google.com"
+                }],[{
+                    text: "3",
+                    url: "http://google.com"
+                }],[{
+                    text: "4",
+                    url: "http://google.com"
+                }],[{
+                    text: "5",
+                    url: "http://google.com"
+                }],[{
+                    text: "6",
+                    url: "http://google.com"
+                }],[{
+                    text: "7",
+                    url: "http://google.com"
+                }],[{
+                    text: "8",
+                    url: "http://google.com"
+                }],[{
+                    text: "9",
+                    url: "http://google.com"
+                }],[{
+                    text: "10",
+                    url: "http://google.com"
+                }],[{
+                    text: "11",
+                    url: "http://google.com"
+                }],[{
+                    text: "12",
+                    url: "http://google.com"
+                }],[{
+                    text: "13",
+                    url: "http://google.com"
+                }],[{
+                    text: "14",
+                    url: "http://google.com"
+                }],[{
+                    text: "15",
+                    url: "http://google.com"
+                }],[{
+                    text: "16",
+                    url: "http://google.com"
+                }],[{
+                    text: "17",
+                    url: "http://google.com"
+                }],[{
+                    text: "18",
+                    url: "http://google.com"
+                }],[{
+                    text: "19",
+                    url: "http://google.com"
+                }],[{
+                    text: "20",
+                    url: "http://google.com"
+                }],
             ]
         }
     })
