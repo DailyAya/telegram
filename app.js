@@ -777,18 +777,12 @@ bot.command('set_reciter', ctx => {
 Who is your favorite Reciter?`
     bot.telegram.sendMessage(ctx.chat.id, msg, {
         reply_markup: {
-            ReplyKeyboardMarkup: {
-                resize_keyboard: true,
-                one_time_keyboard: true,
-                keyboard: [
-                    ['reciter 1'],
-                    ['reciter 2'],
-                    ['reciter 3'],
-                    ['reciter 4'],
-                    ['reciter 5'],
-                    ['reciter 6']
-                ]
-            }
+            resize_keyboard: true,
+            one_time_keyboard: true,
+            keyboard: [
+                ['reciter 1'],
+                ['reciter 2']
+            ]
         }
     })
 })
