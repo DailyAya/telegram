@@ -228,7 +228,7 @@ function prepareAya(ayaNum){
                     translatedName = res.data.data[0].surah.englishNameTranslation.toString(),
                     // arSuraNum = suraNum.toAr(),
                     arAyaNumInSura = ayaNumInSura.toAr(),
-                    arIndex = `﴿<a href="t.me/DailyAyaBot?start=${suraNum}-${ayaNumInSura}">${arName} ${arAyaNumInSura}</a>﴾`,
+                    arIndex = `﴿<a href="t.me/DailyAyaBot?start=${suraNum}-${ayaNumInSura}">${arName} ${ayaNumInSura}</a>﴾`,
                     trIndex = `"${enName}: ${translatedName}", <a href="t.me/DailyAyaBot?start=${suraNum}-${ayaNumInSura}">Sura ${suraNum} Aya ${ayaNumInSura}</a>`,
                     arText =
 `<b>${arAya}</b>
@@ -237,7 +237,7 @@ ${arIndex}`,
                     trText =
 `${translatedAya}
 
-<i>An interpretation of ${trIndex}</i>`,
+<i>An interpretation of ${trIndex}.</i>`,
 
                     minCaption =
 `Daily Aya: <a href="t.me/DailyAyaBot?start=${suraNum}-${ayaNumInSura}">${suraNum}.${ayaNumInSura}</a>`
