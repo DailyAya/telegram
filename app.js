@@ -147,6 +147,7 @@ function getFavReciter(chatId){
                 log(`Error while getting favReciter for chat ${chatId}: `, err)
                 reject(err)
             } else {
+                log(`Favorite reciter for chat ${chatId} is ${res[0].favReciter}.`)
                 resolve(res[0].favReciter)
             }
         })
