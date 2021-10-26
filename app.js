@@ -725,75 +725,6 @@ function handleText(ctx){
 }
 
 
-
-
-//method for invoking start command
-bot.start(ctx => {
-    if(ctx.startPayload.length) handleText(ctx)
-    else start(ctx.chat.id)
-})
-
-
-bot.action('instructions', ctx => {
-    instructions(ctx.chat.id)
-})
-
-
-// When a user presses "Another Aya" inline keyboard button
-bot.action('surpriseAya', ctx => {
-    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
-})
-
-
-
-// When a user presses "Next Aya" inline keyboard button
-bot.action(/^{"currAya/, ctx => {
-    var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
-    var currentAyaNum = Math.floor(callbackData.currAya)
-    var currentReciter = callbackData.r
-    log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
-    log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
-    sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter, ctx.from.language_code, 'next')
-})
-
-
-
-bot.on('text', ctx => handleText(ctx))
-
-
-// Responds to "some" non text messages to send UNRECOGNIZED for reason 4
-bot.on('sticker', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('photo', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('location', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('document', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('audio', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('voice', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('poll', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
-
-
-
-
-// to handle when blocked/unblocked by a user or when added/removed from groups
-bot.on('my_chat_member', ctx => {
-    switch (ctx.update.my_chat_member.new_chat_member.status) {
-        case 'member':
-            if(ctx.chat.type != 'private') start(ctx.chat.id) // don't send to private chats as they already trigger /start
-            break
-
-        case 'kicked': case 'left':
-            lastAyaTime(ctx.chat.id, 'blocked')
-            break
-    
-        default:
-            log('Unknown my_chat_member status: ', JSON.stringify(ctx))
-            break
-    }
-})
-
-
-
-
 // set the bot menu
 bot.telegram.setMyCommands([
     {'command':'surpriseme', 'description': '🎁 ꓢurprise ꓟe فاجئني'},
@@ -873,6 +804,77 @@ function recitersNavPage(page){
 bot.action(/^{"recitersNavPage/ , ctx =>{
     log(JSON.stringify(ctx))
 })
+
+
+
+//method for invoking start command
+bot.start(ctx => {
+    if(ctx.startPayload.length) handleText(ctx)
+    else start(ctx.chat.id)
+})
+
+
+bot.action('instructions', ctx => {
+    instructions(ctx.chat.id)
+})
+
+
+// When a user presses "Another Aya" inline keyboard button
+bot.action('surpriseAya', ctx => {
+    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
+})
+
+
+
+// When a user presses "Next Aya" inline keyboard button
+bot.action(/^{"currAya/, ctx => {
+    var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
+    var currentAyaNum = Math.floor(callbackData.currAya)
+    var currentReciter = callbackData.r
+    log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
+    log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
+    sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter, ctx.from.language_code, 'next')
+})
+
+
+
+bot.on('text', ctx => handleText(ctx))
+
+
+// Responds to "some" non text messages to send UNRECOGNIZED for reason 4
+bot.on('sticker', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('photo', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('location', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('document', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('audio', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('voice', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('poll', ctx => unrecognized(ctx.chat.id, 4))
+bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
+
+
+
+
+// to handle when blocked/unblocked by a user or when added/removed from groups
+bot.on('my_chat_member', ctx => {
+    switch (ctx.update.my_chat_member.new_chat_member.status) {
+        case 'member':
+            if(ctx.chat.type != 'private') start(ctx.chat.id) // don't send to private chats as they already trigger /start
+            break
+
+        case 'kicked': case 'left':
+            lastAyaTime(ctx.chat.id, 'blocked')
+            break
+    
+        default:
+            log('Unknown my_chat_member status: ', JSON.stringify(ctx))
+            break
+    }
+})
+
+
+
+
+
 
 
 
