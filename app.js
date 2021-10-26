@@ -852,7 +852,7 @@ Reciter will be changed with each surprise Aya.`
 
 Current Favorit Reciter: ${requestedFavReciterData[0].englishName}`
     }
-    setFavReciter(chatId, reciterIdentifier)
+    setFavReciter(ctx.chat.id, requestedFavReciter)
     .then(
         bot.telegram.sendMessage(ctx.chat.id, msg, {
             reply_markup: {
