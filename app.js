@@ -139,7 +139,7 @@ function setFavReciter(chatId, reciterIdentifier){
     })
 }
 
-// Sets the favorit reciter for chatIds that request so
+// Gets the favorit reciter for chatIds requesting surprise Aya
 function getFavReciter(chatId){
     return new Promise ((resolve, reject) => {
         dbConn.db('dailyAyaTelegram').collection('chats').find({chatId: chatId}).toArray((err, res) => {
