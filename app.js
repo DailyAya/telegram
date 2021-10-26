@@ -303,7 +303,7 @@ function recitersButtons(recitersData){
     recitersData.forEach(reciter => {
         recitersInlineButtons.push([{
             text: `${reciter.englishName} ${reciter.name}`,
-            callback_data: `setReciter: "${reciter.identifier}"`
+            callback_data: `{"setReciter": "${reciter.identifier}"}`
         }])
     })
 }
@@ -789,8 +789,8 @@ function recitersNavPage(page){
         callback_data: `{"recitersNavPage": ${page-1}}`
     })
     navRow.push({
-        text: `Always Surprise مفاجأة دائما`,
-        callback_data: `setReciter: "surprise"`
+        text: `🎁`,
+        callback_data: `{"setReciter": "surprise"}`
     })
     if (page != Math.ceil(recitersInlineButtons.length/5)) navRow.push({
         text: `⏭️`,
@@ -802,7 +802,11 @@ function recitersNavPage(page){
 }
 
 bot.action(/^{"recitersNavPage/ , ctx =>{
-    log(JSON.stringify(ctx))
+    var callbackData = JSON.parse(ctx.update.callback_query.data)
+    var requestedRecitersNavPage = callbackData.recitersNavPage
+    bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, {
+        inline_keyboard: recitersNavPage(requestedRecitersNavPage)
+    })
 })
 
 
