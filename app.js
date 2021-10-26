@@ -812,7 +812,20 @@ bot.action(/^{"recitersNavPage/ , ctx =>{
 bot.action(/^{"setReciter/ , ctx =>{
     var callbackData = JSON.parse(ctx.update.callback_query.data)
     var requestedFavReciter = callbackData.setReciter
-    bot.telegram.sendMessage(ctx.chat.id, requestedFavReciter, {
+    var msg
+    if (requestedFavReciter == "surprise") {
+        msg = 
+`سيتم تغيير القارئ مع كل آية مفاجئة.
+
+Reciter will be changed with each surprise Aya.`
+    } else {
+        var requestedFavReciterData = recitersData.filter(i => i.identifier == requestedFavReciter)
+        msg =
+`القارئ المفضل الحالي: ${requestedFavReciterData[0].name}
+
+Current Favorit Reciter: ${requestedFavReciterData[0].englishName}`
+    }
+    bot.telegram.sendMessage(ctx.chat.id, msg, {
         reply_markup: {
             inline_keyboard:[
                 [{
