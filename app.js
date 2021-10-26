@@ -113,6 +113,33 @@ function lastAyaTime(chatId, status, chatName, lang, trigger){
 }
 
 
+// Sets the favorit reciter for chatIds that request so
+function setFavReciter(chatId, reciterIdentifier){
+    return new Promise ((resolve, reject) => {
+        var setObj = {}
+
+        // sets reciter to "surprise" if not provided or reciter is not valid
+        reciterIdentifier = (reciterIdentifier == "surprise" || isValidReciter(reciterIdentifier)) ? reciterIdentifier : "surprise"
+        
+        setObj.favReciter = reciterIdentifier
+
+        dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
+            {chatId: chatId},
+            [{$set: setObj}],
+            {upsert: true}
+        )
+        .then(() => {
+            log(`Favorit reciter "${reciterIdentifier}" has been set for chat ${chatId}.`)
+            resolve()
+        })
+        .catch(e => {
+            log(`Error while setting favorit reciter "${reciterIdentifier}" for chat ${chatId}:`, e)
+            reject(e)
+        })
+    })
+}
+
+
 
 
 //timer to fetch database every 15 minutes to send aya every 24 hours to chats who didn't block the bot.
@@ -825,15 +852,34 @@ Reciter will be changed with each surprise Aya.`
 
 Current Favorit Reciter: ${requestedFavReciterData[0].englishName}`
     }
-    bot.telegram.sendMessage(ctx.chat.id, msg, {
-        reply_markup: {
-            inline_keyboard:[
-                [{
-                    text: "👍",
-                    callback_data: "surpriseAya"
-                }]
-            ]
-        }
+    setFavReciter(chatId, reciterIdentifier)
+    .then(
+        bot.telegram.sendMessage(ctx.chat.id, msg, {
+            reply_markup: {
+                inline_keyboard:[
+                    [{
+                        text: "👍",
+                        callback_data: "surpriseAya"
+                    }]
+                ]
+            }
+        })
+    )
+    .catch(e =>{
+        msg =
+`عذرا.. نواجه مشكلة أثناء حفظ القارئ المفضل ونأمل حلها قريبا.
+
+Sorry.. There's an issue while setting favorite reciters and we hope it gets fixed soon.` 
+        bot.telegram.sendMessage(ctx.chat.id, msg, {
+            reply_markup: {
+                inline_keyboard:[
+                    [{
+                        text: "👍",
+                        callback_data: "surpriseAya"
+                    }]
+                ]
+            }
+        })
     })
 })
 
