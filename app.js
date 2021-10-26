@@ -757,7 +757,7 @@ Support you or support us?`
         reply_markup: {
             inline_keyboard:[
                 [{
-                    text: "🪙",
+                    text: "💰",
                     url: "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=sherbeeny@me.com&lc=US&item_name=Support+DailyAya&no_note=0&cn=&currency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted"
                 },{
                     text: "💬",
