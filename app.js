@@ -809,6 +809,21 @@ bot.action(/^{"recitersNavPage/ , ctx =>{
     })
 })
 
+bot.action(/^{"setReciter/ , ctx =>{
+    var callbackData = JSON.parse(ctx.update.callback_query.data)
+    var requestedFavReciter = callbackData.setReciter
+    bot.telegram.sendMessage(ctx.chat.id, requestedFavReciter, {
+        reply_markup: {
+            inline_keyboard:[
+                [{
+                    text: "👍",
+                    callback_data: "surpriseAya"
+                }]
+            ]
+        }
+    })
+})
+
 
 
 //method for invoking start command
