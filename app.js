@@ -288,6 +288,7 @@ function getReciters() {
     .then(res => {
         recitersData = JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language == "ar") // Only Arabic recitations
         log("Reciters List is ready. Total Reciters: " + recitersData.length)
+        recitersButtons(recitersData)
     })
     .catch(e => {
         log('Error while getting reciters list and will try again after 1 sec: ', e)
@@ -295,6 +296,22 @@ function getReciters() {
     })
 }
 getReciters()
+
+// For inline keyboard when setting favorite reciter
+var recitersInlineButtons = [
+    [{
+        text: `Surprise me each time فاجئني كل مرة`,
+        callback_data: `setReciter: "surprise"`
+    }]
+]
+function recitersButtons(recitersData){
+    recitersData.forEach(reciter => {
+        recitersInlineButtons.push([{
+            text: `${reciter.englishName} ${reciter.name}`,
+            callback_data: `setReciter: "${reciter.identifier}"`
+        }])
+    })
+}
 
 
 // Must be called with .then .catch
@@ -769,6 +786,7 @@ Support you or support us?`
 })
 
 
+
 // When a user presses "set_fav_reciter" in menu
 bot.command('set_reciter', ctx => {
     log(recitersData)
@@ -778,69 +796,7 @@ bot.command('set_reciter', ctx => {
 Who is your favorite Reciter?`
     bot.telegram.sendMessage(ctx.chat.id, msg, {
         reply_markup: {
-            inline_keyboard:[
-                [{
-                    text: "1",
-                    url: "http://google.com"
-                }],[{
-                    text: "2",
-                    url: "http://google.com"
-                }],[{
-                    text: "3",
-                    url: "http://google.com"
-                }],[{
-                    text: "4",
-                    url: "http://google.com"
-                }],[{
-                    text: "5",
-                    url: "http://google.com"
-                }],[{
-                    text: "6",
-                    url: "http://google.com"
-                }],[{
-                    text: "7",
-                    url: "http://google.com"
-                }],[{
-                    text: "8",
-                    url: "http://google.com"
-                }],[{
-                    text: "9",
-                    url: "http://google.com"
-                }],[{
-                    text: "10",
-                    url: "http://google.com"
-                }],[{
-                    text: "11",
-                    url: "http://google.com"
-                }],[{
-                    text: "12",
-                    url: "http://google.com"
-                }],[{
-                    text: "13",
-                    url: "http://google.com"
-                }],[{
-                    text: "14",
-                    url: "http://google.com"
-                }],[{
-                    text: "15",
-                    url: "http://google.com"
-                }],[{
-                    text: "16",
-                    url: "http://google.com"
-                }],[{
-                    text: "17",
-                    url: "http://google.com"
-                }],[{
-                    text: "18",
-                    url: "http://google.com"
-                }],[{
-                    text: "19",
-                    url: "http://google.com"
-                }],[{
-                    text: "20",
-                    url: "http://google.com"
-                }],
-            ]
+            inline_keyboard: recitersInlineButtons
         }
     })
 })
