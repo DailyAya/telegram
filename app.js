@@ -449,7 +449,7 @@ ${ayaText[2]}`
 
         // Prepare recitation URL
         var recitationReady
-        reciter = requestedReciter || random('reciter')
+        reciter = isValidReciter(requestedReciter) ? requestedReciter : random('reciter')
 
         recitation(ayaNum, reciter)
         .then(recitationUrl => {
