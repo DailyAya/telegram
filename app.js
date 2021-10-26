@@ -782,7 +782,7 @@ Who is your favorite Reciter?`
 })
 
 function recitersNavPage(page){
-    var buttons = recitersInlineButtons.slice((page-1)*5, (page*5)-1)
+    var buttons = recitersInlineButtons.slice((page-1)*5, (page*5))
     var navRow = []
     if (page != 1) navRow.push({
         text: `⏮️`,
