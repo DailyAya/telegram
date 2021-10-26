@@ -781,12 +781,12 @@ Who is your favorite Reciter?`
                 resize_keyboard: true,
                 one_time_keyboard: true,
                 keyboard: [
-                    [{text: 'reciter 1'}],
-                    [{text: 'reciter 2'}],
-                    [{text: 'reciter 3'}],
-                    [{text: 'reciter 4'}],
-                    [{text: 'reciter 5'}],
-                    [{text: 'reciter 6'}]
+                    ['reciter 1'],
+                    ['reciter 2'],
+                    ['reciter 3'],
+                    ['reciter 4'],
+                    ['reciter 5'],
+                    ['reciter 6']
                 ]
             }
         }
