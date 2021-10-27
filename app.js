@@ -829,7 +829,7 @@ function recitersNavPage(page){
         callback_data: `{"recitersNavPage": ${page-1}}`
     })
     navRow.push({
-        text: `🎁`,
+        text: `🎲`,
         callback_data: `{"setReciter": "surprise"}`
     })
     if (page != Math.ceil(recitersInlineButtons.length/5)) navRow.push({
