@@ -824,18 +824,17 @@ Who is your favorite Reciter?`
 function recitersNavPage(page){
     var recitersPerPage = 5
     var buttons = recitersInlineButtons.slice((page-1)*recitersPerPage, (page*recitersPerPage))
-    var navRow = []
-    var totalPages = Math.ceil(recitersInlineButtons.length/recitersPerPage)
-    if (page != 1) navRow.push({
-        text: `< ${page-1}`,
-        callback_data: `{"recitersNavPage": ${page-1}}`
-    })
-    navRow.push({
+    var navRow = [{
         text: `🎲`,
         callback_data: `{"setReciter": "surprise"}`
+    }]
+    var totalPages = Math.ceil(recitersInlineButtons.length/recitersPerPage)
+    if (page != 1) navRow.push({
+        text: `＜ ${page-1}`,
+        callback_data: `{"recitersNavPage": ${page-1}}`
     })
     if (page != totalPages) navRow.push({
-        text: `${page+1}/${totalPages} >`,
+        text: `${page+1}/${totalPages} ＞`,
         callback_data: `{"recitersNavPage": ${page+1}}`
     })
     buttons.push(navRow)
