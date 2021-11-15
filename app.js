@@ -115,26 +115,60 @@ function lastAyaTime(chatId, status, chatName, lang, trigger){
 
 // Sets the favorit reciter for chatIds that request so
 function setFavReciter(chatId, reciterIdentifier){
-    return new Promise ((resolve, reject) => {
-        var setObj = {}
+    var setObj = {}
 
-        // sets reciter to "surprise" if not provided or reciter is not valid
-        reciterIdentifier = (reciterIdentifier == "surprise" || isValidReciter(reciterIdentifier)) ? reciterIdentifier : "surprise"
-        
-        setObj.favReciter = reciterIdentifier
+    // sets reciter to "surprise" if not provided or reciter is not valid
+    reciterIdentifier = (reciterIdentifier == "surprise" || isValidReciter(reciterIdentifier)) ? reciterIdentifier : "surprise"
+    
+    setObj.favReciter = reciterIdentifier
 
-        dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
-            {chatId: chatId},
-            [{$set: setObj}],
-            {upsert: true}
-        )
-        .then(() => {
-            log(`Favorit reciter "${reciterIdentifier}" has been set for chat ${chatId}.`)
-            resolve()
+    dbConn.db('dailyAyaTelegram').collection('chats').updateOne(
+        {chatId: chatId},
+        [{$set: setObj}],
+        {upsert: true}
+    )
+    .then(() => {
+        log(`Favorit reciter "${reciterIdentifier}" has been set for chat ${chatId}.`)
+
+        var msg
+        if (reciterIdentifier == "surprise") {
+            msg = 
+`سيتم تغيير القارئ مع كل آية مفاجئة.
+
+Reciter will be changed with each surprise Aya.`
+        } else {
+            var requestedFavReciterData = recitersData.filter(i => i.identifier == reciterIdentifier)
+            msg =
+`القارئ المفضل الحالي: ${requestedFavReciterData[0].name}
+
+Current Favorit Reciter: ${requestedFavReciterData[0].englishName}`
+        }
+        bot.telegram.sendMessage(chatId, msg, {
+            reply_markup: {
+                inline_keyboard:[
+                    [{
+                        text: "👍",
+                        callback_data: "surpriseAya"
+                    }]
+                ]
+            }
         })
-        .catch(e => {
-            log(`Error while setting favorit reciter "${reciterIdentifier}" for chat ${chatId}:`, e)
-            reject(e)
+    })
+    .catch(e => {
+        log(`Error while setting favorit reciter "${reciterIdentifier}" for chat ${chatId}:`, e)
+        msg =
+`عذرا.. نواجه مشكلة أثناء حفظ القارئ المفضل ونأمل حلها قريبا.
+
+Sorry.. There's an issue while setting favorite reciters and we hope it gets fixed soon.` 
+        bot.telegram.sendMessage(chatId, msg, {
+            reply_markup: {
+                inline_keyboard:[
+                    [{
+                        text: "👍",
+                        callback_data: "surpriseAya"
+                    }]
+                ]
+            }
         })
     })
 }
@@ -249,15 +283,15 @@ function random(type){
 // Because returning a promise, must be called with .then().catch()
 const axios = require('axios')
 
-function prepareAya(ayaNum){
+function prepareAya(ayaId){
     return new Promise((resolve, reject) => {
-        var ayaUrl = 'https://api.alquran.cloud/ayah/'.concat(ayaNum).concat('/editions/quran-uthmani,en.ahmedraza');
+        var ayaUrl = `https://api.alquran.cloud/ayah/${ayaId}/editions/quran-uthmani,en.ahmedraza`
         
         // Fetching Aya data from API and formating it to be sent to user
         axios(ayaUrl)
             .then((res) => {
                 // to be user to convert numbers from Egnlish to Arabic.
-                String.prototype.toAr = function() {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d]);}; 
+                // String.prototype.toAr = function() {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d])}
                     
                 var arAya = res.data.data[0].text.toString(),
                     translatedAya = res.data.data[1].text.toString(),
@@ -267,7 +301,7 @@ function prepareAya(ayaNum){
                     enName = res.data.data[0].surah.englishName.toString(),
                     translatedName = res.data.data[0].surah.englishNameTranslation.toString(),
                     // arSuraNum = suraNum.toAr(),
-                    arAyaNumInSura = ayaNumInSura.toAr(),
+                    // arAyaNumInSura = ayaNumInSura.toAr(),
                     arIndex = `﴿<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNumInSura}">${arName} ${ayaNumInSura}</a>﴾`,
                     trIndex = `"${enName}: ${translatedName}", <a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNumInSura}">Sura ${suraNum} Aya ${ayaNumInSura}</a>`,
                     arText =
@@ -280,14 +314,14 @@ ${arIndex}`,
 <i>An interpretation of ${trIndex}.</i>`,
 
                     minCaption =
-`@${bot.options.username} ﴾<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNumInSura}">${suraNum}:${ayaNumInSura}</a>﴿`
+`@${bot.options.username}`
                     
 
                 resolve ([minCaption, arText, trText]) 
             })
             .catch((e) => {
-                log(`Failed to prepare Aya ${ayaNum}: `, e);
-                reject(`Failed to prepare Aya ${ayaNum}: `+ e);
+                log(`Failed to prepare Aya ${ayaId}: `, e)
+                reject(`Failed to prepare Aya ${ayaId}: `+ e)
             });
     });
 }
@@ -297,17 +331,17 @@ ${arIndex}`,
 // Provide Aya URL of Quran.com from Aya Number
 function quranUrl(ayaNum){
     return new Promise((resolve, reject) => {
-        var ayaUrl = 'https://api.alquran.cloud/ayah/'.concat(ayaNum).concat('/editions/quran-uthmani');
+        var ayaUrl = `https://api.alquran.cloud/ayah/${ayaNum}/editions/quran-uthmani`
         axios(ayaUrl)
             .then((res) => {
                 var ayaNumInSura = res.data.data[0].numberInSurah.toString(),
                     suraNum = res.data.data[0].surah.number.toString(),
-                    url = 'https://quran.com/'.concat(suraNum).concat('/').concat(ayaNumInSura)
+                    url = `https://quran.com/${suraNum}/${ayaNumInSura}`
                     resolve(url)
             })
             .catch((e) => {
-                log('Failed to get Quran.com URL for aya '+ayaNum+': ', e);
-                reject(e);
+                log(`Failed to get Quran.com URL for aya ${ayaNum}: `, e)
+                reject(e)
             });
     })
 }
@@ -494,18 +528,21 @@ ${ayaText[2]}`
 
 function sendAyaText(ctx, ayaText, ayaNum, reciter, lang, trigger){
     var urlSuccess
-    aMsgId = ctx.audio ? ctx.message_id : 0 // To be able to handle cases of audio issues
+    rMsgId = ctx.audio ? ctx.message_id : 0 // To be able to handle cases of audio issues
 
     // Prepare buttons to be sent with Aya text
     var markup = {
         inline_keyboard:[
             [{
+                text: "⋯",
+                callback_data: `{"aMenu":0, "a":${ayaNum},"r":"${reciter}","rMsgId":${rMsgId}}`
+            },{
                 text: "🎁",
                 callback_data: "surpriseAya"
             },{
                 text: "🔽",
-                callback_data: `{"currAya":${ayaNum},"r":"${reciter}","aMsgId":${aMsgId}}`
-                // aMsgId to be able to change the audio later when needed (for example: change recitation)
+                callback_data: `{"currAya":${ayaNum},"r":"${reciter}","rMsgId":${rMsgId}}`
+                // rMsgId to be able to change the audio later when needed (for example: change recitation)
             }]
         ]
     }
@@ -774,16 +811,106 @@ bot.telegram.setMyCommands([
 ])
 
 
+// Invoking start command
+bot.start(ctx => {
+    if(ctx.startPayload.length) handleText(ctx)
+    else start(ctx.chat.id)
+})
+
+// Invoking help command
+bot.help(ctx => {
+    instructions(ctx.chat.id)
+})
+
+// To manually recache ayas data: serials, sura number/name, aya, text... etc
+// Must only be called from devChatId
+// JSON file is only downloadable before instance is restarted
+bot.hears('cacheQuran', ctx => {
+    if (ctx.chat.id == devChatId){
+        cacheQuran()
+    }
+})
+
+var cacheStartTime
+function cacheQuran(ayaId){
+    return new Promise ((resolve, reject) =>{
+        ayaId = ayaId ? ayaId : 6236
+        if (ayaId == 6236) {
+            cacheStartTime = Date.now()
+        }
+            
+        fetchAya(ayaId)
+            .then(aya =>{
+                dbConn.db('dailyAyaTelegram').collection('quran').updateOne(
+                    {ayaId: ayaId},
+                    [{$set: aya}],
+                    {upsert: true}
+                )
+                    .then(r => {
+                        log('Successfully cached Aya '+ayaId)
+                        ayaId--
+                        if(ayaId){
+                            cacheQuran(ayaId)
+                        } else {
+                            log(`Successfully cached all Quran. It took ${(Date.now()-cacheStartTime)/(1000*60)} minutes.`)
+                            resolve()
+                        }
+                    })
+                    .catch(e => {
+                        log(`Failed to write Aya ${ayaId} to DB: `, e)
+                        reject(e)
+                    })
+            })
+            .catch(e => {
+                log(`Failed to fetch Aya ${ayaId} for caching in DB: `, e)
+                reject(e)
+            })
+    })
+}
+
+function fetchAya(ayaId, tryCount){
+    return new Promise((resolve, reject) => {
+        var ayaUrl = `https://api.alquran.cloud/ayah/${ayaId}/editions/quran-uthmani,en.ahmedraza`
+        axios(ayaUrl)
+            .then(r => {
+                log(`Successfully fetched Aya ${ayaId}: `, e)
+                var arAya       = r.data.data[0].text.toString(),
+                    enAya       = r.data.data[1].text.toString(),
+                    ayaNum      = r.data.data[0].numberInSurah.toString(),
+                    suraNum     = r.data.data[0].surah.number.toString(),
+                    arSura      = r.data.data[0].surah.name.toString().substr(8), // substr(8) to remove the Arabic word "Sura".
+                    enArSura    = r.data.data[0].surah.englishName.toString(),
+                    enSura      = r.data.data[0].surah.englishNameTranslation.toString()
+
+                resolve ({
+                    suraNum:    suraNum,
+                    ayaNum:     ayaNum,
+                    arSura:     arSura,
+                    enSura:     enSura,
+                    enArSura:   enArSura,
+                    arAya:      arAya,
+                    enAya:      enAya
+                }) 
+            })
+            .catch(e => {
+                tryCount = tryCount ? tryCount : 1
+                log(`Failed to fetch Aya ${ayaId}, try ${tryCount}: `, e)
+                if (tryCount < 3){
+                    tryCount++
+                    setTimeout(fetchAya(ayaId, tryCount), 1000)
+                } else{
+                    reject(e)
+                } 
+            })
+    })
+}
+
 
 // When a user presses "Surprise Me" in menu
 bot.command('surpriseme', ctx => {
     sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
 })
 
-
-bot.help(ctx => {
-    instructions(ctx.chat.id)
-})
 
 // When a user presses "Support" in menu
 bot.command('support', ctx => {
@@ -853,57 +980,10 @@ bot.action(/^{"recitersNavPage/ , ctx =>{
 bot.action(/^{"setReciter/ , ctx =>{
     var callbackData = JSON.parse(ctx.update.callback_query.data)
     var requestedFavReciter = callbackData.setReciter
-    var msg
-    if (requestedFavReciter == "surprise") {
-        msg = 
-`سيتم تغيير القارئ مع كل آية مفاجئة.
-
-Reciter will be changed with each surprise Aya.`
-    } else {
-        var requestedFavReciterData = recitersData.filter(i => i.identifier == requestedFavReciter)
-        msg =
-`القارئ المفضل الحالي: ${requestedFavReciterData[0].name}
-
-Current Favorit Reciter: ${requestedFavReciterData[0].englishName}`
-    }
+    
     setFavReciter(ctx.chat.id, requestedFavReciter)
-    .then(
-        bot.telegram.sendMessage(ctx.chat.id, msg, {
-            reply_markup: {
-                inline_keyboard:[
-                    [{
-                        text: "👍",
-                        callback_data: "surpriseAya"
-                    }]
-                ]
-            }
-        })
-    )
-    .catch(e =>{
-        msg =
-`عذرا.. نواجه مشكلة أثناء حفظ القارئ المفضل ونأمل حلها قريبا.
-
-Sorry.. There's an issue while setting favorite reciters and we hope it gets fixed soon.` 
-        bot.telegram.sendMessage(ctx.chat.id, msg, {
-            reply_markup: {
-                inline_keyboard:[
-                    [{
-                        text: "👍",
-                        callback_data: "surpriseAya"
-                    }]
-                ]
-            }
-        })
-    })
 })
 
-
-
-//method for invoking start command
-bot.start(ctx => {
-    if(ctx.startPayload.length) handleText(ctx)
-    else start(ctx.chat.id)
-})
 
 
 bot.action('instructions', ctx => {
@@ -924,11 +1004,36 @@ bot.action('surpriseAya', ctx => {
 bot.action(/^{"currAya/, ctx => {
     var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
     var currentAyaNum = Math.floor(callbackData.currAya)
-    var currentReciter = callbackData.r
-    log("Sending next Aya after Aya "+ currentAyaNum+" with Reciter "+ currentReciter+" for chat "+ctx.chat.id)
-    log("Current ayaMsgId is "+callbackData.aMsgId+" and recitationMsgId is "+ctx.update.callback_query.message.message_id)
-    sendAya(ctx.chat.id, nextAya(currentAyaNum), currentReciter, ctx.from.language_code, 'next')
+    log(`Sending next Aya after Aya ${currentAyaNum} with Reciter ${callbackData.r} for chat ${ctx.chat.id}`)
+    log(`Current ayaMsgId is ${ctx.update.callback_query.message.message_id} and recitationMsgId is ${callbackData.rMsgId}`)
+    sendAya(ctx.chat.id, nextAya(currentAyaNum), callbackData.r, ctx.from.language_code, 'next')
 })
+
+// bot.action(/^{"aMenu/ , ctx =>{
+//     var callbackData = JSON.parse(ctx.update.callback_query.data)
+//     switch (callbackData.aMenu) {
+//         case 0:
+//             var 
+//             bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, {
+//                 inline_keyboard: [{
+//                     text: "⋯",
+//                     callback_data: `{"aMenu":1, "a":, "r":, "rMsgId":, "sA":}`
+//                 },{
+//                     text: "⚠️",
+//                     callback_data: `{"reportAya":1}`
+//                 },{
+//                     text: "🗣️",
+//                     callback_data: `{"setReciter": "${reciter.identifier}"}`
+//                 }]
+//             })
+            
+//             break
+    
+//         default:
+//             log("Invalid Aya Menu State: ", callbackData.aMenu)
+//             break
+//     }
+// })
 
 
 
