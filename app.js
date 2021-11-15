@@ -825,7 +825,7 @@ bot.help(ctx => {
 // To manually recache ayas data: serials, sura number/name, aya, text... etc
 // Must only be called from devChatId
 // JSON file is only downloadable before instance is restarted
-bot.hears('cacheQuran', ctx => {
+bot.command('cacheQuran', ctx => {
     if (ctx.chat.id == devChatId){
         bot.telegram.sendMessage(ctx.chat.id, 'Starting to cache Quran...')
         cacheQuran()
