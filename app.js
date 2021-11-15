@@ -847,7 +847,7 @@ function cacheQuran(ayaId){
                     [{$set: aya}],
                     {upsert: true}
                 )
-                    .then(r => {
+                    .then(() => {
                         log('Successfully cached Aya '+ayaId)
                         ayaId--
                         if(ayaId){
@@ -876,7 +876,7 @@ function fetchAya(ayaId, tryCount){
         var ayaUrl = `https://api.alquran.cloud/ayah/${ayaId}/editions/quran-uthmani,en.ahmedraza`
         axios(ayaUrl)
             .then(r => {
-                log(`Successfully fetched Aya ${ayaId}: `, e)
+                log(`Successfully fetched Aya ${ayaId}`)
                 var arAya       = r.data.data[0].text.toString(),
                     enAya       = r.data.data[1].text.toString(),
                     ayaNum      = r.data.data[0].numberInSurah.toString(),
@@ -901,7 +901,7 @@ function fetchAya(ayaId, tryCount){
                 if (tryCount < 3){
                     tryCount++
                     setTimeout(fetchAya(ayaId, tryCount), 1000)
-                } else{
+                } else {
                     reject(e)
                 } 
             })
