@@ -827,6 +827,7 @@ bot.help(ctx => {
 // JSON file is only downloadable before instance is restarted
 bot.hears('cacheQuran', ctx => {
     if (ctx.chat.id == devChatId){
+        bot.telegram.sendMessage(ctx.chat.id, 'Starting to cache Quran...')
         cacheQuran()
     }
 })
@@ -852,7 +853,9 @@ function cacheQuran(ayaId){
                         if(ayaId){
                             cacheQuran(ayaId)
                         } else {
-                            log(`Successfully cached all Quran. It took ${(Date.now()-cacheStartTime)/(1000*60)} minutes.`)
+                            var msg = `Successfully cached all Quran. It took ${(Date.now()-cacheStartTime)/(1000*60)} minutes.`
+                            log(msg)
+                            bot.telegram.sendMessage(devChatId, msg)
                             resolve()
                         }
                     })
