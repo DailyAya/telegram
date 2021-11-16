@@ -291,7 +291,7 @@ for (let s = 0; s < enQuran.data.surahs.length; s++) {
     for (let a = 0; a < enQuran.data.surahs[s].ayahs.length; a++) {
         ayaIndex.push({sura: s+1, aya: a+1})
         if(ayaIndex.length == 6237){
-            log(`Finished indexing Quran. It took ${((Date.now()-loopStart)/(1000)).toFixed(1)} seconds.`)
+            log(`Finished indexing Quran. It took ${Date.now()-loopStart} ms.`)
             log(`Index test: ayaId 6236 is in Sura ${ayaIndex[6236].sura}, Aya ${ayaIndex[6236].aya}`)
         }
     }
@@ -300,7 +300,7 @@ for (let s = 0; s < enQuran.data.surahs.length; s++) {
 findStart = Date.now()
 var suraTest = enQuran.data.surahs.find(s => s.ayahs.find(a => a.number == 6236))
 var ayaTest = enQuran.data.surahs[suraTest.number-1].ayahs.find(a => a.number == 6236)
-log(`Finished Finding Aya 6236 in ${((Date.now()-findStart)/(1000)).toFixed(1)} seconds. It's in Sura ${suraTest.number}, Aya ${ayaTest.numberInSurah}.`)
+log(`Finished Finding Aya 6236 in ${Date.now()-findStart} ms. It's in Sura ${suraTest.number}, Aya ${ayaTest.numberInSurah}.`)
 
 
 
