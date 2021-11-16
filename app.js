@@ -300,7 +300,7 @@ for (let s = 0; s < enQuran.data.surahs.length; s++) {
 findStart = Date.now()
 var suraTest = enQuran.data.surahs.find(s => s.ayahs.find(a => a.number == 6236))
 var ayaTest = enQuran.data.surahs[suraTest.number-1].ayahs.find(a => a.number == 6236)
-log(`Finished Finding Aya 6236 in ${((Date.now()-findStart)/(1000)).toFixed(1)} seconds. It's in Sura ${suraTest.number}, Aya ${ayaTest.number}.`)
+log(`Finished Finding Aya 6236 in ${((Date.now()-findStart)/(1000)).toFixed(1)} seconds. It's in Sura ${suraTest.number}, Aya ${ayaTest.numberInSurah}.`)
 
 
 
