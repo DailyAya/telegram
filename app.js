@@ -284,23 +284,15 @@ function random(type){
 const axios = require('axios')
 const arQuran = require('./quran-uthmani.json')
 const enQuran = require('./en.ahmedraza.json')
-var ayaIndex = [{sura: 0, aya: 0}]
-var loopStart = Date.now()
-log(`Starting to index Quran...`)
-for (let s = 0; s < enQuran.data.surahs.length; s++) {
-    for (let a = 0; a < enQuran.data.surahs[s].ayahs.length; a++) {
-        ayaIndex.push({sura: s+1, aya: a+1})
-        if(ayaIndex.length == 6237){
-            log(`Finished indexing Quran. It took ${Date.now()-loopStart} ms.`)
-            log(`Index test: ayaId 6236 is in Sura ${ayaIndex[6236].sura}, Aya ${ayaIndex[6236].aya}`)
-        }
-    }
+
+
+function ayaId2SuraAya(ayaId){
+    var sura = enQuran.data.surahs.find(s => s.ayahs.find(a => a.number == 6236)).number
+    var aya = enQuran.data.surahs[sura-1].ayahs.find(a => a.number == 6236).numberInSurah
+    return {sura: sura, aya: aya}
 }
 
-findStart = Date.now()
-var suraTest = enQuran.data.surahs.find(s => s.ayahs.find(a => a.number == 6236))
-var ayaTest = enQuran.data.surahs[suraTest.number-1].ayahs.find(a => a.number == 6236)
-log(`Finished Finding Aya 6236 in ${Date.now()-findStart} ms. It's in Sura ${suraTest.number}, Aya ${ayaTest.numberInSurah}.`)
+log(`Testing ayaId2SuraAya for 6236: ${JSON.stringify(ayaId2SuraAya(6236))}`)
 
 
 
