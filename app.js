@@ -829,7 +829,7 @@ bot.help(ctx => {
 bot.command('cacheQuran', ctx => {
     if (ctx.chat.id == devChatId){
         bot.telegram.sendMessage(ctx.chat.id, 'Starting to cache Quran...')
-        cacheQuran()
+            .then(cacheQuran())
     }
 })
 
