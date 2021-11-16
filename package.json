@@ -1,35 +1,35 @@
 {
-    "name": "dailyAya-telegram-chatbot",
-    "version": "2021.09.21",
-    "description": "Sends one random Aya from Quran everyday and when one more (or specific) is requested.",
-     "main": "app.js",
-    
-    "scripts": {
-      "test": "echo \"No tests to run\" && exit 0",
-      "start": "node app.js"
-    },
-    
-    "keywords": [
-      "telegram",
-      "bot",
-      "chatbot",
-      "Quran",
-      "Aya",
-      "Daily", 
-      "recite"
-    ],
-    "repository": {
-      "type": "git",
-      "url": "https://github.com/DailyAya/telegram.git"
-    },
-    "author": "m.Sherbeeny.com",
-    "license": "ISC",
-    
-    "dependencies": {
-      "express": "^4.17.1",
-      "axios":"^0.21.3",
-      "telegraf": "^4.4.2",
-      "mongodb": "^4.1.1"
-    }
+  "name": "dailyAya-telegram-chatbot",
+  "version": "2021.11.15",
+  "description": "Sends one random Aya from Quran everyday and when one more (or specific) is requested.",
+    "main": "app.js",
+  
+  "scripts": {
+    "test": "echo \"No tests to run\" && exit 0",
+    "start": "node app.js"
+  },
+  
+  "keywords": [
+    "telegram",
+    "bot",
+    "chatbot",
+    "Quran",
+    "Aya",
+    "Daily", 
+    "recite"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DailyAya/telegram.git"
+  },
+  "author": "m.Sherbeeny.com",
+  "license": "ISC",
+  
+  "dependencies": {
+    "express": "^4.17.1",
+    "axios":"^0.21.3",
+    "telegraf": "^4.4.2",
+    "mongodb": "^4.1.1"
   }
+}
   

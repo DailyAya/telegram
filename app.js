@@ -822,9 +822,16 @@ bot.help(ctx => {
     instructions(ctx.chat.id)
 })
 
+// To test sending JSON files
+bot.command('json', ctx => {
+    if (ctx.chat.id == devChatId){
+        bot.telegram.sendDocument(devChatId, {source: './package.json'})
+            .catch(e => log('Error while sending quran.json to devChatId: ', e))
+    }
+})
+
 // To manually recache ayas data: serials, sura number/name, aya, text... etc
 // Must only be called from devChatId
-// JSON file is only downloadable before instance is restarted
 bot.command('cacheQuran', ctx => {
     if (ctx.chat.id == devChatId){
         bot.telegram.sendMessage(ctx.chat.id, 'Starting to cache Quran...')
@@ -832,16 +839,20 @@ bot.command('cacheQuran', ctx => {
     }
 })
 
-var cacheStartTime
+var cacheStartTime, progressMsgId, quranCache = {quran: []}
+const fs = require('fs')
 function cacheQuran(ayaId){
     return new Promise ((resolve, reject) =>{
         ayaId = ayaId ? ayaId : 6236
         if (ayaId == 6236) {
             cacheStartTime = Date.now()
+            bot.telegram.sendMessage(devChatId, `Quran Caching Progress: ${((6236-ayaId)*100/6236).toFixed(2)}%`)
+                .then(({message_id}) => progressMsgId = message_id)
         }
             
         fetchAya(ayaId)
             .then(aya =>{
+                quranCache.quran.push(aya)
                 dbConn.db('dailyAyaTelegram').collection('quran').updateOne(
                     {ayaId: ayaId},
                     [{$set: aya}],
@@ -850,12 +861,18 @@ function cacheQuran(ayaId){
                     .then(() => {
                         log('Successfully cached Aya '+ayaId)
                         ayaId--
+                        bot.telegram.editMessageText(devChatId, progressMsgId, undefined, `Quran Caching Progress: ${((6236-ayaId)*100/6236).toFixed(2)}%`)
                         if(ayaId){
                             cacheQuran(ayaId)
                         } else {
-                            var msg = `Successfully cached all Quran. It took ${(Date.now()-cacheStartTime)/(1000*60)} minutes.`
+                            var msg = `Successfully cached all Quran. It took ${((Date.now()-cacheStartTime)/(1000*60)).toFixed(2)} minutes.`
                             log(msg)
                             bot.telegram.sendMessage(devChatId, msg)
+                            bot.telegram.sendMessage(devChatId, 'Stringifying Quran cache...')
+                            const jsonQuranString = JSON.stringify(quranCache, null, 2)
+                            fs.writeFileSync('./quran.json', jsonQuranString)
+                            bot.telegram.sendDocument(devChatId, {source: './quran.json'})
+                                .catch(e => log('Error while sending quran.json to devChatId: ', e))
                             resolve()
                         }
                     })
