@@ -838,10 +838,10 @@ const fs = require('fs')
 function cacheQuran(ayaId){
     return new Promise ((resolve, reject) =>{
         ayaId = ayaId ? ayaId : 6236
-        var progress = Math.floor((6236-ayaId)*100/6236)
+        var cacheProgress = Math.floor((6236-ayaId)*100/6236)
         if (ayaId == 6236) {
             quranCache.updated = Date.now()
-            progressStep = progress
+            progressStep = cacheProgress
             bot.telegram.sendMessage(devChatId, `Quran Caching Progress: ${progressStep}%`)
                 .then(({message_id}) => progressMsgId = message_id)
         }
@@ -857,8 +857,8 @@ function cacheQuran(ayaId){
                     .then(() => {
                         log('Successfully cached Aya '+ayaId)
                         ayaId--
-                        if (progress > progressStep){ // To update the message only when needed to be within Telegram sending/updating limits
-                            progressStep = process
+                        if (cacheProgress > progressStep){ // To update the message only when needed due to Telegram sending/updating limits
+                            progressStep = cacheProgress
                             bot.telegram.editMessageText(devChatId, progressMsgId, undefined, `Quran Caching Progress: ${progressStep}%`)
                         }
                         
