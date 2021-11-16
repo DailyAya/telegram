@@ -282,6 +282,17 @@ function random(type){
 // Prepare an Aya to be sent
 // Because returning a promise, must be called with .then().catch()
 const axios = require('axios')
+const arQuran = require('./quran-uthmani.json')
+const enQuran = require('./en.ahmedraza.json')
+var ayaIndex = [{sura: 0, aya: 0}]
+var loopStart = Date.now()
+log(`Starting to index Quran...`)
+for (let s = 0; s < enQuran.data.surahs.length; s++) {
+    for (let a = 0; a < enQuran.data.surah[s].ayahs.length; a++) {
+        ayaIndex.push({sura: s+1, aya: a+1})
+    }
+}
+log(`Finished indexing Quran. It took ${((Date.now()-loopStart)/(1000)).toFixed(1)} seconds.`)
 
 function prepareAya(ayaId){
     return new Promise((resolve, reject) => {
@@ -540,7 +551,7 @@ function sendAyaText(ctx, ayaText, ayaNum, reciter, lang, trigger){
                 text: "🎁",
                 callback_data: "surpriseAya"
             },{
-                text: "🔽",
+                text: "▼",
                 callback_data: `{"currAya":${ayaNum},"r":"${reciter}","rMsgId":${rMsgId}}`
                 // rMsgId to be able to change the audio later when needed (for example: change recitation)
             }]
@@ -823,107 +834,6 @@ bot.help(ctx => {
 })
 
 
-
-// To manually recache ayas data: serials, sura number/name, aya, text... etc
-// Must only be called from devChatId
-bot.command('cacheQuran', ctx => {
-    if (ctx.chat.id == devChatId){
-        bot.telegram.sendMessage(ctx.chat.id, 'Starting to cache Quran...')
-            .then(cacheQuran())
-    }
-})
-
-var progressStep, progressMsgId, quranCache = {updated: "", quran: []}
-const fs = require('fs')
-function cacheQuran(ayaId){
-    return new Promise ((resolve, reject) =>{
-        ayaId = ayaId ? ayaId : 6236
-        var cacheProgress = Math.floor((6236-ayaId)*100/6236)
-        if (ayaId == 6236) {
-            quranCache.updated = Date.now()
-            progressStep = cacheProgress
-            bot.telegram.sendMessage(devChatId, `Quran Caching Progress: ${progressStep}%`)
-                .then(({message_id}) => progressMsgId = message_id)
-        }
-            
-        fetchAya(ayaId)
-            .then(aya =>{
-                quranCache.quran.push(aya)
-                dbConn.db('dailyAyaTelegram').collection('quran').updateOne(
-                    {ayaId: ayaId},
-                    [{$set: aya}],
-                    {upsert: true}
-                )
-                    .then(() => {
-                        log('Successfully cached Aya '+ayaId)
-                        ayaId--
-                        if (cacheProgress > progressStep){ // To update the message only when needed due to Telegram sending/updating limits
-                            progressStep = cacheProgress
-                            bot.telegram.editMessageText(devChatId, progressMsgId, undefined, `Quran Caching Progress: ${progressStep}%`)
-                        }
-                        
-                        if(ayaId){
-                            cacheQuran(ayaId)
-                        } else {
-                            var msg = `Successfully cached all Quran. It took ${((Date.now()-quranCache.updated)/(1000*60)).toFixed(2)} minutes.`
-                            log(msg)
-                            bot.telegram.sendMessage(devChatId, msg)
-                            bot.telegram.sendMessage(devChatId, 'Stringifying Quran cache...')
-                            const jsonQuranString = JSON.stringify(quranCache, null, 2)
-                            fs.writeFileSync('./quran.json', jsonQuranString)
-                            bot.telegram.sendDocument(devChatId, {source: './quran.json'})
-                                .catch(e => log('Error while sending quran.json to devChatId: ', e))
-                            resolve()
-                        }
-                    })
-                    .catch(e => {
-                        log(`Failed to write Aya ${ayaId} to DB: `, e)
-                        reject(e)
-                    })
-            })
-            .catch(e => {
-                log(`Failed to fetch Aya ${ayaId} for caching in DB: `, e)
-                reject(e)
-            })
-    })
-}
-
-function fetchAya(ayaId, tryCount){
-    return new Promise((resolve, reject) => {
-        var ayaUrl = `https://api.alquran.cloud/ayah/${ayaId}/editions/quran-uthmani,en.ahmedraza`
-        axios(ayaUrl)
-            .then(r => {
-                log(`Successfully fetched Aya ${ayaId}`)
-                var arAya       = r.data.data[0].text.toString(),
-                    enAya       = r.data.data[1].text.toString(),
-                    ayaNum      = r.data.data[0].numberInSurah.toString(),
-                    suraNum     = r.data.data[0].surah.number.toString(),
-                    arSura      = r.data.data[0].surah.name.toString().substr(8), // substr(8) to remove the Arabic word "Sura".
-                    enArSura    = r.data.data[0].surah.englishName.toString(),
-                    enSura      = r.data.data[0].surah.englishNameTranslation.toString()
-
-                resolve ({
-                    suraNum:    suraNum,
-                    ayaNum:     ayaNum,
-                    arSura:     arSura,
-                    enSura:     enSura,
-                    enArSura:   enArSura,
-                    arAya:      arAya,
-                    enAya:      enAya
-                }) 
-            })
-            .catch(e => {
-                tryCount = tryCount ? tryCount : 1
-                log(`Failed to fetch Aya ${ayaId}, try ${tryCount}: `, e)
-                if (tryCount < 3){
-                    tryCount++
-                    setTimeout(fetchAya(ayaId, tryCount), 1000)
-                } else {
-                    reject(e)
-                } 
-            })
-    })
-}
 
 
 // When a user presses "Surprise Me" in menu
