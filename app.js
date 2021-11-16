@@ -292,9 +292,6 @@ function ayaId2SuraAya(ayaId){
     return {sura: sura, aya: aya}
 }
 
-log(`Testing ayaId2SuraAya for 6236: ${JSON.stringify(ayaId2SuraAya(6236))}`)
-
-
 
 function prepareAya(ayaId){
     return new Promise((resolve, reject) => {
