@@ -296,6 +296,12 @@ for (let s = 0; s < enQuran.data.surahs.length; s++) {
     }
 }
 
+findStart = Date.now()
+var suraTest = enQuran.data.surahs.find(s => s.ayahs.number == 6236).number
+var ayaTest = enQuran.data.surahs[suraTest-1].ayahs.find(a => a.number == 6236).number
+log(`Finished Finding Aya 6236 in ${((Date.now()-findStart)/(1000)).toFixed(1)} seconds. It's in Sura ${suraTest}, Aya ${ayaTest}.`)
+
+
 
 function prepareAya(ayaId){
     return new Promise((resolve, reject) => {
