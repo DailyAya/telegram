@@ -288,7 +288,7 @@ var ayaIndex = [{sura: 0, aya: 0}]
 var loopStart = Date.now()
 log(`Starting to index Quran...`)
 for (let s = 0; s < enQuran.data.surahs.length; s++) {
-    for (let a = 0; a < enQuran.data.surah[s].ayahs.length; a++) {
+    for (let a = 0; a < enQuran.data.surahs[s].ayahs.length; a++) {
         ayaIndex.push({sura: s+1, aya: a+1})
     }
 }
