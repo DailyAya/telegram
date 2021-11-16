@@ -290,9 +290,12 @@ log(`Starting to index Quran...`)
 for (let s = 0; s < enQuran.data.surahs.length; s++) {
     for (let a = 0; a < enQuran.data.surahs[s].ayahs.length; a++) {
         ayaIndex.push({sura: s+1, aya: a+1})
+        if(ayaIndex.length == 6237){
+            log(`Finished indexing Quran. It took ${((Date.now()-loopStart)/(1000)).toFixed(1)} seconds.`)
+        }
     }
 }
-log(`Finished indexing Quran. It took ${((Date.now()-loopStart)/(1000)).toFixed(1)} seconds.`)
+
 
 function prepareAya(ayaId){
     return new Promise((resolve, reject) => {
