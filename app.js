@@ -292,6 +292,7 @@ for (let s = 0; s < enQuran.data.surahs.length; s++) {
         ayaIndex.push({sura: s+1, aya: a+1})
         if(ayaIndex.length == 6237){
             log(`Finished indexing Quran. It took ${((Date.now()-loopStart)/(1000)).toFixed(1)} seconds.`)
+            log(`Index test: ayaId 6236 is in Sura ${ayaIndex[6236].sura}, Aya ${ayaIndex[6236].aya}`)
         }
     }
 }
