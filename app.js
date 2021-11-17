@@ -298,13 +298,13 @@ function checkQuran(){
     .then(r =>{
         log('Fetched arQuran JSON file URL headers.')
         log(JSON.stringify(r.headers))
-        // if(r.headers['content-type'] == 'audio/mpeg' || r.headers['content-type'] == 'application/octet-stream') resolve(true)
-        // else {
-        //     log(`Error in audio file "${url}" header: `, r.headers)
-        //     resolve(false)
-        // }
+        if(r.headers['content-length'] != 4671961){
+            bot.telegram.sendMessage(devChatId, 'Remote arQuran has changed. Please update the cached JSON file.')
+        } else {
+            log('Remote arQuran is the same as the cached JSON file.')
+        }
     })
-    .catch(e => log('Error while checking remote Quran version: ', e)) // No reject if URL request failed
+    .catch(e => log('Error while checking remote Quran version: ', e))
 }
 checkQuran()
 
