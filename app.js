@@ -304,19 +304,19 @@ function checkQuran(){
             log('Remote arQuran is the same as the cached JSON file.')
         }
     })
-    .catch(e => log('Error while checking remote Quran version: ', e))
+    .catch(e => log('Error while checking remote arQuran version: ', e))
 
     axios.head("http://api.alquran.cloud/v1/quran/en.ahmedraza")
     .then(r =>{
-        log('Fetched arQuran JSON file URL headers.')
+        log('Fetched enQuran JSON file URL headers.')
         log(JSON.stringify(r.headers))
-        // if(r.headers['content-length'] != 4671961){
-        //     bot.telegram.sendMessage(devChatId, 'Remote arQuran has changed. Please update the cached JSON file.')
-        // } else {
-        //     log('Remote arQuran is the same as the cached JSON file.')
-        // }
+        if(r.headers['content-length'] != 1699957){
+            bot.telegram.sendMessage(devChatId, 'Remote enQuran has changed. Please update the cached JSON file.')
+        } else {
+            log('Remote enQuran is the same as the cached JSON file.')
+        }
     })
-    .catch(e => log('Error while checking remote Quran version: ', e))
+    .catch(e => log('Error while checking remote enQuran version: ', e))
 }
 checkQuran()
 
