@@ -491,7 +491,7 @@ ${preparedAya.enText}`
             sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger)
             if(trigger == 'surprise' || trigger == 'timer'){
                 var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
-                var personalizedCaption = `${ctx.caption} ➜ ${chatName}`
+                var personalizedCaption = `${ctx.caption} ➔ ${chatName}`
                 bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
                     type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, caption_entities: ctx.caption_entities
                 })
