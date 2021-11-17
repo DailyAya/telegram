@@ -293,6 +293,21 @@ function ayaId2SuraAya(ayaId){
 }
 
 
+function checkQuran(){
+    axios.head("http://api.alquran.cloud/v1/quran/quran-uthmani")
+    .then(r =>{
+        log('Fetched arQuran JSON file URL headers.')
+        log(JSON.stringify(r))
+        // if(r.headers['content-type'] == 'audio/mpeg' || r.headers['content-type'] == 'application/octet-stream') resolve(true)
+        // else {
+        //     log(`Error in audio file "${url}" header: `, r.headers)
+        //     resolve(false)
+        // }
+    })
+    .catch(resolve(false)) // No reject if URL request failed
+}
+checkQuran()
+
 function prepareAya(ayaId){
     return new Promise((resolve, reject) => {
         var ayaUrl = `https://api.alquran.cloud/ayah/${ayaId}/editions/quran-uthmani,en.ahmedraza`
