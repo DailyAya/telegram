@@ -294,7 +294,7 @@ function ayaId2SuraAya(ayaId){
 
 
 function checkQuran(){
-    log(`Cached arQuran length: ${Buffer.byteLength(arQuran)}`)
+    log(`Cached arQuran length: ${Buffer.byteLength(Buffer.from(JSON.stringify(arQuran)))}`)
     axios.head("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
         if(r.headers['content-length'] != 4671961){
