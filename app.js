@@ -292,15 +292,26 @@ function ayaId2SuraAya(ayaId){
     return {sura: sura, aya: aya}
 }
 
-var fs = require("fs"); // Load the filesystem module
+
+var fs = require('fs')
+var crypto = require('crypto')
+
+fs.readFile('./quran-uthmani.json', function(err, data) {
+    if (err){
+        log('Error while reading stored arQuran file: ', e)
+    } else {
+        log(`arQuran file checksum: ${crypto.createHash('md5').update(data, 'utf8').digest('hex')}`)
+    }
+})
+
 
 function checkQuran(){
-    var arQuranstats = fs.statSync('./quran-uthmani.json')
-    log(`Cached arQuran size: ${arQuranstats.size}`)
     axios.head("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
         if(r.headers['content-length'] != 4671961){
-            bot.telegram.sendMessage(devChatId, 'Remote arQuran has changed. Please update the cached JSON file.')
+            bot.telegram.sendMessage(devChatId,
+                `Remote arQuran has changed. Please update the cached JSON file. New file length: ${r.headers['content-length']}`
+            )
         } else {
             log('Remote arQuran is the same as the cached JSON file.')
         }
@@ -310,7 +321,9 @@ function checkQuran(){
     axios.head("http://api.alquran.cloud/v1/quran/en.ahmedraza")
     .then(r =>{
         if(r.headers['content-length'] != 1699957){
-            bot.telegram.sendMessage(devChatId, 'Remote enQuran has changed. Please update the cached JSON file.')
+            bot.telegram.sendMessage(devChatId,
+                `Remote enQuran has changed. Please update the cached JSON file. New file length: ${r.headers['content-length']}`
+            )
         } else {
             log('Remote enQuran is the same as the cached JSON file.')
         }
@@ -350,7 +363,7 @@ ${arIndex}`,
 <i>An interpretation of ${trIndex}.</i>`,
 
                     minCaption =
-`@${bot.options.username}`
+`<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNumInSura}">@${bot.options.username}</a>`
                     
 
                 resolve ([minCaption, arText, trText]) 
