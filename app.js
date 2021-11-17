@@ -335,7 +335,7 @@ function prepareAya(ayaId){
         arName              = enQuran.data.surahs[suraNum-1].name.substr(8), // substr(8) to remove the Arabic word "Sura".
         enArName            = enQuran.data.surahs[suraNum-1].englishName,
         enTranslatedName    = enQuran.data.surahs[suraNum-1].englishNameTranslation,
-        arIndex             = `﴿<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">${arName}؜ ${ayaNum.toString.toAr}</a>﴾`,
+        arIndex             = `﴿<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">${arName}؜ ${ayaNum.toString.toArNum}</a>﴾`,
         enIndex             = `"${enArName}: ${enTranslatedName}", <a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">Sura ${suraNum} Aya ${ayaNum}</a>`,
         
         arText      =
