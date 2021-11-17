@@ -292,9 +292,11 @@ function ayaId2SuraAya(ayaId){
     return {sura: sura, aya: aya}
 }
 
+var fs = require("fs"); // Load the filesystem module
 
 function checkQuran(){
-    log(`Cached arQuran length: ${Buffer.byteLength(Buffer.from(JSON.stringify(arQuran)))}`)
+    var arQuranstats = fs.statSync('./quran-uthmani.json')
+    log(`Cached arQuran size: ${arQuranstats.size}`)
     axios.head("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
         if(r.headers['content-length'] != 4671961){
