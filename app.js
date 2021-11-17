@@ -293,28 +293,20 @@ function ayaId2SuraAya(ayaId){
 }
 
 
-var fs = require('fs')
-var crypto = require('crypto')
 
-fs.readFile('./quran-uthmani.json', function(err, data) {
-    if (err){
-        log('Error while reading stored arQuran file: ', e)
-    } else {
-        log(`arQuran file checksum: ${crypto.createHash('md5').update(data, 'utf8').digest('hex')}`)
-    }
-})
 
 
 function checkQuran(){
-    axios.head("http://api.alquran.cloud/v1/quran/quran-uthmani")
+    axios("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
-        if(r.headers['content-length'] != 4671961){
-            bot.telegram.sendMessage(devChatId,
-                `Remote arQuran has changed. Please update the cached JSON file. New file length: ${r.headers['content-length']}`
-            )
-        } else {
-            log('Remote arQuran is the same as the cached JSON file.')
-        }
+        log(`arQuran cached vs remote: ${r.data == arQuran}`)
+        // if(r.headers['content-length'] != 4671961){
+        //     bot.telegram.sendMessage(devChatId,
+        //         `Remote arQuran has changed. Please update the cached JSON file. New file length: ${r.headers['content-length']}`
+        //     )
+        // } else {
+        //     log('Remote arQuran is the same as the cached JSON file.')
+        // }
     })
     .catch(e => log('Error while checking remote arQuran version: ', e))
 
