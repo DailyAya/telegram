@@ -316,8 +316,8 @@ checkQuran()
 
 
 function ayaId2SuraAya(ayaId){
-    var sura = enQuran.data.surahs.find(s => s.ayahs.find(a => a.number == 6236)).number
-    var aya = enQuran.data.surahs[sura-1].ayahs.find(a => a.number == 6236).numberInSurah
+    var sura = enQuran.data.surahs.find(s => s.ayahs.find(a => a.number == ayaId)).number
+    var aya = enQuran.data.surahs[sura-1].ayahs.find(a => a.number == ayaId).numberInSurah
     return {sura: sura, aya: aya}
 }
 
