@@ -299,7 +299,7 @@ function ayaId2SuraAya(ayaId){
 function checkQuran(){
     axios("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
-        log(`arQuran cached vs remote: ${r.data == arQuran}`)
+        log(`arQuran cached vs remote: ${JSON.stringify(r.data) == JSON.stringify(arQuran)}`)
         // if(r.headers['content-length'] != 4671961){
         //     bot.telegram.sendMessage(devChatId,
         //         `Remote arQuran has changed. Please update the cached JSON file. New file length: ${r.headers['content-length']}`
