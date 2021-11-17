@@ -899,11 +899,11 @@ bot.action('surpriseAya', ctx => {
 
 // When a user presses "Next Aya" inline keyboard button
 bot.action(/^{"currAya/, ctx => {
-    var callbackData= JSON.parse(ctx.update.callback_query.message.reply_markup.inline_keyboard[0][2].callback_data)
-    var currentAyaNum = Math.floor(callbackData.currAya)
-    log(`Sending next Aya after Aya ${currentAyaNum} with Reciter ${callbackData.r} for chat ${ctx.chat.id}`)
+    var callbackData= JSON.parse(ctx.update.callback_query.data)
+    var currentAyaId = Math.floor(callbackData.currAya)
+    log(`Sending next Aya after Aya ${currentAyaId} with Reciter ${callbackData.r} for chat ${ctx.chat.id}`)
     log(`Current ayaMsgId is ${ctx.update.callback_query.message.message_id} and recitationMsgId is ${callbackData.rMsgId}`)
-    sendAya(ctx.chat.id, nextAya(currentAyaNum), callbackData.r, ctx.from.language_code, 'next')
+    sendAya(ctx.chat.id, nextAya(currentAyaId), callbackData.r, ctx.from.language_code, 'next')
 })
 
 // bot.action(/^{"aMenu/ , ctx =>{
