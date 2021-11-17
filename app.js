@@ -312,7 +312,9 @@ function checkQuran(){
     })
     .catch(e => log('Error while checking enQuran cached vs remote: ', e))
 }
-checkQuran()
+if(!debugging) {
+    checkQuran()
+}
 
 
 function ayaId2SuraAya(ayaId){
@@ -321,49 +323,34 @@ function ayaId2SuraAya(ayaId){
     return {sura: sura, aya: aya}
 }
 
-
 function prepareAya(ayaId){
-    return new Promise((resolve, reject) => {
-        var ayaUrl = `https://api.alquran.cloud/ayah/${ayaId}/editions/quran-uthmani,en.ahmedraza`
+    var ayaIndex    = ayaId2SuraAya(ayaId),
+        suraNum     = ayaIndex.sura,
+        ayaNum      = ayaIndex.aya,
+
+        arAya               = arQuran.data.surahs[suraNum-1].ayahs[ayaNum-1].text,
+        enTranslatedAya       = enQuran.data.surahs[suraNum-1].ayahs[ayaNum-1].text,
+        arName              = enQuran.data.surahs[suraNum-1].name.substr(8), // substr(8) to remove the Arabic word "Sura".
+        enArName            = enQuran.data.surahs[suraNum-1].englishName,
+        enTranslatedName    = enQuran.data.surahs[suraNum-1].englishNameTranslation,
+        arIndex             = `﴿<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">${arName}؜ ${ayaNum}</a>﴾`,
+        enIndex             = `"${enArName}: ${enTranslatedName}", <a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">Sura ${suraNum} Aya ${ayaNum}</a>`,
         
-        // Fetching Aya data from API and formating it to be sent to user
-        axios(ayaUrl)
-            .then((res) => {
-                // to be user to convert numbers from Egnlish to Arabic.
-                // String.prototype.toAr = function() {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d])}
-                    
-                var arAya = res.data.data[0].text.toString(),
-                    translatedAya = res.data.data[1].text.toString(),
-                    ayaNumInSura = res.data.data[0].numberInSurah.toString(),
-                    suraNum = res.data.data[0].surah.number.toString(),
-                    arName = res.data.data[0].surah.name.toString().substr(8), // substr(8) to remove the Arabic word "Sura".
-                    enName = res.data.data[0].surah.englishName.toString(),
-                    translatedName = res.data.data[0].surah.englishNameTranslation.toString(),
-                    // arSuraNum = suraNum.toAr(),
-                    // arAyaNumInSura = ayaNumInSura.toAr(),
-                    arIndex = `﴿<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNumInSura}">${arName} ${ayaNumInSura}</a>﴾`,
-                    trIndex = `"${enName}: ${translatedName}", <a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNumInSura}">Sura ${suraNum} Aya ${ayaNumInSura}</a>`,
-                    arText =
+        arText      =
 `<b>${arAya}</b>
 ${arIndex}`,
 
-                    trText =
-`${translatedAya}
+        enText      =
+`${enTranslatedAya}
 
-<i>An interpretation of ${trIndex}.</i>`,
+<i>An interpretation of ${enIndex}.</i>`,
 
-                    minCaption =
-`<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNumInSura}">@${bot.options.username}</a>`
-                    
+        caption  =
+`<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">@${bot.options.username}</a>`
 
-                resolve ([minCaption, arText, trText]) 
-            })
-            .catch((e) => {
-                log(`Failed to prepare Aya ${ayaId}: `, e)
-                reject(`Failed to prepare Aya ${ayaId}: `+ e)
-            });
-    });
+    return {caption: caption, arText: arText, enText: enText}
 }
+
 
 
 
@@ -476,67 +463,57 @@ function audioUrlCheck(url){
 
 
 // Send random Aya and random reciter if called with the userId argument only 
-function sendAya(chatId, requestedAyaNum, requestedReciter, lang, trigger){
+function sendAya(chatId, requestedAyaId, requestedReciter, lang, trigger){
 
-    var ayaNum, reciter, audioSuccess
+    var ayaId, reciter, audioSuccess
     
-    ayaNum = requestedAyaNum || random('aya')
+    ayaId = requestedAyaId || random('aya')
 
-    
-    // prepare the Aya
-    var textReady
-    log('Preparing Aya ' +ayaNum+ ' for chat '+chatId)
-    prepareAya(ayaNum)
-    .then(ayaText => {
-        log('Successfully prepared Aya ' +ayaNum+ ' for chat '+chatId)
-        textReady = true
-        var dualText =
-`${ayaText[1]}
+    log(`Formating Aya ${ayaId} for chat ${chatId}`)
+    var preparedAya = prepareAya(ayaId)
+    var dualText =
+`${preparedAya.arText}
 
-${ayaText[2]}`
+${preparedAya.enText}`
 
-        // Prepare recitation URL
-        var recitationReady
-        reciter = isValidReciter(requestedReciter) ? requestedReciter : random('reciter')
+    // Prepare recitation URL
+    var recitationReady
+    reciter = isValidReciter(requestedReciter) ? requestedReciter : random('reciter')
 
-        recitation(ayaNum, reciter)
-        .then(recitationUrl => {
-            recitationReady = true
-            bot.telegram.sendAudio(chatId, recitationUrl, {caption: ayaText[0], parse_mode: 'HTML'})
-            .then(ctx =>{
-                audioSuccess = true
-                sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger)
-                if(trigger == 'surprise' || trigger == 'timer'){
-                    var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
-                    var personalizedCaption = `${ctx.caption} → ${chatName}`
-                    bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
-                        type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, caption_entities: ctx.caption_entities
-                    })
-                }
-            })
-            .catch(e => {
-                log(`Error while sending recitation for aya ${ayaNum} by ${reciter} to chat ${chatId} (${ayaText[0]}): `, e)
-                if(JSON.stringify(e).includes('blocked by the user')) lastAyaTime(chatId, 'blocked')
-                else if(!audioSuccess) {
-                    sendSorry(chatId, 'audio')
-                    .then(ctx => sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger))
-                    .catch(e => log(`Error while sending SORRY for failed recitation send for aya ${ayaNum} by ${reciter} to chat ${chatId}: `, e))
-                }
-            })
+    recitation(ayaId, reciter)
+    .then(recitationUrl => {
+        recitationReady = true
+        bot.telegram.sendAudio(chatId, recitationUrl, {caption: preparedAya.caption, parse_mode: 'HTML'})
+        .then(ctx =>{
+            audioSuccess = true
+            sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger)
+            if(trigger == 'surprise' || trigger == 'timer'){
+                var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
+                var personalizedCaption = `${ctx.caption} ➜ ${chatName}`
+                bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
+                    type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, caption_entities: ctx.caption_entities
+                })
+            }
         })
         .catch(e => {
-            log(`Error while getting recitation URL for aya ${ayaNum} by ${reciter} for chat ${chatId}: `, e)
-            if(!recitationReady) {
+            log(`Error while sending recitation for aya ${ayaId} by ${reciter} to chat ${chatId} (${preparedAya.caption}): `, e)
+            if(JSON.stringify(e).includes('blocked by the user')) {
+                lastAyaTime(chatId, 'blocked')
+            } else if(!audioSuccess) {
                 sendSorry(chatId, 'audio')
-                .then(ctx => sendAyaText(ctx, dualText, ayaNum, reciter, lang, trigger))
-                .catch(e => log(`Error while sending SORRY for no recitation for aya ${ayaNum} by ${reciter} to chat ${chatId}: `, e))
+                .then(ctx => sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger))
+                .catch(e => log(`Error while sending SORRY for failed recitation send for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e))
             }
-        })       
+        })
     })
     .catch(e => {
-        log(`Error while preparing aya ${ayaNum} by ${reciter} for chat ${chatId}: `, e)
-        if(!textReady) sendSorry(chatId, 'text')
-    })
+        log(`Error while getting recitation URL for aya ${ayaId} by ${reciter} for chat ${chatId}: `, e)
+        if(!recitationReady) {
+            sendSorry(chatId, 'audio')
+            .then(ctx => sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger))
+            .catch(e => log(`Error while sending SORRY for no recitation for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e))
+        }
+    }) 
 }
 
 
@@ -567,7 +544,12 @@ function sendAyaText(ctx, ayaText, ayaId, reciter, lang, trigger){
     // send aya text and inline buttons
     bot.telegram.sendMessage(ctx.chat.id, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: markup})
         .then(c => successSend(c, ayaId, lang, trigger))
-        .catch(e => log(`Error while sending Aya ${ayaId} text to chat ${ctx.chat.id}: `, e))
+        .catch(e => {
+            log(`Error while sending Aya ${ayaId} text to chat ${ctx.chat.id}: `, e)
+            if(JSON.stringify(e).includes('blocked by the user')){
+                lastAyaTime(ctx.chat.id, 'blocked')
+            }
+        })
 }
 
 
