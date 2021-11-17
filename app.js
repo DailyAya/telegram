@@ -304,7 +304,7 @@ function checkQuran(){
         //     resolve(false)
         // }
     })
-    .catch(resolve(false)) // No reject if URL request failed
+    .catch(e => log('Error while checking remote Quran version: ', e)) // No reject if URL request failed
 }
 checkQuran()
 
