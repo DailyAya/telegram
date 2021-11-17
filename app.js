@@ -294,10 +294,9 @@ function ayaId2SuraAya(ayaId){
 
 
 function checkQuran(){
+    log(`Cached arQuran length: ${Buffer.byteLength(JSON.stringify(arQuran))}`)
     axios.head("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
-        log('Fetched arQuran JSON file URL headers.')
-        log(JSON.stringify(r.headers))
         if(r.headers['content-length'] != 4671961){
             bot.telegram.sendMessage(devChatId, 'Remote arQuran has changed. Please update the cached JSON file.')
         } else {
@@ -308,8 +307,6 @@ function checkQuran(){
 
     axios.head("http://api.alquran.cloud/v1/quran/en.ahmedraza")
     .then(r =>{
-        log('Fetched enQuran JSON file URL headers.')
-        log(JSON.stringify(r.headers))
         if(r.headers['content-length'] != 1699957){
             bot.telegram.sendMessage(devChatId, 'Remote enQuran has changed. Please update the cached JSON file.')
         } else {
