@@ -293,34 +293,31 @@ function ayaId2SuraAya(ayaId){
 }
 
 
-
-
-
 function checkQuran(){
+    var downloadStart = Date.now()
     axios("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
-        log(`arQuran cached vs remote: ${JSON.stringify(r.data) == JSON.stringify(arQuran)}`)
-        // if(r.headers['content-length'] != 4671961){
-        //     bot.telegram.sendMessage(devChatId,
-        //         `Remote arQuran has changed. Please update the cached JSON file. New file length: ${r.headers['content-length']}`
-        //     )
-        // } else {
-        //     log('Remote arQuran is the same as the cached JSON file.')
-        // }
-    })
-    .catch(e => log('Error while checking remote arQuran version: ', e))
-
-    axios.head("http://api.alquran.cloud/v1/quran/en.ahmedraza")
-    .then(r =>{
-        if(r.headers['content-length'] != 1699957){
+        if(JSON.stringify(r.data) != JSON.stringify(arQuran)){
             bot.telegram.sendMessage(devChatId,
-                `Remote enQuran has changed. Please update the cached JSON file. New file length: ${r.headers['content-length']}`
+                `Remote arQuran has changed. Please update the cached JSON file.`
             )
         } else {
-            log('Remote enQuran is the same as the cached JSON file.')
+            log(`Remote arQuran is the same as the cached JSON file. It took ${((Date.now()-downloadStart)/1000).toFixed(2)} seconds.`)
         }
     })
-    .catch(e => log('Error while checking remote enQuran version: ', e))
+    .catch(e => log('Error while comparing arQuran cached vs remote: ', e))
+
+    axios("http://api.alquran.cloud/v1/quran/en.ahmedraza")
+    .then(r =>{
+        if(JSON.stringify(r.data) != JSON.stringify(enQuran)){
+            bot.telegram.sendMessage(devChatId,
+                `Remote enQuran has changed. Please update the cached JSON file.`
+            )
+        } else {
+            log(`Remote enQuran is the same as the cached JSON file. It took ${((Date.now()-downloadStart)/1000).toFixed(2)} seconds.`)
+        }
+    })
+    .catch(e => log('Error while checking enQuran cached vs remote: ', e))
 }
 checkQuran()
 
