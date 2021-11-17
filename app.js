@@ -324,7 +324,7 @@ function ayaId2SuraAya(ayaId){
 }
 
 function prepareAya(ayaId){
-    String.prototype.toArNum = () => {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d])}
+    String.prototype.toArNum = function() {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d])}
 
     var ayaIndex    = ayaId2SuraAya(ayaId),
         suraNum     = ayaIndex.sura,
