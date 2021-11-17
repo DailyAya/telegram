@@ -297,7 +297,7 @@ function checkQuran(){
     axios.head("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
         log('Fetched arQuran JSON file URL headers.')
-        log(JSON.stringify(r))
+        log(JSON.stringify(r.headers))
         // if(r.headers['content-type'] == 'audio/mpeg' || r.headers['content-type'] == 'application/octet-stream') resolve(true)
         // else {
         //     log(`Error in audio file "${url}" header: `, r.headers)
