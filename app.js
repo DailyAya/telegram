@@ -527,9 +527,6 @@ function sendAyaText(ctx, ayaText, ayaId, reciter, lang, trigger){
     var markup = {
         inline_keyboard:[
             [{
-                text: "⋯",
-                callback_data: `{"aMenu":0, "a":${ayaId},"r":"${reciter}","rMsgId":${rMsgId}}`
-            },{
                 text: "🎁",
                 callback_data: "surpriseAya"
             },{
@@ -603,8 +600,8 @@ Sorry.. An unknown issue happened.`
 
 
 
-function nextAya(ayaNum){
-    return ayaNum == 6236 ? 1 : ayaNum+1
+function nextAya(ayaId){
+    return ayaId == 6236 ? 1 : ayaId+1
 }
 
 
