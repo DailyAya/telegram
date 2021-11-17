@@ -286,13 +286,6 @@ const arQuran = require('./quran-uthmani.json')
 const enQuran = require('./en.ahmedraza.json')
 
 
-function ayaId2SuraAya(ayaId){
-    var sura = enQuran.data.surahs.find(s => s.ayahs.find(a => a.number == 6236)).number
-    var aya = enQuran.data.surahs[sura-1].ayahs.find(a => a.number == 6236).numberInSurah
-    return {sura: sura, aya: aya}
-}
-
-
 function checkQuran(){
     var downloadStart = Date.now()
     axios("http://api.alquran.cloud/v1/quran/quran-uthmani")
@@ -320,6 +313,14 @@ function checkQuran(){
     .catch(e => log('Error while checking enQuran cached vs remote: ', e))
 }
 checkQuran()
+
+
+function ayaId2SuraAya(ayaId){
+    var sura = enQuran.data.surahs.find(s => s.ayahs.find(a => a.number == 6236)).number
+    var aya = enQuran.data.surahs[sura-1].ayahs.find(a => a.number == 6236).numberInSurah
+    return {sura: sura, aya: aya}
+}
+
 
 function prepareAya(ayaId){
     return new Promise((resolve, reject) => {
@@ -363,31 +364,6 @@ ${arIndex}`,
             });
     });
 }
-
-
-
-// Provide Aya URL of Quran.com from Aya Number
-function quranUrl(ayaNum){
-    return new Promise((resolve, reject) => {
-        var ayaUrl = `https://api.alquran.cloud/ayah/${ayaNum}/editions/quran-uthmani`
-        axios(ayaUrl)
-            .then((res) => {
-                var ayaNumInSura = res.data.data[0].numberInSurah.toString(),
-                    suraNum = res.data.data[0].surah.number.toString(),
-                    url = `https://quran.com/${suraNum}/${ayaNumInSura}`
-                    resolve(url)
-            })
-            .catch((e) => {
-                log(`Failed to get Quran.com URL for aya ${ayaNum}: `, e)
-                reject(e)
-            });
-    })
-}
-
-
-
-
-
 
 
 
@@ -564,58 +540,40 @@ ${ayaText[2]}`
 }
 
 
-function sendAyaText(ctx, ayaText, ayaNum, reciter, lang, trigger){
-    var urlSuccess
+function sendAyaText(ctx, ayaText, ayaId, reciter, lang, trigger){
     rMsgId = ctx.audio ? ctx.message_id : 0 // To be able to handle cases of audio issues
+    var ayaIndex = ayaId2SuraAya(ayaId)
 
     // Prepare buttons to be sent with Aya text
     var markup = {
         inline_keyboard:[
             [{
                 text: "⋯",
-                callback_data: `{"aMenu":0, "a":${ayaNum},"r":"${reciter}","rMsgId":${rMsgId}}`
+                callback_data: `{"aMenu":0, "a":${ayaId},"r":"${reciter}","rMsgId":${rMsgId}}`
             },{
                 text: "🎁",
                 callback_data: "surpriseAya"
             },{
+                text: "📖",
+                url: `https://quran.com/${ayaIndex.sura}/${ayaIndex.aya}`
+            },{
                 text: "▼",
-                callback_data: `{"currAya":${ayaNum},"r":"${reciter}","rMsgId":${rMsgId}}`
+                callback_data: `{"currAya":${ayaId},"r":"${reciter}","rMsgId":${rMsgId}}`
                 // rMsgId to be able to change the audio later when needed (for example: change recitation)
             }]
         ]
     }
 
-    // Prepare the Aya URL for open button
-    quranUrl(ayaNum)
-    .then(quranUrl => {
-        urlSuccess = true
-
-        // Add "Open Aya" button
-        markup.inline_keyboard[0].splice(1,0, {
-            text: "📖",
-            url: quranUrl
-        })
-
-        // send aya text and inline buttons including "Open Aya" button
-        bot.telegram.sendMessage(ctx.chat.id, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: markup})
-        .then(c => successSend(c, ayaNum, lang, trigger))
-        .catch(e => log("Error while sending Aya "+ayaNum+" text to chat "+ctx.chat.id+": ", e))
-        
-    }).catch((e) => {
-        log(`Error while getting aya ${ayaNum} Quran.com URL: `, e)
-        if(!urlSuccess){
-            // send aya text and inline buttons without "Open Aya" button
-            bot.telegram.sendMessage(ctx.chat.id, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: markup})
-            .then(c => successSend(c, ayaNum, lang, trigger))
-            .catch(e => log("Error while sending Aya "+ayaNum+" text to chat "+ctx.chat.id+": ", e))
-        }
-    })
+    // send aya text and inline buttons
+    bot.telegram.sendMessage(ctx.chat.id, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: markup})
+        .then(c => successSend(c, ayaId, lang, trigger))
+        .catch(e => log(`Error while sending Aya ${ayaId} text to chat ${ctx.chat.id}: `, e))
 }
 
 
-function successSend(ctx, ayaNum, lang, trigger){
+function successSend(ctx, ayaId, lang, trigger){
     var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
-    log(`Successfully sent Aya ${ayaNum} has been sent to chat ${ctx.chat.id}`)
+    log(`Successfully sent Aya ${ayaId} has been sent to chat ${ctx.chat.id}`)
     lastAyaTime(ctx.chat.id, 'success', chatName, lang, trigger)
 }
 
