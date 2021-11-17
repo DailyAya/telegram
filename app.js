@@ -324,16 +324,18 @@ function ayaId2SuraAya(ayaId){
 }
 
 function prepareAya(ayaId){
+    String.prototype.toArNum = () => {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d])}
+
     var ayaIndex    = ayaId2SuraAya(ayaId),
         suraNum     = ayaIndex.sura,
         ayaNum      = ayaIndex.aya,
 
         arAya               = arQuran.data.surahs[suraNum-1].ayahs[ayaNum-1].text,
-        enTranslatedAya       = enQuran.data.surahs[suraNum-1].ayahs[ayaNum-1].text,
+        enTranslatedAya     = enQuran.data.surahs[suraNum-1].ayahs[ayaNum-1].text,
         arName              = enQuran.data.surahs[suraNum-1].name.substr(8), // substr(8) to remove the Arabic word "Sura".
         enArName            = enQuran.data.surahs[suraNum-1].englishName,
         enTranslatedName    = enQuran.data.surahs[suraNum-1].englishNameTranslation,
-        arIndex             = `﴿<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">${arName}؜ ${ayaNum}</a>﴾`,
+        arIndex             = `﴿<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">${arName}؜ ${ayaNum.toString.toAr}</a>﴾`,
         enIndex             = `"${enArName}: ${enTranslatedName}", <a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">Sura ${suraNum} Aya ${ayaNum}</a>`,
         
         arText      =
@@ -601,17 +603,9 @@ Sorry.. An unknown issue happened.`
 
 
 
-
-
-
-
 function nextAya(ayaNum){
     return ayaNum == 6236 ? 1 : ayaNum+1
 }
-
-
-
-
 
 
 
