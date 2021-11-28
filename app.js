@@ -547,7 +547,7 @@ function sendAyaText(ctx, ayaText, ayaId, reciter, lang, trigger){
 function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
     var buttons, menuState = menuState ? menuState : 0
     switch (menuState) {
-        case 1:
+        case 0:
             var ayaIndex = ayaId2SuraAya(ayaId)
             buttons = {
                 inline_keyboard:[
@@ -569,7 +569,7 @@ function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
             }
             break
 
-        case 0:
+        case 1:
             buttons = {
                 inline_keyboard: [{
                     text: "⋯",
@@ -937,7 +937,7 @@ bot.action(/^{"currAya/, ctx => {
 
 bot.action(/^{"aMenu/ , ctx =>{
     var callbackData = JSON.parse(ctx.update.callback_query.data)
-    var buttons = aMenuButtons(callbackData.a, callbackData.r, callbackData.rMsgId, callbackData.aMenu)
+    var buttons = aMenuButtons(callbackData.a, callbackData.r, callbackData.rMsgId, callbackData.aMenu ? 0 : 1) // Toggle menu state
     bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, buttons)
 })
 
