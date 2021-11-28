@@ -528,28 +528,10 @@ ${preparedAya.enText}`
 
 
 function sendAyaText(ctx, ayaText, ayaId, reciter, lang, trigger){
-    rMsgId = ctx.audio ? ctx.message_id : 0 // To be able to handle cases of audio issues
-    var ayaIndex = ayaId2SuraAya(ayaId)
+    recitationMsgId = ctx.audio ? ctx.message_id : 0 // To be able to handle cases of audio issues
 
     // Prepare buttons to be sent with Aya text
-    var markup = {
-        inline_keyboard:[
-            [{
-                text: "⋯",
-                callback_data: `{"aMenu":0, "a":${ayaId},"r":"${reciter}","rMsgId":${rMsgId}}`
-            },{
-                text: "🎁",
-                callback_data: "surpriseAya"
-            },{
-                text: "📖",
-                url: `https://quran.com/${ayaIndex.sura}/${ayaIndex.aya}`
-            },{
-                text: "▼",
-                callback_data: `{"currAya":${ayaId},"r":"${reciter}","rMsgId":${rMsgId}}`
-                // rMsgId to be able to change the audio later when needed (for example: change recitation)
-            }]
-        ]
-    }
+    var markup = aMenuButtons(ayaId, reciter, recitationMsgId)
 
     // send aya text and inline buttons
     bot.telegram.sendMessage(ctx.chat.id, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: markup})
@@ -560,6 +542,53 @@ function sendAyaText(ctx, ayaText, ayaId, reciter, lang, trigger){
                 lastAyaTime(ctx.chat.id, 'blocked')
             }
         })
+}
+
+function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
+    var buttons, menuState = menuState ? menuState : 0
+    switch (menuState) {
+        case 0:
+            var ayaIndex = ayaId2SuraAya(ayaId)
+            buttons = {
+                inline_keyboard:[
+                    [{
+                        text: "⋯",
+                        callback_data: `{"aMenu":0,"a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
+                    },{
+                        text: "🎁",
+                        callback_data: "surpriseAya"
+                    },{
+                        text: "📖",
+                        url: `https://quran.com/${ayaIndex.sura}/${ayaIndex.aya}`
+                    },{
+                        text: "▼",
+                        callback_data: `{"currAya":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
+                        // rMsgId to be able to change the audio later when needed (for example: change recitation)
+                    }]
+                ]
+            }
+            break
+
+        case 1:
+            buttons = {
+                inline_keyboard: [{
+                    text: "⋯",
+                    callback_data: `{"aMenu":0, "a":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
+                },{
+                    text: "⚠️",
+                    callback_data: `{"aReport":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
+                },{
+                    text: "🗣️",
+                    callback_data: `{"setReciter": "${reciter}","a":${ayaId},"rMsgId":${recitationMsgId}}`
+                }]
+            }
+            break
+    
+        default:
+            log("Invalid aMenuButtons menuState: ", menuState)
+            break
+    }
+    return buttons
 }
 
 
@@ -906,31 +935,11 @@ bot.action(/^{"currAya/, ctx => {
     sendAya(ctx.chat.id, nextAya(currentAyaId), callbackData.r, ctx.from.language_code, 'next')
 })
 
-// bot.action(/^{"aMenu/ , ctx =>{
-//     var callbackData = JSON.parse(ctx.update.callback_query.data)
-//     switch (callbackData.aMenu) {
-//         case 0:
-//             var 
-//             bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, {
-//                 inline_keyboard: [{
-//                     text: "⋯",
-//                     callback_data: `{"aMenu":1, "a":, "r":, "rMsgId":, "sA":}`
-//                 },{
-//                     text: "⚠️",
-//                     callback_data: `{"reportAya":1}`
-//                 },{
-//                     text: "🗣️",
-//                     callback_data: `{"setReciter": "${reciter.identifier}"}`
-//                 }]
-//             })
-            
-//             break
-    
-//         default:
-//             log("Invalid Aya Menu State: ", callbackData.aMenu)
-//             break
-//     }
-// })
+bot.action(/^{"aMenu/ , ctx =>{
+    var callbackData = JSON.parse(ctx.update.callback_query.data)
+    var buttons = aMenuButtons(callbackData.a, callbackData.r, callbackData.rMsgId, callbackData.aMenu)
+    bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, buttons)
+})
 
 
 
