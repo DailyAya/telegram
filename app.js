@@ -176,14 +176,18 @@ Sorry.. There's an issue while setting favorite reciters and we hope it gets fix
 // Gets the favorit reciter for chatIds requesting surprise Aya
 function getFavReciter(chatId){
     return new Promise ((resolve, reject) => {
-        dbConn.db('dailyAyaTelegram').collection('chats').find({chatId: chatId}).toArray((err, res) => {
-            if (err){
-                log(`Error while getting favReciter for chat ${chatId}: `, err)
-                reject(err)
-            } else {
-                resolve(res[0].favReciter)
-            }
-        })
+        if (chatId){
+            dbConn.db('dailyAyaTelegram').collection('chats').find({chatId: chatId}).toArray((err, res) => {
+                if (err){
+                    log(`Error while getting favReciter for chat ${chatId}: `, err)
+                    reject(err)
+                } else {
+                    resolve(res[0].favReciter)
+                }
+            })
+        } else {
+            resolve(0)
+        }
     })
 }
 
@@ -479,43 +483,47 @@ function sendAya(chatId, requestedAyaId, requestedReciter, lang, trigger){
 ${preparedAya.enText}`
 
     // Prepare recitation URL
-    var recitationReady
-    reciter = isValidReciter(requestedReciter) ? requestedReciter : random('reciter')
+    getFavReciter(requestedReciter ? 0 : chatId) // getFavReciter will resolve 0 if there's a requestedReciter
+    .then(favReciter => {
+        var recitationReady
+        reciter = favReciter ? favReciter : isValidReciter(requestedReciter) ? requestedReciter : random('reciter')
 
-    recitation(ayaId, reciter)
-    .then(recitationUrl => {
-        recitationReady = true
-        bot.telegram.sendAudio(chatId, recitationUrl, {caption: preparedAya.caption, parse_mode: 'HTML'})
-        .then(ctx =>{
-            audioSuccess = true
-            sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger)
-            if(trigger == 'surprise' || trigger == 'timer'){
-                var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
-                var personalizedCaption = `${ctx.caption} ➔ ${chatName}`
-                bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
-                    type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, caption_entities: ctx.caption_entities
-                })
-            }
+        recitation(ayaId, reciter)
+        .then(recitationUrl => {
+            recitationReady = true
+            bot.telegram.sendAudio(chatId, recitationUrl, {caption: preparedAya.caption, parse_mode: 'HTML'})
+            .then(ctx =>{
+                audioSuccess = true
+                sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger)
+                if(trigger == 'surprise' || trigger == 'timer'){
+                    var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
+                    var personalizedCaption = `${ctx.caption} ➔ ${chatName}`
+                    bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
+                        type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, caption_entities: ctx.caption_entities
+                    })
+                }
+            })
+            .catch(e => {
+                log(`Error while sending recitation for aya ${ayaId} by ${reciter} to chat ${chatId} (${preparedAya.caption}): `, e)
+                if(JSON.stringify(e).includes('blocked by the user')) {
+                    lastAyaTime(chatId, 'blocked')
+                } else if(!audioSuccess) {
+                    sendSorry(chatId, 'audio')
+                    .then(ctx => sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger))
+                    .catch(e => log(`Error while sending SORRY for failed recitation send for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e))
+                }
+            })
         })
         .catch(e => {
-            log(`Error while sending recitation for aya ${ayaId} by ${reciter} to chat ${chatId} (${preparedAya.caption}): `, e)
-            if(JSON.stringify(e).includes('blocked by the user')) {
-                lastAyaTime(chatId, 'blocked')
-            } else if(!audioSuccess) {
+            log(`Error while getting recitation URL for aya ${ayaId} by ${reciter} for chat ${chatId}: `, e)
+            if(!recitationReady) {
                 sendSorry(chatId, 'audio')
                 .then(ctx => sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger))
-                .catch(e => log(`Error while sending SORRY for failed recitation send for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e))
+                .catch(e => log(`Error while sending SORRY for no recitation for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e))
             }
         })
     })
-    .catch(e => {
-        log(`Error while getting recitation URL for aya ${ayaId} by ${reciter} for chat ${chatId}: `, e)
-        if(!recitationReady) {
-            sendSorry(chatId, 'audio')
-            .then(ctx => sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger))
-            .catch(e => log(`Error while sending SORRY for no recitation for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e))
-        }
-    }) 
+    .catch(e => log(`Error while calling getFavReciter for chat ${chatId}: `, e)) 
 }
 
 
@@ -527,6 +535,9 @@ function sendAyaText(ctx, ayaText, ayaId, reciter, lang, trigger){
     var markup = {
         inline_keyboard:[
             [{
+                text: "⋯",
+                callback_data: `{"aMenu":0, "a":${ayaId},"r":"${reciter}","rMsgId":${rMsgId}}`
+            },{
                 text: "🎁",
                 callback_data: "surpriseAya"
             },{
@@ -708,8 +719,8 @@ Or Sura number only: 2`
 // Converting input arabic number into english one to easily find numbers in sent messages
 function numArabicToEnglish(string) {
     return string.replace(/[\u0660-\u0669]/g, function (c) {
-        return c.charCodeAt(0) - 0x0660;
-    });
+        return c.charCodeAt(0) - 0x0660
+    })
 }
 
 
@@ -881,9 +892,7 @@ bot.action('instructions', ctx => {
 
 // When a user presses "Another Aya" inline keyboard button
 bot.action('surpriseAya', ctx => {
-    getFavReciter(ctx.chat.id)
-    .then(favReciter => sendAya(ctx.chat.id, "", favReciter, ctx.from.language_code, 'surprise'))
-    .catch(e => log(`Error while calling getFavReciter for chat ${chatId}: `, e))
+    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
 })
 
 
