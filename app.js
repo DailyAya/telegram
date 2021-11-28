@@ -547,7 +547,7 @@ function sendAyaText(ctx, ayaText, ayaId, reciter, lang, trigger){
 function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
     var buttons, menuState = menuState ? menuState : 0
     switch (menuState) {
-        case 0:
+        case 1:
             var ayaIndex = ayaId2SuraAya(ayaId)
             buttons = {
                 inline_keyboard:[
@@ -569,11 +569,11 @@ function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
             }
             break
 
-        case 1:
+        case 0:
             buttons = {
                 inline_keyboard: [{
                     text: "⋯",
-                    callback_data: `{"aMenu":0, "a":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
+                    callback_data: `{"aMenu":1, "a":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
                 },{
                     text: "⚠️",
                     callback_data: `{"aReport":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
