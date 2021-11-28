@@ -574,10 +574,10 @@ function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
                 inline_keyboard: [
                     [{
                         text: "⋯",
-                        callback_data: `{"aMenu":1, "a":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
+                        callback_data: `{"aMenu":1, "a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
                     },{
                         text: "⚠️",
-                        callback_data: `{"aReport":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
+                        callback_data: `{"aReport":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
                     },{
                         text: "🗣️",
                         callback_data: `{"setReciter": "${reciter}","a":${ayaId},"rMsgId":${recitationMsgId}}`
