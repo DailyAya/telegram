@@ -571,16 +571,18 @@ function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
 
         case 1:
             buttons = {
-                inline_keyboard: [{
-                    text: "⋯",
-                    callback_data: `{"aMenu":1, "a":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
-                },{
-                    text: "⚠️",
-                    callback_data: `{"aReport":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
-                },{
-                    text: "🗣️",
-                    callback_data: `{"setReciter": "${reciter}","a":${ayaId},"rMsgId":${recitationMsgId}}`
-                }]
+                inline_keyboard: [
+                    [{
+                        text: "⋯",
+                        callback_data: `{"aMenu":1, "a":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
+                    },{
+                        text: "⚠️",
+                        callback_data: `{"aReport":${ayaId},"r":${reciter},"rMsgId":${recitationMsgId}}`
+                    },{
+                        text: "🗣️",
+                        callback_data: `{"setReciter": "${reciter}","a":${ayaId},"rMsgId":${recitationMsgId}}`
+                    }]
+                ]
             }
             break
     
