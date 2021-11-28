@@ -856,13 +856,13 @@ function recitersNavPage(page){
         callback_data: `{"setReciter": "surprise"}`
     },{
         text: `＜`,
-        callback_data:  page != 1 ? `{"recitersNavPage": ${page-1}}` : "inactive"
+        callback_data:  page != 1 ? `{"recitersNavPage": ${page-1}}` : `{"recitersNavPage": ${totalPages}}`
     },{
         text: `${page}/${totalPages}`,
         callback_data:  "inactive"
     },{
         text: `＞`,
-        callback_data:  page != totalPages ? `{"recitersNavPage": ${page+1}}` : "inactive"
+        callback_data:  page != totalPages ? `{"recitersNavPage": ${page+1}}` : `{"recitersNavPage": 1}`
     }]
     buttons.push(navRow)
     return buttons
