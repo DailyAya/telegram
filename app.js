@@ -456,7 +456,7 @@ function audioUrlCheck(url){
         axios.head(url)
         .then(r =>{
             log('Fetched audio file URL headers.')
-            if(r.headers['content-type'] == 'audio/mpeg' || r.headers['content-type'] == 'application/octet-stream') resolve(true)
+            if(r.status >= 200 && r.status < 300) resolve(true)
             else {
                 log(`Error in audio file "${url}" header: `, r.headers)
                 resolve(false)
