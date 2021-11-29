@@ -378,7 +378,7 @@ function getReciters() {
             if(!e.message.includes(`Cannot read property 'db'`)){ // only log error if it's not due to dbConn not ready
                 log(`Error while calling timerSend: `, e)
             }
-            throw new Error(`timerSend error.`)
+            throw `timerSend error.`
         }
     })
     .catch(e => {
