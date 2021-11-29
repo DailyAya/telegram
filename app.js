@@ -387,15 +387,16 @@ function getReciters() {
                 reject(`timerSend error.`)
             })
         })
-        .catch(e => {
-            log('Error while getting reciters list and will try again after 1 sec: ', e)
-            setTimeout(() => {
-                getReciters()
-            }, 1000) // wait 1 sec before trying again due to api.alquran.cloud requests limit
-        })
+        .catch(e => reject(e))
     })
 }
 getReciters()
+.catch(e => {
+    log('Error while getting reciters list and will try again after 1 sec: ', e)
+    setTimeout(() => {
+        getReciters()
+    }, 1000) // wait 1 sec before trying again due to api.alquran.cloud requests limit
+})
 
 // For inline keyboard when setting favorite reciter
 var recitersInlineButtons = []
