@@ -60,8 +60,21 @@ log('Connecting to MongoDB...')
 client.connect((err, db) => {
     if (err) log('MongoDbConn ERROR: ', err)
     else {
-      log('MongoDbConn Connected!')
-      dbConn = db
+        log('MongoDbConn Connected!')
+        dbConn = db
+
+        getReciters()
+        .then((r) => {
+            recitersButtons(r)
+            timerSend()
+            .catch(e => {
+                log(`Error while calling timerSend inside getReciters: `, e)
+            })
+        }).catch(e => {
+            if(!recitersData.length){
+                log(`Error while calling getReciters inside client.connect: `, e)
+            }
+        })
     }
 })
 
@@ -203,17 +216,24 @@ var sendMillis = (sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 ho
 
 function timerSend(){
     return new Promise((resolve, reject) =>{
-        dbConn.db('dailyAyaTelegram').collection('chats').find({lastAyaTime: {$lte: Date.now()-sendMillis}, blocked: false}).toArray( (err, res) => {
-            if (err) {
-                log('Timer error: ', err)
-                reject(err)
-            } else {
-                log(`Used memory: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`)
-                log('Timer will send to ' + res.length + ' chats.')
-                res.forEach(chat => sendAya(chat.chatId, "", chat.favReciter, "", 'timer'))
-                resolve()
+        try {
+            dbConn.db('dailyAyaTelegram').collection('chats').find({lastAyaTime: {$lte: Date.now()-sendMillis}, blocked: false}).toArray( (err, res) => {
+                if (err) {
+                    log('Timer dbConn error: ', err)
+                    reject(err)
+                } else {
+                    log(`Used memory: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`)
+                    log('Timer will send to ' + res.length + ' chats.')
+                    res.forEach(chat => sendAya(chat.chatId, "", chat.favReciter, "", 'timer'))
+                    resolve()
+                }
+            })
+        } catch (e) {
+            if (!e.message.includes(`Cannot read property 'db'`)){
+                log('Timer unexpected error: ', e)
             }
-        })
+            reject(e)   
+        }
     })
 }
 var dailyTimer = setInterval(timerSend, checkMillis)
@@ -377,26 +397,19 @@ function getReciters() {
         .then(res => {
             recitersData = JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language == "ar") // Only Arabic recitations
             log("Reciters List is ready. Total Reciters: " + recitersData.length)
-            recitersButtons(recitersData)
-            timerSend()
-            .then(() => resolve()) // trigger timer send after getting reciters data
-            .catch(e => {
-                if(!e.message.includes(`Cannot read property 'db'`)){ // only log error if it's not due to dbConn not ready
-                    log(`Error while calling timerSend: `, e)
-                }
-                reject(`timerSend error.`)
-            })
+            resolve(recitersData)
         })
-        .catch(e => reject(e))
+        .catch(e => {
+            log('Error while getting reciters list and will try again after 1 sec: ', e)
+            setTimeout(() => {
+                getReciters()
+            }, 1000) // wait 1 sec before trying again due to api.alquran.cloud requests limit
+            
+            reject(e)
+        })
     })
 }
-getReciters()
-.catch(e => {
-    log('Error while getting reciters list and will try again after 1 sec: ', e)
-    setTimeout(() => {
-        getReciters()
-    }, 1000) // wait 1 sec before trying again due to api.alquran.cloud requests limit
-})
+
 
 // For inline keyboard when setting favorite reciter
 var recitersInlineButtons = []
