@@ -178,6 +178,7 @@ Sorry.. There's an issue while setting favorite reciters and we hope it gets fix
 // Gets the favorit reciter for chatIds requesting surprise Aya
 function getFavReciter(chatId){
     return new Promise ((resolve, reject) => {
+        log(`Getting fav reciter for Chat ${chatId}`)
         if (chatId){
             dbConn.db('dailyAyaTelegram').collection('chats').find({chatId: chatId}).toArray((err, res) => {
                 if (err){
@@ -472,6 +473,7 @@ function audioUrlCheck(url){
 
 // Send random Aya and random reciter if called with the userId argument only 
 function sendAya(chatId, requestedAyaId, requestedReciter, lang, trigger){
+    log(`Initiating sending an Aya to chat ${chatId} with requested reciter: ${requestedReciter}`)
 
     var ayaId, reciter, audioSuccess
     
