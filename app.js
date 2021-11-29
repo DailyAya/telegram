@@ -548,39 +548,39 @@ function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
     var buttons, menuState = menuState ? menuState : 0
     switch (menuState) {
         case 0:
-            var ayaIndex = ayaId2SuraAya(ayaId)
             buttons = {
                 inline_keyboard:[
                     [{
-                        text: "⋯",
+                        text: "···",
                         callback_data: `{"aMenu":0,"a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
-                    },{
-                        text: "🎁",
-                        callback_data: "surpriseAya"
-                    },{
-                        text: "📖",
-                        url: `https://quran.com/${ayaIndex.sura}/${ayaIndex.aya}`
+                        // rMsgId to be able to change the audio later when needed (for example: change recitation)
                     },{
                         text: "▼",
                         callback_data: `{"currAya":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
-                        // rMsgId to be able to change the audio later when needed (for example: change recitation)
                     }]
                 ]
             }
             break
 
         case 1:
+            var ayaIndex = ayaId2SuraAya(ayaId)
             buttons = {
                 inline_keyboard: [
                     [{
-                        text: "⋯",
-                        callback_data: `{"aMenu":1, "a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
+                        text: "·",
+                        callback_data: `{"aMenu":1,"a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
                     },{
                         text: "⚠️",
                         callback_data: `{"aReport":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
                     },{
                         text: "🗣️",
-                        callback_data: `{"setReciter": "${reciter}","a":${ayaId},"rMsgId":${recitationMsgId}}`
+                        callback_data: `{"setReciter":"${reciter}","a":${ayaId},"rMsgId":${recitationMsgId}}`
+                    },{
+                        text: "📖",
+                        url: `https://quran.com/${ayaIndex.sura}/${ayaIndex.aya}`
+                    },{
+                        text: "▼",
+                        callback_data: `{"currAya":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
                     }]
                 ]
             }
@@ -818,7 +818,7 @@ bot.telegram.setMyCommands([
     {'command':'surpriseme', 'description': '🎁 ꓢurprise ꓟe فاجئني'},
     {'command':'help', 'description': '🤔 𝐈nstructions إرشادات'},
     {'command':'support', 'description': '🤗 ꓢupport دعم'},
-    {'command':'set_reciter', 'description': '🗣️ ꓢet Reciter اختيار القارئ'}
+    {'command':'reciters', 'description': '🗣️ ꓢet Reciter اختيار القارئ'}
 ])
 
 
@@ -866,7 +866,7 @@ Support you or support us?`
 
 
 // When a user presses "set_fav_reciter" in menu
-bot.command('set_reciter', ctx => {
+bot.command('reciters', ctx => {
     var msg =
 `من هو قارئك المفضل؟
 
