@@ -489,6 +489,7 @@ ${preparedAya.enText}`
     .then(favReciter => {
         var recitationReady
         reciter = favReciter ? favReciter : isValidReciter(requestedReciter) ? requestedReciter : random('reciter')
+        log(`Chat ${chatId} got reciter: ${reciter}`)
 
         recitation(ayaId, reciter)
         .then(recitationUrl => {
