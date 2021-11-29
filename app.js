@@ -375,7 +375,7 @@ function getReciters() {
         try {
             timerSend() // trigger timer send after getting reciters data
         } catch (e) {
-            log(JSON.stringify(e, Object.keys(e)))
+            log(JSON.stringify(e, Object.getOwnPropertyNames(e)))
             if(!e.TypeError.includes(`Cannot read property 'db'`)){ // only log error if it's not due to dbConn not ready
                 log(`Error while calling timerSend: `, e)
             }
