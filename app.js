@@ -116,9 +116,11 @@ function lastAyaTime(chatId, status, chatName, lang, trigger){
 // Sets the favorit reciter for chatIds that request so
 function setFavReciter(chatId, reciterIdentifier){
     var setObj = {}
+    log(`Chat ${chatId} fav reciter request: ${reciterIdentifier}`)
 
     // sets reciter to "surprise" if not provided or reciter is not valid
     reciterIdentifier = (reciterIdentifier == "surprise" || isValidReciter(reciterIdentifier)) ? reciterIdentifier : "surprise"
+    log(`Chat ${chatId} fav reciter to be stored: ${reciterIdentifier}`)
     
     setObj.favReciter = reciterIdentifier
 
