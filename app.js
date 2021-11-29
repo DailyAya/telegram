@@ -372,7 +372,11 @@ function getReciters() {
         recitersData = JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language == "ar") // Only Arabic recitations
         log("Reciters List is ready. Total Reciters: " + recitersData.length)
         recitersButtons(recitersData)
-        timerSend() // trigger timer send after getting reciters data
+        try {
+            timerSend() // trigger timer send after getting reciters data
+        } catch (e) {
+            log(`Error while calling timerSend: `, e)
+        }
     })
     .catch(e => {
         log('Error while getting reciters list and will try again after 1 sec: ', e)
