@@ -487,7 +487,7 @@ function sendAya(chatId, requestedAyaId, requestedReciter, lang, trigger){
 ${preparedAya.enText}`
 
     // Prepare recitation URL
-    getFavReciter(requestedReciter ? 0 : chatId) // getFavReciter will resolve 0 if there's a requestedReciter
+    getFavReciter((requestedReciter ? 0 : chatId)) // getFavReciter will resolve 0 if there's a requestedReciter
     .then(favReciter => {
         var recitationReady
         reciter = favReciter ? favReciter : isValidReciter(requestedReciter) ? requestedReciter : random('reciter')
