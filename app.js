@@ -378,15 +378,14 @@ function getReciters() {
             recitersData = JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language == "ar") // Only Arabic recitations
             log("Reciters List is ready. Total Reciters: " + recitersData.length)
             recitersButtons(recitersData)
-            try {
-                timerSend()
-                .then(() => resolve()) // trigger timer send after getting reciters data
-            } catch (e) {
+            timerSend()
+            .then(() => resolve()) // trigger timer send after getting reciters data
+            .catch(e => {
                 if(!e.message.includes(`Cannot read property 'db'`)){ // only log error if it's not due to dbConn not ready
                     log(`Error while calling timerSend: `, e)
                 }
-                reject(`timerSend error.`) 
-            }
+                reject(`timerSend error.`)
+            })
         })
         .catch(e => {
             log('Error while getting reciters list and will try again after 1 sec: ', e)
