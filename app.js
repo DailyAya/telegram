@@ -403,9 +403,9 @@ function getReciters() {
             log('Error while getting reciters list and will try again after 1 sec: ', e)
             setTimeout(() => {
                 getReciters()
+                .then(r => resolve(r))
+                .catch(e => log(`getReciters Try Error: `, e)) // don't reject inside promise loop
             }, 1000) // wait 1 sec before trying again due to api.alquran.cloud requests limit
-            
-            reject(e)
         })
     })
 }
