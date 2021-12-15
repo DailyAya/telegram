@@ -528,6 +528,7 @@ ${preparedAya.enText}`
             recitationReady = true
             bot.telegram.sendAudio(chatId, recitationUrl, {caption: preparedAya.caption, parse_mode: 'HTML'})
             .then(ctx =>{
+                log(`Audio File ctx: ${JSON.stringify(ctx)}`)
                 audioSuccess = true
                 sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger)
                 if(trigger == 'surprise' || trigger == 'timer'){
