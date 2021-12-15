@@ -6,7 +6,8 @@
   
   "scripts": {
     "test": "echo \"No tests to run\" && exit 0",
-    "start": "node app.js"
+    "preinstall": "npm install -g pm2",
+    "start": "pm2 start app.js"
   },
   
   "keywords": [
