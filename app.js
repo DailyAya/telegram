@@ -921,9 +921,9 @@ Who is your favorite Reciter?`
     })
 })
 
-bot.command(`restart`, ctx =>{
-    sigHandler(`restartCommand`)
-})
+// bot.command(`restart`, ctx =>{
+//     sigHandler(`restartCommand`)
+// })
 
 function recitersNavPage(page){
     var recitersPerPage = 5
