@@ -12,18 +12,22 @@ const devChatId = process.env.devChatId  // the group ID of development team on 
 // Use log(x) instead of log(x) to control debugging mode from env variables
 // Use log(x, e) for errors
 function log(x, e){
-    switch(log.arguments.length){
-        case 1:
-            if(debugging) console.log(x)
-            break
-        case 2:
-            console.error(x, e)
-            if(bot) bot.telegram.sendMessage(devChatId, x+JSON.stringify(e))
-            break
-        default:
-            console.error('Invalid log argument count.')
-            break
-    }
+    return new promise((resolve, reject) =>{
+        switch(log.arguments.length){
+            case 1:
+                if(debugging) console.log(x)
+                resolve()
+                break
+            case 2:
+                console.error(x, e)
+                if(bot) bot.telegram.sendMessage(devChatId, x+JSON.stringify(e)).then(resolve())
+                break
+            default:
+                console.error('Invalid log argument count.')
+                resolve()
+                break
+        }
+    })
 }
 
 var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${debugging ? 'debugging' : 'normal'} mode until ${instActivetUntil}.
@@ -489,7 +493,7 @@ function audioUrlCheck(url){
         axios.head(url)
         .then(r =>{
             log('Fetched audio file URL headers.')
-            log(`Audio URL header: ${JSON.stringify(r.headers)}`)
+            // log(`Audio URL header: ${JSON.stringify(r.headers)}`)
             if(r.status >= 200 && r.status < 300) resolve(true)
             else {
                 log(`Error in audio file "${url}" header: `, r.headers)
@@ -529,7 +533,7 @@ ${preparedAya.enText}`
             recitationReady = true
             bot.telegram.sendAudio(chatId, recitationUrl, {caption: preparedAya.caption, parse_mode: 'HTML'})
             .then(ctx =>{
-                log(`Audio File ctx: ${JSON.stringify(ctx)}`)
+                // log(`Audio File ctx: ${JSON.stringify(ctx)}`)
                 audioSuccess = true
                 sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger)
                 if(trigger == 'surprise' || trigger == 'timer'){
@@ -917,6 +921,10 @@ Who is your favorite Reciter?`
     })
 })
 
+bot.command(`restart`, ctx =>{
+    sigHandler(`restartCommand`)
+})
+
 function recitersNavPage(page){
     var recitersPerPage = 5
     var totalPages = Math.ceil(recitersInlineButtons.length/recitersPerPage)
@@ -1033,11 +1041,22 @@ bot.launch()
 
 function sigHandler(sig){
     log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours and Used Memory ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB due to: `, sig)
-    bot.stop(sig)
+    .then(() => {
+        bot.stop(sig)
+        process.exit(1)
+    })
+    
 }
 
 // Enable graceful stop
 process
     .on('SIGTERM', () => sigHandler('SIGTERM'))
     .on('SIGINT', () => sigHandler('SIGINT'))
-    .on('uncaughtException', () => sigHandler('uncaughtException'))
+    .on('uncaughtException', (err, origin) => {
+        log(`Uncaught Exception of origin (${origin}): `, err)
+        sigHandler('uncaughtException')
+    })
+    .on('unhandledRejection', (reason, promise) =>{
+        log(`Unhandled Rejection for promise (${promise}): `, reason)
+        sigHandler('unhandledRejection')
+    })
