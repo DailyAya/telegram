@@ -1043,7 +1043,7 @@ function sigHandler(sig){
     log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours and Used Memory ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB due to: `, sig)
     .then(() => {
         bot.stop(sig)
-        process.exit()
+        //process.exit()
     })
     
 }
