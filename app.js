@@ -12,7 +12,7 @@ const devChatId = process.env.devChatId  // the group ID of development team on 
 // Use log(x) instead of log(x) to control debugging mode from env variables
 // Use log(x, e) for errors
 function log(x, e){
-    return new promise((resolve, reject) =>{
+    return new Promise ((resolve, reject) =>{
         switch(log.arguments.length){
             case 1:
                 if(debugging) console.log(x)
