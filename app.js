@@ -1051,6 +1051,7 @@ bot.launch()
 function sigHandler(sig){
     log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours and Used Memory ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB due to: `, sig)
     .then(() => {
+        console.log(`Stopping bot...`)
         bot.stop(sig)
         process.exit(0)
     })
