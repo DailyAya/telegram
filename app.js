@@ -1,3 +1,5 @@
+"use strict"
+
 const numCPUs = require('os').cpus().length
 console.log(`Number of CPUs is: ${numCPUs}`)
 
@@ -925,8 +927,7 @@ Who is your favorite Reciter?`
 })
 
 bot.command(`restart`, ctx =>{
-    bot.telegram.sendMessage(ctx.chat.id, `Restarting...`)
-    //    .then(sigHandler(`restartCommand`))
+    bot.telegram.sendMessage(ctx.chat.id, `Restarting...`).then(sigHandler(`restartCommand`))
 })
 
 function recitersNavPage(page){
