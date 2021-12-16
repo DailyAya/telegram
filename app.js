@@ -1,4 +1,4 @@
-"use strict"
+//"use strict"
 
 const numCPUs = require('os').cpus().length
 console.log(`Number of CPUs is: ${numCPUs}`)
