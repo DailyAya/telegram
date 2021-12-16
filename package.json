@@ -6,7 +6,7 @@
   
   "scripts": {
     "test": "echo \"No tests to run\" && exit 0",
-    "start": "PORT=3002 pm2 start ./bin/www --exp-backoff-restart-delay=100",
+    "start": "pm2 start ./bin/www -i max --exp-backoff-restart-delay=100",
     "autorestart": "pm2 startup"
   },
   
