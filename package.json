@@ -6,7 +6,7 @@
   
   "scripts": {
     "test": "echo \"No tests to run\" && exit 0",
-    "start": "pm2 start app.js -i max --exp-backoff-restart-delay=100",
+    "start": "PORT=3000 pm2 start app.js -i max --exp-backoff-restart-delay=100",
     "autorestart": "pm2 startup"
   },
   
