@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"No tests to run\" && exit 0",
     "wwwcheck": "pm2 show www",
-    "start": "PORT=3000 pm2 start bin/www -i max --exp-backoff-restart-delay=100",
+    "start": "PORT=3000 pm2 start app.js -i max --exp-backoff-restart-delay=100",
     "autorestart": "pm2 startup"
   },
   
