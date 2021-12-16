@@ -926,13 +926,13 @@ Who is your favorite Reciter?`
     })
 })
 
-bot.command(`restart`, ctx =>{
-    bot.telegram.sendMessage(ctx.chat.id, `Restarting...`)
-    .then(() =>{
-        log(`Restarting Command...`)
-        sigHandler(`restartCommand`)
-    })
-})
+// bot.command(`restart`, ctx =>{
+//     bot.telegram.sendMessage(ctx.chat.id, `Restarting...`)
+//     .then(() =>{
+//         log(`Restarting Command...`)
+//         sigHandler(`restartCommand`)
+//     })
+// })
 
 function recitersNavPage(page){
     var recitersPerPage = 5
