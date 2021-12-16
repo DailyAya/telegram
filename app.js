@@ -926,7 +926,7 @@ Who is your favorite Reciter?`
 
 bot.command(`restart`, ctx =>{
     bot.telegram.sendMessage(ctx.chat.id, `Restarting...`)
-        .then(sigHandler(`restartCommand`))
+    //    .then(sigHandler(`restartCommand`))
 })
 
 function recitersNavPage(page){
