@@ -924,9 +924,9 @@ Who is your favorite Reciter?`
     })
 })
 
-// bot.command(`restart`, ctx =>{
-//     sigHandler(`restartCommand`)
-// })
+bot.command(`restart`, ctx =>{
+    sigHandler(`restartCommand`)
+})
 
 function recitersNavPage(page){
     var recitersPerPage = 5
@@ -1046,7 +1046,7 @@ function sigHandler(sig){
     log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours and Used Memory ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB due to: `, sig)
     .then(() => {
         bot.stop(sig)
-        //process.exit()
+        process.exit(0)
     })
     
 }
@@ -1060,6 +1060,6 @@ process
         sigHandler('uncaughtException')
     })
     .on('unhandledRejection', (reason, promise) =>{
-        log(`Unhandled Rejection for promise (${promise}): `, reason)
+        log(`Unhandled Rejection due to reason (${reason}) for promise: `, promise)
         sigHandler('unhandledRejection')
     })
