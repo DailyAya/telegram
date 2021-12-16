@@ -1,5 +1,5 @@
 const numCPUs = require('os').cpus().length
-log(`Number of CPUs is: ${numCPUs}`)
+console.log(`Number of CPUs is: ${numCPUs}`)
 
 const telegramToken = process.env.telegramToken || 0
 const inst = process.env.inst || 0
