@@ -6,9 +6,7 @@
   
   "scripts": {
     "test": "echo \"No tests to run\" && exit 0",
-    "wwwcheck": "pm2 show www",
-    "start": "PORT=3000 pm2 start app.js -i max --exp-backoff-restart-delay=100",
-    "autorestart": "pm2 startup"
+    "start": "node app.js"
   },
   
   "keywords": [
@@ -31,7 +29,6 @@
     "express": "^4.17.1",
     "axios":"^0.21.3",
     "telegraf": "^4.4.2",
-    "mongodb": "^4.1.1",
-    "pm2": "^5.1.2"
+    "mongodb": "^4.1.1"
   }
 }
