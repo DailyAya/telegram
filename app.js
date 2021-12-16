@@ -1,5 +1,4 @@
-import { cpus } from 'os'
-const numCPUs = cpus().length
+const numCPUs = require('os').cpus().length
 log(`Number of CPUs is: ${numCPUs}`)
 
 const telegramToken = process.env.telegramToken || 0
