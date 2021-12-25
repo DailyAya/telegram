@@ -270,9 +270,9 @@ if(telegramToken){
 
 function start(chatId){
     var msg =
-`دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات.
+`دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات حتى لا ينقطع وردك اليومي.
 
-Daily Aya sends one Aya daily at the same time of the last Aya you request in private chats or groups.`
+Daily Aya sends one Aya daily at the same time of the last Aya you request in private chats or groups so your daily read doesn't stop.`
 
     bot.telegram.sendMessage(chatId, msg, {
         reply_markup: {
