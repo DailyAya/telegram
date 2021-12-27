@@ -513,7 +513,7 @@ function audioUrlCheck(url){
 
 // Send random Aya and random reciter if called with the userId argument only 
 function sendAya(chatId, requestedAyaId, requestedReciter, lang, trigger){
-    log(`Initiating sending an Aya to chat ${chatId} with requested reciter: ${requestedReciter}`)
+    log(`Initiating sending an Aya to chat ${chatId} with requested reciter: ${requestedReciter ? requestedReciter : "None"}`)
 
     var ayaId, reciter, audioSuccess
     
