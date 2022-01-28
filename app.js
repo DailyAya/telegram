@@ -12,6 +12,7 @@ const instActivetUntil = process.env.instActiveUntil || "WHO KNOWS!"
 const branch = process.env.branch || "staging"
 const debugging = process.env.debugging == "true"
 const devChatId = process.env.devChatId  // the group ID of development team on Telegram
+const codeVer = process.env.npm_package_version || "1970.1.1"
 
 
 // Use log(x) instead of log(x) to control debugging mode from env variables
@@ -35,7 +36,7 @@ function log(x, e){
     })
 }
 
-var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${debugging ? 'debugging' : 'normal'} mode until ${instActivetUntil}.
+var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${debugging ? 'debugging' : 'normal'} mode of version ${codeVer} until ${instActivetUntil}.
 Memory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`
 
 
