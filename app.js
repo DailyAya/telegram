@@ -1021,7 +1021,7 @@ bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
 // to handle when blocked/unblocked by a user or when added/removed from groups
 bot.on('my_chat_member', ctx => {
     switch (ctx.update.my_chat_member.new_chat_member.status) {
-        case 'member':
+        case 'member': case 'administrator':
             if(ctx.chat.type != 'private') start(ctx.chat.id) // don't send to private chats as they already trigger /start
             break
 
