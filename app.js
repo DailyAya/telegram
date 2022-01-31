@@ -869,7 +869,7 @@ function surpriseAya(ctx){
             sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
         } else {
             log(`User ${ctx.from.id} is not admin in chat ${ctx.chat.id}.`)
-            ctx.answerCbQuery("Only admins can interact with DailyAya here.", {show_alert: false, url:`t.me/${bot.options.username}?start=1`})
+            ctx.answerCbQuery("Only admins can interact with DailyAya. Press on Sura name to open DailyAya privately.", {show_alert: true})
         }
     })
     .catch(e =>{
