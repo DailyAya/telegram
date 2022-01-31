@@ -862,6 +862,11 @@ function handleText(ctx){
 }
 
 
+function surpriseAya(ctx){
+    log(JSON.stringify(ctx))
+    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
+}
+
 // set the bot menu
 bot.telegram.setMyCommands([
     {'command':'surpriseme', 'description': '🎁 ꓢurprise ꓟe فاجئني'},
@@ -887,7 +892,7 @@ bot.help(ctx => {
 
 // When a user presses "Surprise Me" in menu
 bot.command('surpriseme', ctx => {
-    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
+    surpriseAya(ctx)
 })
 
 
@@ -980,8 +985,7 @@ bot.action('instructions', ctx => {
 
 // When a user presses "Another Aya" inline keyboard button
 bot.action('surpriseAya', ctx => {
-    log(JSON.stringify(ctx))
-    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
+    surpriseAya(ctx)
 })
 
 
