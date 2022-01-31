@@ -207,7 +207,7 @@ function getFavReciter(chatId){
                     log(`Error while getting favReciter for chat ${chatId}: `, err)
                     reject(err)
                 } else {
-                    resolve(res ? (res[0].favReciter ? res[0].favReciter : 0) : 0) // Resolve with favReciter if it exists, or 0 if not
+                    resolve(res[0] ? (res[0].favReciter ? res[0].favReciter : 0) : 0) // Resolve with favReciter if it exists, or 0 if not
                 }
             })
         } else {
