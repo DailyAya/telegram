@@ -537,7 +537,7 @@ ${preparedAya.enText}`
         recitation(ayaId, reciter)
         .then(recitationUrl => {
             recitationReady = true
-            bot.telegram.sendAudio(chatId, recitationUrl, {caption: preparedAya.caption, parse_mode: 'HTML'})
+            bot.telegram.sendAudio(chatId, recitationUrl, {caption: preparedAya.caption, parse_mode: 'HTML', disable_notifications: true})
             .then(ctx =>{
                 // log(`Audio File ctx: ${JSON.stringify(ctx)}`)
                 audioSuccess = true
@@ -677,7 +677,7 @@ Sorry.. An unknown issue happened.`
         }
 
 
-        bot.telegram.sendMessage(chatId, msg)
+        bot.telegram.sendMessage(chatId, msg, {disable_notifications: true})
         .then(ctx => {
             log(`Sorry message sent to ${chatId} due to ${reason}.`)
             resolve(ctx)
