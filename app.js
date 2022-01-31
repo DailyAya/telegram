@@ -26,7 +26,7 @@ function log(x, e){
                 break
             case 2:
                 console.error(x, e)
-                if(bot) bot.telegram.sendMessage(devChatId, (x+JSON.stringify(e)).substring(0, 4096)).then(resolve())
+                if(bot) bot.telegram.sendMessage(devChatId, (x+JSON.stringify(e.message)).substring(0, 4096)).then(resolve())
                 break
             default:
                 console.error('Invalid log argument count.')
@@ -915,7 +915,7 @@ bot.start(ctx => {
             if(ctx.startPayload.length) handleText(ctx)
             else start(ctx.chat.id)
         } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name to open DailyAya privately.", {show_alert: true})
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name to open DailyAya privately.", {show_alert: true})???
         }
     })
     .catch(e =>{
