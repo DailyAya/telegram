@@ -207,7 +207,7 @@ function getFavReciter(chatId){
                     log(`Error while getting favReciter for chat ${chatId}: `, err)
                     reject(err)
                 } else {
-                    resolve(res[0].favReciter ? res[0].favReciter : 0) // Resolve with favReciter if it exists, or 0 if not
+                    resolve(res ? (res[0].favReciter ? res[0].favReciter : 0) : 0) // Resolve with favReciter if it exists, or 0 if not
                 }
             })
         } else {
@@ -869,7 +869,7 @@ function surpriseAya(ctx){
             sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
         } else {
             log(`User ${ctx.from.id} is not admin in chat ${ctx.chat.id}.`)
-            ctx.answerCbQuery("Only admins can interact with DailyAya here.", {show_alert: true, url:`t.me/${bot.options.username}?start=1-1`})
+            ctx.answerCbQuery("Only admins can interact with DailyAya here.", {show_alert: true, url:`t.me/${bot.options.username}?start=1`})
         }
     })
     .catch(e =>{
