@@ -868,7 +868,6 @@ function surpriseAya(ctx){
         if(isAdmin){
             sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
         } else {
-            log(`User ${ctx.from.id} is not admin in chat ${ctx.chat.id}.`)
             ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name to open DailyAya privately.", {show_alert: true})
         }
     })
@@ -910,8 +909,18 @@ bot.telegram.setMyCommands([
 
 // Invoking start command
 bot.start(ctx => {
-    if(ctx.startPayload.length) handleText(ctx)
-    else start(ctx.chat.id)
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            if(ctx.startPayload.length) handleText(ctx)
+            else start(ctx.chat.id)
+        } else {
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name to open DailyAya privately.", {show_alert: true})
+        }
+    })
+    .catch(e =>{
+        log('Error while checking admin: ', e)
+    })
 })
 
 // Invoking help command
