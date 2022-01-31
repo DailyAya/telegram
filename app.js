@@ -980,6 +980,7 @@ bot.action('instructions', ctx => {
 
 // When a user presses "Another Aya" inline keyboard button
 bot.action('surpriseAya', ctx => {
+    log(JSON.stringify(ctx))
     sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
 })
 
