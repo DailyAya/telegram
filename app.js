@@ -863,13 +863,13 @@ function handleText(ctx){
 
 
 function surpriseAya(ctx){
-    isAdmin(ctx)
+    adminChecker(ctx)
     .then(isAdmin =>{
         if(isAdmin){
             sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
         } else {
             log(`User ${ctx.from.id} is not admin in chat ${ctx.chat.id}.`)
-            bot.telegram.sendChatAction(ctx.chat.id, `typing`)
+            ctx.answerCbQuery("Only admins can interact with DailyAya here.", {show_alert: true})
         }
     })
     .catch(e =>{
@@ -878,7 +878,7 @@ function surpriseAya(ctx){
 }
 
 
-function isAdmin(ctx){
+function adminChecker(ctx){
     return new Promise ((resolve, reject) => {
         if (ctx.chat.type == "private"){
             resolve(true)
