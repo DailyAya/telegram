@@ -915,7 +915,7 @@ bot.start(ctx => {
             if(ctx.startPayload.length) handleText(ctx)
             else start(ctx.chat.id)
         } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name to open DailyAya privately.", {show_alert: true})???
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name to open DailyAya privately.", {show_alert: true})
         }
     })
     .catch(e =>{
