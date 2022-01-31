@@ -818,8 +818,8 @@ function ayaCheck(sura, aya){
     	            log('ayaCheck error: ', e);
                     if (e.response.data.data.match('surah')) resolve(0); // Aya is not valid
                     else reject(e); // Something else is wrong!
-                });
-    });
+                })
+    })
 }
 
 
@@ -863,8 +863,39 @@ function handleText(ctx){
 
 
 function surpriseAya(ctx){
-    log(JSON.stringify(ctx))
-    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
+    isAdmin(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
+        } else {
+            log(`User ${ctx.from.id} is not admin in chat ${ctx.chat.id}.`)
+        }
+    })
+    .catch(e =>{
+        log('Error while checking admin: ', e)
+    })
+}
+
+
+function isAdmin(ctx){
+    return new Promise ((resolve, reject) => {
+        if (ctx.chat.type == "private"){
+            resolve(true)
+        } else {
+            bot.telegram.getChatMember(ctx.chat.id, ctx.from.id)
+            .then(r => {
+                if(r.status == "creator" || r.status == "administrator"){
+                    resolve(true)
+                } else {
+                    resolve(false)
+                }
+            })
+            .catch(e => {
+                log('isAdmin check error: ', e)
+                reject(e)
+            })
+        }
+    })
 }
 
 // set the bot menu
