@@ -869,7 +869,7 @@ function surpriseAya(ctx){
             sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
         } else {
             log(`User ${ctx.from.id} is not admin in chat ${ctx.chat.id}.`)
-            bot.telegram.sendChatAction(ctx.chat.id, `For admins only!`)
+            bot.telegram.sendChatAction(ctx.chat.id, `typing`)
         }
     })
     .catch(e =>{
