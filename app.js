@@ -347,7 +347,7 @@ function checkSource(){
 
     axios("http://api.alquran.cloud/edition/format/audio")
     .then(r =>{
-        if(JSON.stringify(JSON.parse(JSON.stringify(r.data)).data.filter(i => i.language == "ar")) != JSON.stringify(arReciters)){
+        if(JSON.parse(JSON.stringify(r.data)).data.filter(i => i.language == "ar") != arReciters){
             bot.telegram.sendMessage(devChatId,
                 `Remote arReciters has changed. Please update the cached JSON file.`
             )
