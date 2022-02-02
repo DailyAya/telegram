@@ -316,7 +316,7 @@ function random(type){
 const axios = require('axios')
 const arQuran = require('./quran-uthmani.json').data.surahs
 const enQuran = require('./en.ahmedraza.json').data.surahs
-const arReciters = require('./arReciters.json').data.filter(i => i.language == "ar")
+const arReciters = require('./audio.json').data.filter(i => i.language == "ar")
 
 
 function checkSource(){
