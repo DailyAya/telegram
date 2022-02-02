@@ -165,6 +165,24 @@
             "direction": null
         },
         {
+            "identifier": "en.walk",
+            "language": "en",
+            "name": "Ibrahim Walk",
+            "englishName": "Ibrahim Walk",
+            "format": "audio",
+            "type": "versebyverse",
+            "direction": null
+        },
+        {
+            "identifier": "fa.hedayatfarfooladvand",
+            "language": "fa",
+            "name": "Fooladvand - Hedayatfar",
+            "englishName": "Fooladvand - Hedayatfar",
+            "format": "audio",
+            "type": "translation",
+            "direction": null
+        },
+        {
             "identifier": "ar.parhizgar",
             "language": "ar",
             "name": "\u0634\u0647\u0631\u06cc\u0627\u0631 \u067e\u0631\u0647\u06cc\u0632\u06af\u0627\u0631",
@@ -174,10 +192,46 @@
             "direction": null
         },
         {
+            "identifier": "ur.khan",
+            "language": "ur",
+            "name": "Shamshad Ali Khan",
+            "englishName": "Shamshad Ali Khan",
+            "format": "audio",
+            "type": "versebyverse",
+            "direction": null
+        },
+        {
+            "identifier": "zh.chinese",
+            "language": "zh",
+            "name": "\u4e2d\u6587",
+            "englishName": "Chinese",
+            "format": "audio",
+            "type": "versebyverse",
+            "direction": null
+        },
+        {
+            "identifier": "fr.leclerc",
+            "language": "fr",
+            "name": "Youssouf Leclerc",
+            "englishName": "Youssouf Leclerc",
+            "format": "audio",
+            "type": "versebyverse",
+            "direction": null
+        },
+        {
             "identifier": "ar.aymanswoaid",
             "language": "ar",
             "name": "\u0623\u064a\u0645\u0646 \u0633\u0648\u064a\u062f",
             "englishName": "Ayman Sowaid",
+            "format": "audio",
+            "type": "versebyverse",
+            "direction": null
+        },
+        {
+            "identifier": "ru.kuliev-audio",
+            "language": "ru",
+            "name": "Elmir Kuliev by 1MuslimApp",
+            "englishName": "Elmir Kuliev by 1MuslimApp",
             "format": "audio",
             "type": "versebyverse",
             "direction": null
