@@ -314,8 +314,8 @@ function random(type){
 
 
 const axios = require('axios')
-const arQuran = require('./quran-uthmani.json')
-const enQuran = require('./en.ahmedraza.json')
+const arQuran = require('./quran-uthmani.json').data.surahs
+const enQuran = require('./en.ahmedraza.json').data.surahs
 const arReciters = require('./arReciters.json').data
 
 
@@ -323,7 +323,7 @@ function checkSource(){
     var downloadStart = Date.now()
     axios("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
-        if(JSON.stringify(r.data) != JSON.stringify(arQuran)){
+        if(JSON.stringify(r.data.data.surahs) != JSON.stringify(arQuran)){
             bot.telegram.sendMessage(devChatId,
                 `Remote arQuran has changed. Please update the cached JSON file.`
             )
@@ -335,7 +335,7 @@ function checkSource(){
 
     axios("http://api.alquran.cloud/v1/quran/en.ahmedraza")
     .then(r =>{
-        if(JSON.stringify(r.data) != JSON.stringify(enQuran)){
+        if(JSON.stringify(r.data.data.surahs) != JSON.stringify(enQuran)){
             bot.telegram.sendMessage(devChatId,
                 `Remote enQuran has changed. Please update the cached JSON file.`
             )
@@ -347,7 +347,7 @@ function checkSource(){
 
     axios("http://api.alquran.cloud/edition/format/audio")
     .then(r =>{
-        if(r.data.data.filter(i => i.language == "ar") != arReciters){
+        if(JSON.stringify(r.data.data.filter(i => i.language == "ar")) != JSON.stringify(arReciters)){
             bot.telegram.sendMessage(devChatId,
                 `Remote arReciters has changed. Please update the cached JSON file.`
             )
@@ -363,8 +363,8 @@ if(debugging) {
 
 
 function ayaId2SuraAya(ayaId){
-    var sura = enQuran.data.surahs.find(s => s.ayahs.find(a => a.number == ayaId)).number
-    var aya = enQuran.data.surahs[sura-1].ayahs.find(a => a.number == ayaId).numberInSurah
+    var sura = enQuran.find(s => s.ayahs.find(a => a.number == ayaId)).number
+    var aya = enQuran[sura-1].ayahs.find(a => a.number == ayaId).numberInSurah
     return {sura: sura, aya: aya}
 }
 
@@ -379,11 +379,11 @@ function prepareAya(ayaId){
         suraNum     = ayaIndex.sura,
         ayaNum      = ayaIndex.aya,
 
-        arAya               = arQuran.data.surahs[suraNum-1].ayahs[ayaNum-1].text,
-        enTranslatedAya     = enQuran.data.surahs[suraNum-1].ayahs[ayaNum-1].text,
-        arName              = enQuran.data.surahs[suraNum-1].name.substr(8), // substr(8) to remove the Arabic word "Sura".
-        enArName            = enQuran.data.surahs[suraNum-1].englishName,
-        enTranslatedName    = enQuran.data.surahs[suraNum-1].englishNameTranslation,
+        arAya               = arQuran[suraNum-1].ayahs[ayaNum-1].text,
+        enTranslatedAya     = enQuran[suraNum-1].ayahs[ayaNum-1].text,
+        arName              = enQuran[suraNum-1].name.substr(8), // substr(8) to remove the Arabic word "Sura".
+        enArName            = enQuran[suraNum-1].englishName,
+        enTranslatedName    = enQuran[suraNum-1].englishNameTranslation,
         arIndex             = `﴿<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">${arName}؜ ${ayaNum.toString().toArNum()}</a>﴾`,
         enIndex             = `"${enArName}: ${enTranslatedName}", <a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">Sura ${suraNum} Aya ${ayaNum}</a>`,
         
