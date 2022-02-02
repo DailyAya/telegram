@@ -73,18 +73,10 @@ client.connect((err, db) => {
         log('MongoDbConn Connected!')
         dbConn = db
 
-        getReciters()
-        .then((r) => {
-            recitersButtons(r)
-            timerSend()
+        timerSend()
             .catch(e => {
-                log(`Error while calling timerSend inside getReciters: `, e)
+                log(`Error while calling timerSend inside dbConn: `, e)
             })
-        }).catch(e => {
-            if(!recitersData.length){
-                log(`Error while calling getReciters inside client.connect: `, e)
-            }
-        })
     }
 })
 
@@ -161,7 +153,7 @@ function setFavReciter(chatId, reciterIdentifier){
 
 Reciter will be changed with each surprise Aya.`
         } else {
-            var requestedFavReciterData = recitersData.filter(i => i.identifier == reciterIdentifier)
+            var requestedFavReciterData = arReciters.filter(i => i.identifier == reciterIdentifier)
             msg =
 `القارئ المفضل الحالي: ${requestedFavReciterData[0].name}
 
@@ -310,8 +302,8 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
 function random(type){
     var max = 6236 // default for aya number
     if (type == "reciter"){
-        max = recitersData.length
-        return recitersData[Math.floor(Math.random() * Math.floor(max))].identifier
+        max = arReciters.length
+        return arReciters[Math.floor(Math.random() * Math.floor(max))].identifier
     }
     // +1 because the generated numbers are between 0 and max-1
     else return Math.floor(Math.random() * Math.floor(max)) + 1  
@@ -320,14 +312,14 @@ function random(type){
 
 
 
-// Prepare an Aya to be sent
-// Because returning a promise, must be called with .then().catch()
+
 const axios = require('axios')
 const arQuran = require('./quran-uthmani.json')
 const enQuran = require('./en.ahmedraza.json')
+var arReciters = require('./arReciters.json')
 
 
-function checkQuran(){
+function checkSource(){
     var downloadStart = Date.now()
     axios("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
@@ -352,9 +344,21 @@ function checkQuran(){
         }
     })
     .catch(e => log('Error while checking enQuran cached vs remote: ', e))
+
+    axios("http://api.alquran.cloud/edition/format/audio")
+    .then(r =>{
+        if(JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language == "ar") != JSON.stringify(arReciters)){
+            bot.telegram.sendMessage(devChatId,
+                `Remote arReciters has changed. Please update the cached JSON file.`
+            )
+        } else {
+            log(`Remote arReciters is the same as the cached JSON file. It took ${((Date.now()-downloadStart)/1000).toFixed(2)} seconds.`)
+        }
+    })
+    .catch(e => log('Error while checking arReciters cached vs remote: ', e))
 }
 if(!debugging) {
-    checkQuran()
+    checkSource()
 }
 
 
@@ -363,6 +367,10 @@ function ayaId2SuraAya(ayaId){
     var aya = enQuran.data.surahs[sura-1].ayahs.find(a => a.number == ayaId).numberInSurah
     return {sura: sura, aya: aya}
 }
+
+
+// Prepare an Aya to be sent
+// Because returning a promise, must be called with .then().catch()
 
 function prepareAya(ayaId){
     String.prototype.toArNum = function() {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d])}
@@ -397,42 +405,20 @@ ${arIndex}`,
 
 
 
-// returns a URL string for the audio file of the requested aya (is a must)
-// if reciter is not requested or not supported, a random reciter will be provided
-var recitersData
-
-function getReciters() {
-    return new Promise((resolve, reject) =>{
-        axios('http://api.alquran.cloud/edition/format/audio') // Run only once for each process
-        .then(res => {
-            recitersData = JSON.parse(JSON.stringify(res.data)).data.filter(i => i.language == "ar") // Only Arabic recitations
-            log("Reciters List is ready. Total Reciters: " + recitersData.length)
-            resolve(recitersData)
-        })
-        .catch(e => {
-            log('Error while getting reciters list and will try again after 1 sec: ', e)
-            setTimeout(() => {
-                getReciters()
-                .then(r => resolve(r))
-                .catch(e => log(`getReciters Try Error: `, e)) // don't reject inside promise loop
-            }, 1000) // wait 1 sec before trying again due to api.alquran.cloud requests limit
-        })
-    })
-}
-
-
 // For inline keyboard when setting favorite reciter
 var recitersInlineButtons = []
-function recitersButtons(recitersData){
-    recitersData.forEach(reciter => {
+function recitersButtons(reciters){
+    reciters.forEach(reciter => {
         recitersInlineButtons.push([{
             text: `${reciter.englishName} ${reciter.name}`,
             callback_data: `{"setReciter": "${reciter.identifier}"}`
         }])
     })
 }
+recitersButtons(arReciters)
 
-
+// returns a URL string for the audio file of the requested aya (is a must)
+// if reciter is not requested or not supported, a random reciter will be provided
 // Must be called with .then .catch
 var recitationTries = [] // ['aya/reciter']
 function recitation(aya, reciter){
@@ -467,8 +453,8 @@ function recitation(aya, reciter){
 
 function isValidReciter(reciter){
     var validReciter = false
-    for (let i = 0; i < recitersData.length; i++) {
-        if(recitersData[i].identifier == reciter) {
+    for (let i = 0; i < arReciters.length; i++) {
+        if(arReciters[i].identifier == reciter) {
             validReciter = true
             break
         }
