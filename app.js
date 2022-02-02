@@ -316,7 +316,7 @@ function random(type){
 const axios = require('axios')
 const arQuran = require('./quran-uthmani.json')
 const enQuran = require('./en.ahmedraza.json')
-var arReciters = require('./arReciters.json')
+const arReciters = require('./arReciters.json').data
 
 
 function checkSource(){
