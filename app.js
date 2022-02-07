@@ -263,9 +263,9 @@ if(telegramToken){
 
 function start(chatId){
     var msg =
-`دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات حتى لا ينقطع وردك اليومي.
+`دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات والقنوات حتى لا ينقطع وردك اليومي.
 
-Daily Aya sends one Aya daily at the same time of the last Aya you request in private chats or groups so your daily read doesn't stop.`
+Daily Aya sends one Aya daily at the same time of the last Aya you request in private chats or groups and channels so your daily read doesn't stop.`
 
     bot.telegram.sendMessage(chatId, msg, {
         reply_markup: {
@@ -277,6 +277,7 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
             ]
         }
     })
+    .catch(e => log("Error while sending start: ", e))
 
 
     // Informing "DailyAya Dev" of total active and blocked chats when /start is sent
@@ -685,64 +686,72 @@ function nextAya(ayaId){
 
 // Sends an error message if unrecognized aya
 function unrecognized(chatId, reason){
-    var msg 
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var msg 
 
-    switch (reason) {
-        case 1:
-            msg =
+            switch (reason) {
+                case 1:
+                    msg =
 `رسالتك بلا أرقام.
 رجاء إرسال رقم السورة على الأقل.
 
 Your message didn't contain numbers.
 Please send Sura number at least.`
-            break;
-            
-        case 2:
-            msg =
+                    break;
+                    
+                case 2:
+                    msg =
 `الرقم الأول ليس رقم سورة.
 يجب أن يكون من 1 إلى 114.
 
 The first number is not a Sura number.
 It must be from 1 to 114.`
-            break;
+                    break;
 
-        case 3:
-            msg =
+                case 3:
+                    msg =
 `الرقم الثاني ليس آية في السورة المطلوبة.
 
 The second number is not an Aya in the requested Sura.`
-            break;
+                    break;
 
-        case 4:
-            msg =
+                case 4:
+                    msg =
 `عفوا، حاليا نتعرف فقط على أرقام السور والآيات في الرسائل النصية.
 
 Sorry, we currently only recognize numbers of Sura or Aya in text messages.`
-            break;
-    
-        default:
-            msg =
+                    break;
+            
+                default:
+                    msg =
 `خطأ غير معروف!
 
 Unknown error!`
-            break;
-    }
+                    break;
+            }
 
-    bot.telegram.sendMessage(chatId, msg, {
-        reply_markup: {
-            inline_keyboard:[
-                [{
-                    text: "🎁",
-                    callback_data: "surpriseAya"
-                },{
-                    text: "🤔",
-                    callback_data: "instructions"
-                }]
-            ]
-        }
-    })
+            bot.telegram.sendMessage(chatId, msg, {
+                reply_markup: {
+                    inline_keyboard:[
+                        [{
+                            text: "🎁",
+                            callback_data: "surpriseAya"
+                        },{
+                            text: "🤔",
+                            callback_data: "instructions"
+                        }]
+                    ]
+                }
+            })
     .then(log('Sent reason of unrecognized request to chat '+chatId+'.'))
     .catch(e=>log('Failed to send reason of unrecognized request to chat '+chatId+': ', e))
+        } else {
+            log(`Ignored message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
 }
 
 
@@ -796,14 +805,14 @@ function numArabicToEnglish(string) {
 // Because returning a promise, must be called with .then().catch()
 function ayaCheck(sura, aya){
     return new Promise((resolve, reject) => {
-        var url = 'http://api.alquran.cloud/ayah/'+sura+':'+aya;
+        var url = 'http://api.alquran.cloud/ayah/'+sura+':'+aya
       	    axios(url)
       	        .then(function (res) {
-      	            resolve(res.data.data.number);
+      	            resolve(res.data.data.number)
     	        }).catch(function (e) {
-    	            log('ayaCheck error: ', e);
-                    if (e.response.data.data.match('surah')) resolve(0); // Aya is not valid
-                    else reject(e); // Something else is wrong!
+    	            log('ayaCheck error: ', e)
+                    if (e.response.data.data.match('surah')) resolve(0) // Aya is not valid
+                    else reject(e) // Something else is wrong!
                 })
     })
 }
@@ -849,17 +858,7 @@ function handleText(ctx){
 
 
 function surpriseAya(ctx){
-    adminChecker(ctx)
-    .then(isAdmin =>{
-        if(isAdmin){
-            sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
-        } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name to open DailyAya privately.", {show_alert: true})
-        }
-    })
-    .catch(e =>{
-        log('Error while checking admin: ', e)
-    })
+    sendAya(ctx.chat.id, "", "", ctx.from.language_code, 'surprise')
 }
 
 
@@ -901,7 +900,7 @@ bot.start(ctx => {
             if(ctx.startPayload.length) handleText(ctx)
             else start(ctx.chat.id)
         } else {
-            log(`Ignored start command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
+            log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
         }
     })
     .catch(e =>{
@@ -911,7 +910,15 @@ bot.start(ctx => {
 
 // Invoking help command
 bot.help(ctx => {
-    instructions(ctx.chat.id)
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            instructions(ctx.chat.id)
+        } else {
+            log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
 })
 
 
@@ -919,44 +926,68 @@ bot.help(ctx => {
 
 // When a user presses "Surprise Me" in menu
 bot.command('surpriseme', ctx => {
-    surpriseAya(ctx)
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            surpriseAya(ctx)
+        } else {
+            log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
 })
 
 
 // When a user presses "Support" in menu
 bot.command('support', ctx => {
-    var msg =
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var msg =
 `ندعمك أم تدعمنا؟
 
 Support you or support us?`
-    bot.telegram.sendMessage(ctx.chat.id, msg, {
-        reply_markup: {
-            inline_keyboard:[
-                [{
-                    text: "💰",
-                    url: "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=sherbeeny@me.com&lc=US&item_name=Support+DailyAya&no_note=0&cn=&currency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted"
-                },{
-                    text: "💬",
-                    url: "https://t.me/sherbeeny"
-                }]
-            ]
+            bot.telegram.sendMessage(ctx.chat.id, msg, {
+                reply_markup: {
+                    inline_keyboard:[
+                        [{
+                            text: "💰",
+                            url: "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=sherbeeny@me.com&lc=US&item_name=Support+DailyAya&no_note=0&cn=&currency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted"
+                        },{
+                            text: "💬",
+                            url: "https://t.me/sherbeeny"
+                        }]
+                    ]
+                }
+            })  
+        } else {
+            log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
         }
     })
+    .catch(e => log('Error while checking admin: ', e))
 })
 
 
 
 // When a user presses "set_fav_reciter" in menu
 bot.command('reciters', ctx => {
-    var msg =
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var msg =
 `من هو قارئك المفضل؟
 
 Who is your favorite Reciter?`
-    bot.telegram.sendMessage(ctx.chat.id, msg, {
-        reply_markup: {
-            inline_keyboard: recitersNavPage(1)
+            bot.telegram.sendMessage(ctx.chat.id, msg, {
+                reply_markup: {
+                    inline_keyboard: recitersNavPage(1)
+                }
+            })
+        } else {
+            log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
         }
     })
+    .catch(e => log('Error while checking admin: ', e))
 })
 
 // bot.command(`restart`, ctx =>{
@@ -989,63 +1020,121 @@ function recitersNavPage(page){
 }
 
 bot.action(/^{"recitersNavPage/ , ctx =>{
-    var callbackData = JSON.parse(ctx.update.callback_query.data)
-    var requestedRecitersNavPage = callbackData.recitersNavPage
-    bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, {
-        inline_keyboard: recitersNavPage(requestedRecitersNavPage)
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var callbackData = JSON.parse(ctx.update.callback_query.data)
+            var requestedRecitersNavPage = callbackData.recitersNavPage
+            bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, {
+                inline_keyboard: recitersNavPage(requestedRecitersNavPage)
+            })
+        } else {
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+        }
     })
+    .catch(e => log('Error while checking admin: ', e))
 })
 
 bot.action(/^{"setReciter/ , ctx =>{
-    var callbackData = JSON.parse(ctx.update.callback_query.data)
-    var requestedFavReciter = callbackData.setReciter
-    
-    setFavReciter(ctx.chat.id, requestedFavReciter)
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var callbackData = JSON.parse(ctx.update.callback_query.data)
+            var requestedFavReciter = callbackData.setReciter
+            
+            setFavReciter(ctx.chat.id, requestedFavReciter)
+        } else {
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
 })
 
 
 
 bot.action('instructions', ctx => {
-    instructions(ctx.chat.id)
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            instructions(ctx.chat.id)
+        } else {
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
 })
 
 
 // When a user presses "Another Aya" inline keyboard button
 bot.action('surpriseAya', ctx => {
-    surpriseAya(ctx)
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            surpriseAya(ctx)
+        } else {
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
 })
 
 
 
 // When a user presses "Next Aya" inline keyboard button
 bot.action(/^{"currAya/, ctx => {
-    var callbackData= JSON.parse(ctx.update.callback_query.data)
-    var currentAyaId = Math.floor(callbackData.currAya)
-    log(`Sending next Aya after Aya ${currentAyaId} with Reciter ${callbackData.r} for chat ${ctx.chat.id}`)
-    log(`Current ayaMsgId is ${ctx.update.callback_query.message.message_id} and recitationMsgId is ${callbackData.rMsgId}`)
-    sendAya(ctx.chat.id, nextAya(currentAyaId), callbackData.r, ctx.from.language_code, 'next')
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var callbackData= JSON.parse(ctx.update.callback_query.data)
+            var currentAyaId = Math.floor(callbackData.currAya)
+            log(`Sending next Aya after Aya ${currentAyaId} with Reciter ${callbackData.r} for chat ${ctx.chat.id}`)
+            log(`Current ayaMsgId is ${ctx.update.callback_query.message.message_id} and recitationMsgId is ${callbackData.rMsgId}`)
+            sendAya(ctx.chat.id, nextAya(currentAyaId), callbackData.r, ctx.from.language_code, 'next')
+        } else {
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
 })
 
 bot.action(/^{"aMenu/ , ctx =>{
-    var callbackData = JSON.parse(ctx.update.callback_query.data)
-    var buttons = aMenuButtons(callbackData.a, callbackData.r, callbackData.rMsgId, callbackData.aMenu ? 0 : 1) // Toggle menu state
-    bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, buttons)
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var callbackData = JSON.parse(ctx.update.callback_query.data)
+            var buttons = aMenuButtons(callbackData.a, callbackData.r, callbackData.rMsgId, callbackData.aMenu ? 0 : 1) // Toggle menu state
+            bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, buttons)
+        } else {
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
 })
 
 
 
-bot.on('text', ctx => handleText(ctx))
+bot.on('text', ctx => {
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            handleText(ctx)
+        } else {
+            log(`Ignored text from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
+})
 
 
 // Responds to "some" non text messages to send UNRECOGNIZED for reason 4
-bot.on('sticker', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('photo', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('location', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('document', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('audio', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('voice', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('poll', ctx => unrecognized(ctx.chat.id, 4))
-bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
+// bot.on('sticker', ctx => unrecognized(ctx.chat.id, 4))
+// bot.on('photo', ctx => unrecognized(ctx.chat.id, 4))
+// bot.on('location', ctx => unrecognized(ctx.chat.id, 4))
+// bot.on('document', ctx => unrecognized(ctx.chat.id, 4))
+// bot.on('audio', ctx => unrecognized(ctx.chat.id, 4))
+// bot.on('voice', ctx => unrecognized(ctx.chat.id, 4))
+// bot.on('poll', ctx => unrecognized(ctx.chat.id, 4))
+// bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
 
 
 
