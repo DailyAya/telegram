@@ -563,14 +563,33 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                 recitation(ayaId, reciter)
                     .then(recitationUrl => {
                         recitationReady = true
-                        ctx.replyWithAudio(recitationUrl, {reply_to_message_id: ctx.update.callback_query.message.message_id, caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
+                        ctx.replyWithAudio(recitationUrl, {caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
                             .then((c) =>{
                                 audioSuccess = true
-                                ctx.editMessageReplyMarkup(null)
-                                    .then (() => {
-                                        bot.telegram.editMessageReplyMarkup(chatId, c.message_id, null, aMenuButtons("r0", ayaId, reciter))
-                                            .then(() => resolve(c))
-                                    })
+                                if (c.message_id != 1 + ctx.update.callback_query.message.message_id){ // if the recitation is not right after the text
+                                    audioSuccess = false
+                                    bot.telegram.deleteMessage(chatId, c.message_id)
+                                        .then (() => {
+                                            ctx.replyWithAudio(recitationUrl, {
+                                                reply_to_message_id: ctx.update.callback_query.message.message_id,
+                                                caption: recitationCaption, parse_mode: 'HTML', disable_notification: true
+                                            })
+                                                .then((r) => {
+                                                    audioSuccess = true
+                                                    ctx.editMessageReplyMarkup(null)
+                                                        .then (() => {
+                                                            bot.telegram.editMessageReplyMarkup(chatId, r.message_id, null, aMenuButtons("r0", ayaId, reciter))
+                                                                .then(() => resolve(r))
+                                                        })
+                                                })
+                                        })
+                                } else {
+                                    ctx.editMessageReplyMarkup(null)
+                                        .then (() => {
+                                            bot.telegram.editMessageReplyMarkup(chatId, c.message_id, null, aMenuButtons("r0", ayaId, reciter))
+                                                .then(() => resolve(c))
+                                        })
+                                }
                             })
                             .catch(e => {
                                 log(`Error while sending recitation for aya ${ayaId} by ${reciter} to chat ${chatId} (${preparedAya.caption}): `, e)
