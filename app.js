@@ -563,12 +563,12 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                 recitation(ayaId, reciter)
                     .then(recitationUrl => {
                         recitationReady = true
-                        ctx.replyWithAudio(recitationUrl, {caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
+                        ctx.replyWithAudio(recitationUrl, {reply_to_message_id: ctx.inlineMessageId, caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
                             .then((c) =>{
                                 audioSuccess = true
                                 ctx.editMessageReplyMarkup(null)
                                     .then (() => {
-                                        c.editMessageReplyMarkup(aMenuButtons("r0", ayaId, reciter))
+                                        bot.telegram.editMessageReplyMarkup(chatId, c.message_id, null, aMenuButtons("r0", ayaId, reciter))
                                             .then(() => resolve(c))
                                     })
                             })
