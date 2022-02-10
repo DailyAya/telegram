@@ -821,7 +821,7 @@ function numArabicToEnglish(string) {
 // Responds to text messages to send the requested Aya or error message if unrecognized
 function handleText(ctx){
     var txt         = ctx.message.text,
-        foundNums   = numArabicToEnglish(txt).match(/\d+/g),
+        foundNums   = numArabicToEnglish(txt).match(/\d+/g) || [],
         chatId      = ctx.chat.id,
         ayaId
     log('Message from chat ' + chatId+ ': ' + txt)
