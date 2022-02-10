@@ -550,7 +550,7 @@ function sendAyaText(chatId, ayaId, reciter, lang, trigger){
 function sendAyaRecitation(ctx, ayaId, reciter){
     return new Promise ((resolve, reject) => {
         var audioSuccess, favReciterReady, recitationReady, buttons, chatId = ctx.chat.id
-        getFavReciter(reciter ? 0 : chatId) // getFavReciter will resolve 0 if there's a reciter
+        getFavReciter(isValidReciter(reciter) ? 0 : chatId) // getFavReciter will resolve 0 if there's a valid reciter
             .then(favReciter => {
                 favReciterReady = true
                 reciter = isValidReciter(favReciter || "None") ? favReciter : (isValidReciter(reciter) ? reciter : random('reciter'))
@@ -1076,7 +1076,6 @@ bot.action(/^{"currAya/, ctx => {
             var callbackData= JSON.parse(ctx.update.callback_query.data)
             var currentAyaId = Math.floor(callbackData.currAya)
             log(`Sending next Aya after Aya ${currentAyaId} with Reciter ${callbackData.r} for chat ${ctx.chat.id}`)
-            log(`Current ayaMsgId is ${ctx.update.callback_query.message.message_id} and recitationMsgId is ${callbackData.rMsgId}`)
             sendAya(ctx.chat.id, nextAya(currentAyaId), callbackData.r, ctx.from.language_code, 'next')
         } else {
             ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
@@ -1107,6 +1106,7 @@ bot.action(/^{"recite/ , ctx =>{
     .then(isAdmin =>{
         if(isAdmin){
             var callbackData = JSON.parse(ctx.update.callback_query.data)
+            log("Button reciter: " + callbackData.r)
             sendAyaRecitation(ctx, callbackData.recite, callbackData.r)
         } else {
             ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
