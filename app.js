@@ -563,7 +563,7 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                 recitation(ayaId, reciter)
                     .then(recitationUrl => {
                         recitationReady = true
-                        log("ctx.message.message_id: " + ctx.message.message_id)
+                        log("ctx.message.message_id: " + ctx.update.callback_query.message.message_id)
                         log("ctx.message_id: " + ctx.message_id)
                         log("ctx.inlineMessageId: " + ctx.inlineMessageId)
                         ctx.replyWithAudio(recitationUrl, {reply_to_message_id: ctx.message.message_id, caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
