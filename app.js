@@ -701,7 +701,8 @@ function nextAya(ayaId){
 
 
 // Sends an error message if unrecognized aya
-function unrecognized(chatId, reason){
+function unrecognized(ctx, reason){
+    var chatId = ctx.chat.id
     adminChecker(ctx)
     .then(isAdmin =>{
         if(isAdmin){
@@ -830,7 +831,7 @@ function handleText(ctx){
         ayaId = suraAya2ayaId({sura: foundNums[0], aya: foundNums.length >= 2 ? foundNums[1] : 1})
     } else {
         // if incoming text doesn't have any valid numbers, send UNRECOGNIZED for reason 1
-        unrecognized(chatId, 1)
+        unrecognized(ctx, 1)
     }
 
     if (ayaId > 0 && foundNums.length >= 1) {
@@ -838,10 +839,10 @@ function handleText(ctx){
         sendAya(chatId, ayaId, "", ctx.from.language_code, 'request')
     } else if (ayaId == -1) {
         // if first number is not valid sura number, send UNRECOGNIZED for reason 2
-        unrecognized(chatId, 2)
+        unrecognized(ctx, 2)
     } else if (ayaId == 0){
         // if first number is valid sura but second number is not valid aya send UNRECOGNIZED for reason 3
-        unrecognized(chatId, 3)
+        unrecognized(ctx, 3)
     }
 }
 
@@ -1145,14 +1146,14 @@ bot.on('text', ctx => {
 
 
 // Responds to "some" non text messages to send UNRECOGNIZED for reason 4
-// bot.on('sticker', ctx => unrecognized(ctx.chat.id, 4))
-// bot.on('photo', ctx => unrecognized(ctx.chat.id, 4))
-// bot.on('location', ctx => unrecognized(ctx.chat.id, 4))
-// bot.on('document', ctx => unrecognized(ctx.chat.id, 4))
-// bot.on('audio', ctx => unrecognized(ctx.chat.id, 4))
-// bot.on('voice', ctx => unrecognized(ctx.chat.id, 4))
-// bot.on('poll', ctx => unrecognized(ctx.chat.id, 4))
-// bot.on('contact', ctx => unrecognized(ctx.chat.id, 4))
+// bot.on('sticker', ctx => unrecognized(ctx, 4))
+// bot.on('photo', ctx => unrecognized(ctx, 4))
+// bot.on('location', ctx => unrecognized(ctx, 4))
+// bot.on('document', ctx => unrecognized(ctx, 4))
+// bot.on('audio', ctx => unrecognized(ctx, 4))
+// bot.on('voice', ctx => unrecognized(ctx, 4))
+// bot.on('poll', ctx => unrecognized(ctx, 4))
+// bot.on('contact', ctx => unrecognized(ctx, 4))
 
 
 
