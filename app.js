@@ -403,7 +403,7 @@ function prepareAya(ayaId){
         enIndex             = `<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">"${enArName}: ${enTranslatedName}", Sura ${suraNum} Aya ${ayaNum}</a>`,
         
         arText              = `<b>${arAya}</b>\n${arIndex}`,
-        enText              = `${enTranslatedAya}\n<i>An interpretation of ${enIndex}.</i>`
+        enText              = `${enTranslatedAya}\n<i>{An interpretation of ${enIndex}}</i>`
 
     return {arText: arText, enText: enText}
 }
@@ -563,13 +563,16 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                 recitation(ayaId, reciter)
                     .then(recitationUrl => {
                         recitationReady = true
-                        bot.telegram.sendAudio(chatId, recitationUrl,
-                            {reply_to_message_id: ctx.message_id, caption: recitationCaption, parse_mode: 'HTML', disable_notification: true, reply_markup: buttons})
+                        ctx.replyWithAudio(recitationUrl, {caption: recitationCaption, parse_mode: 'HTML', disable_notification: true, reply_markup: buttons})
+                        // bot.telegram.sendAudio(chatId, recitationUrl,
+                        //     {reply_to_message_id: ctx.message_id, caption: recitationCaption, parse_mode: 'HTML', disable_notification: true, reply_markup: buttons})
                             .then((c) =>{
                                 audioSuccess = true
-                                bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.message_id, undefined, null)
+                                ctx.editMessageReplyMarkup(null)
+                                // bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.message_id, undefined, null)
                                     .then (() => {
-                                        bot.telegram.editMessageReplyMarkup(c.chat.id, c.message_id, undefined, aMenuButtons("r0", ayaId, reciter))
+                                        c.editMessageReplyMarkup(aMenuButtons("r0", ayaId, reciter))
+                                        // bot.telegram.editMessageReplyMarkup(c.chat.id, c.message_id, undefined, aMenuButtons("r0", ayaId, reciter))
                                             .then(() => resolve(c))
                                     })
                             })
