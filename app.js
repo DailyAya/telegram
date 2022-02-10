@@ -563,20 +563,20 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                 recitation(ayaId, reciter)
                     .then(recitationUrl => {
                         recitationReady = true
-                        ctx.replyWithAudio(recitationUrl, {caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
+                        bot.telegram.sendAudio(chatId, recitationUrl, {caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
                             .then((c) =>{
                                 audioSuccess = true
-                                if (c.message_id != 1 + ctx.update.callback_query.message.message_id){ // Refer/Reply to the text if the recitation is not sent right after it
+                                if (c.message_id != 1 + (ctx.update.callback_query.message.message_id || ctx.message.message_id)){ // Refer/Reply to the text if the recitation is not sent right after it
                                     audioSuccess = false
                                     bot.telegram.deleteMessage(chatId, c.message_id)
                                         .then (() => {
-                                            ctx.replyWithAudio(recitationUrl, {
-                                                reply_to_message_id: ctx.update.callback_query.message.message_id,
+                                            bot.telegram.sendAudio(chatId, recitationUrl, {
+                                                reply_to_message_id: ctx.update.callback_query.message.message_id || ctx.message.message_id,
                                                 caption: recitationCaption, parse_mode: 'HTML', disable_notification: true
                                             })
                                                 .then((r) => {
                                                     audioSuccess = true
-                                                    ctx.editMessageReplyMarkup(null)
+                                                    bot.telegram.editMessageReplyMarkup(chatId, ctx.update.callback_query.message.message_id || ctx.message.message_id, null, null)
                                                         .then (() => {
                                                             bot.telegram.editMessageReplyMarkup(chatId, r.message_id, null, aMenuButtons("r0", ayaId, reciter))
                                                                 .then(() => resolve(r))
