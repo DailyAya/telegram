@@ -566,7 +566,7 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                         ctx.replyWithAudio(recitationUrl, {caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
                             .then((c) =>{
                                 audioSuccess = true
-                                if (c.message_id != 1 + ctx.update.callback_query.message.message_id){ // if the recitation is not right after the text
+                                if (c.message_id != 1 + ctx.update.callback_query.message.message_id){ // Refer/Reply to the text if the recitation is not sent right after it
                                     audioSuccess = false
                                     bot.telegram.deleteMessage(chatId, c.message_id)
                                         .then (() => {
@@ -827,7 +827,7 @@ function handleText(ctx){
     var txt         = ctx.message.text,
         foundNums   = numArabicToEnglish(txt).match(/\d+/g) || [],
         chatId      = ctx.chat.id,
-        ayaId
+        ayaId       = -2 // Positive for valid ayaId, 0 for valid sura but invalid aya, -1 for invalid sura, -2 or any other negative for initialization.
     log('Message from chat ' + chatId+ ': ' + txt)
 
     if (foundNums.length >= 1){
@@ -837,9 +837,8 @@ function handleText(ctx){
         unrecognized(ctx, 1)
     }
 
-    if (ayaId > 0 && foundNums.length >= 1) {
-        log('suraAya2ayaId: '+ ayaId)
-        sendAya(chatId, ayaId, "", ctx.from.language_code, 'request')
+    if (ayaId > 0) {
+        sendAya(chatId, ayaId, "", ctx.from.language_code, 'request', ctx.startPayload.includes("r"))
     } else if (ayaId == -1) {
         // if first number is not valid sura number, send UNRECOGNIZED for reason 2
         unrecognized(ctx, 2)
@@ -1121,14 +1120,15 @@ bot.action(/^{"aMenu/ , ctx =>{
 
 
 bot.action(/^{"recite/ , ctx =>{
+    var callbackData = JSON.parse(ctx.update.callback_query.data)
     adminChecker(ctx)
     .then(isAdmin =>{
         if(isAdmin){
-            var callbackData = JSON.parse(ctx.update.callback_query.data)
             log("Button reciter: " + callbackData.r)
             sendAyaRecitation(ctx, callbackData.recite, callbackData.r)
         } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+            var ayaIndex = ayaId2suraAya(callbackData.recite)
+            ctx.answerCbQuery("", {url: `t.me/${bot.options.username}?start=r${ayaIndex.sura}-${ayaIndex.aya}`})
         }
     })
     .catch(e => log('Error while checking admin: ', e))
