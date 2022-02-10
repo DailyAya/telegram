@@ -363,10 +363,24 @@ if(!debugging) {
 }
 
 
-function ayaId2SuraAya(ayaId){
-    var sura = enQuran.find(s => s.ayahs.find(a => a.number == ayaId)).number
-    var aya = enQuran[sura-1].ayahs.find(a => a.number == ayaId).numberInSurah
-    return {sura: sura, aya: aya}
+function ayaId2suraAya(ayaId){
+    var sura = enQuran.find(s => s.ayahs.find(a => a.number == ayaId)).number || 0
+    var aya = enQuran[sura-1].ayahs.find(a => a.number == ayaId).numberInSurah || 0
+    return {sura: sura, aya: aya} // Returns {sura: 0, aya: 0} if not valid ayaId
+}
+
+function suraAya2ayaId(suraAya){ // suraAya = {sura: suraNum, aya: ayaNum}
+    var sura    = suraAya.sura,
+        aya     = suraAya.aya,
+        ayaId
+    
+    if (sura >= 1 && sura <= 114){
+        ayaId = enQuran[sura-1].ayahs.find(a => a.numberInSurah == aya).number || 0 // return  0 if valid Sura but invalid Aya
+    } else {
+        ayaId = -1 // return -1 if invalid Sura
+    }
+    
+    return ayaId
 }
 
 
@@ -376,7 +390,7 @@ function ayaId2SuraAya(ayaId){
 function prepareAya(ayaId){
     String.prototype.toArNum = function() {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d])}
 
-    var ayaIndex    = ayaId2SuraAya(ayaId),
+    var ayaIndex    = ayaId2suraAya(ayaId),
         suraNum     = ayaIndex.sura,
         ayaNum      = ayaIndex.aya,
 
@@ -388,19 +402,10 @@ function prepareAya(ayaId){
         arIndex             = `﴿<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">${arName}؜ ${ayaNum.toString().toArNum()}</a>﴾`,
         enIndex             = `"${enArName}: ${enTranslatedName}", <a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">Sura ${suraNum} Aya ${ayaNum}</a>`,
         
-        arText      =
-`<b>${arAya}</b>
-${arIndex}`,
+        arText              = `<b>${arAya}</b>\n\n${arIndex}`,
+        enText              = `${enTranslatedAya}\n\n<i>An interpretation of ${enIndex}.</i>`
 
-        enText      =
-`${enTranslatedAya}
-
-<i>An interpretation of ${enIndex}.</i>`,
-
-        caption  =
-`<a href="t.me/${bot.options.username}?start=${suraNum}-${ayaNum}">@${bot.options.username}</a>`
-
-    return {caption: caption, arText: arText, enText: enText}
+    return {arText: arText, enText: enText}
 }
 
 
@@ -499,8 +504,27 @@ function audioUrlCheck(url){
 
 
 
-// Send random Aya and random reciter if called with the userId argument only 
-function sendAya(chatId, requestedAyaId, requestedReciter, lang, trigger){
+// Send random Aya and random reciter if called with the userId argument only
+function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation){
+    log(`Initiating sending an Aya to chat ${chatId} with requested reciter: ${reciter ? reciter : "None"}`)
+
+    ayaId = ayaId || random('aya')
+    withRecitation = withRecitation || false
+
+    sendAyaText(chatId, ayaId, reciter, lang, trigger)
+        .then((ctx) => {
+            if (withRecitation) {
+                sendAyaRecitation(ctx, ayaId, reciter)
+            }
+        })
+        .catch(e => {
+            log(`Error while sending Aya ${ayaId} text to chat ${chatId}: `, e)
+                if(JSON.stringify(e).includes('blocked by the user')){
+                    lastAyaTime(chatId, 'blocked')
+                }
+        })
+}
+function sendAyaV1(chatId, requestedAyaId, requestedReciter, lang, trigger){
     log(`Initiating sending an Aya to chat ${chatId} with requested reciter: ${requestedReciter ? requestedReciter : "None"}`)
 
     var ayaId, reciter, audioSuccess
@@ -522,50 +546,50 @@ ${preparedAya.enText}`
         log(`Chat ${chatId} got reciter: ${reciter}`)
 
         recitation(ayaId, reciter)
-        .then(recitationUrl => {
-            recitationReady = true
-            bot.telegram.sendAudio(chatId, recitationUrl, {caption: preparedAya.caption, parse_mode: 'HTML', disable_notifications: true})
-            .then(ctx =>{
-                // log(`Audio File ctx: ${JSON.stringify(ctx)}`)
-                audioSuccess = true
-                sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger)
-                if(trigger == 'surprise' || trigger == 'timer'){
-                    var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
-                    var personalizedCaption = `${ctx.caption} ➔ ${chatName}`
-                    bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
-                        type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, caption_entities: ctx.caption_entities
-                    })
-                }
+            .then(recitationUrl => {
+                recitationReady = true
+                bot.telegram.sendAudio(chatId, recitationUrl, {caption: preparedAya.caption, parse_mode: 'HTML', disable_notification: true})
+                .then(ctx =>{
+                    // log(`Audio File ctx: ${JSON.stringify(ctx)}`)
+                    audioSuccess = true
+                    sendAyaTextV1(ctx, dualText, ayaId, reciter, lang, trigger)
+                    if(trigger == 'surprise' || trigger == 'timer'){
+                        var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
+                        var personalizedCaption = `${ctx.caption} ➔ ${chatName}`
+                        bot.telegram.editMessageMedia(chatId, ctx.message_id, undefined, {
+                            type: 'audio', media: ctx.audio.file_id, caption: personalizedCaption, caption_entities: ctx.caption_entities
+                        })
+                    }
+                })
+                .catch(e => {
+                    log(`Error while sending recitation for aya ${ayaId} by ${reciter} to chat ${chatId} (${preparedAya.caption}): `, e)
+                    if(JSON.stringify(e).includes('blocked by the user')) {
+                        lastAyaTime(chatId, 'blocked')
+                    } else if(!audioSuccess) {
+                        sendSorry(chatId, 'audio')
+                        .then(ctx => sendAyaTextV1(ctx, dualText, ayaId, reciter, lang, trigger))
+                        .catch(e => log(`Error while sending SORRY for failed recitation send for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e))
+                    }
+                })
             })
             .catch(e => {
-                log(`Error while sending recitation for aya ${ayaId} by ${reciter} to chat ${chatId} (${preparedAya.caption}): `, e)
-                if(JSON.stringify(e).includes('blocked by the user')) {
-                    lastAyaTime(chatId, 'blocked')
-                } else if(!audioSuccess) {
+                log(`Error while getting recitation URL for aya ${ayaId} by ${reciter} for chat ${chatId}: `, e)
+                if(!recitationReady) {
                     sendSorry(chatId, 'audio')
-                    .then(ctx => sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger))
-                    .catch(e => log(`Error while sending SORRY for failed recitation send for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e))
+                    .then(ctx => sendAyaTextV1(ctx, dualText, ayaId, reciter, lang, trigger))
+                    .catch(e => log(`Error while sending SORRY for no recitation for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e))
                 }
             })
-        })
-        .catch(e => {
-            log(`Error while getting recitation URL for aya ${ayaId} by ${reciter} for chat ${chatId}: `, e)
-            if(!recitationReady) {
-                sendSorry(chatId, 'audio')
-                .then(ctx => sendAyaText(ctx, dualText, ayaId, reciter, lang, trigger))
-                .catch(e => log(`Error while sending SORRY for no recitation for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e))
-            }
-        })
     })
     .catch(e => log(`Error while calling getFavReciter for chat ${chatId}: `, e)) 
 }
 
 
-function sendAyaText(ctx, ayaText, ayaId, reciter, lang, trigger){
+function sendAyaTextV1(ctx, ayaText, ayaId, reciter, lang, trigger){
     recitationMsgId = ctx.audio ? ctx.message_id : 0 // To be able to handle cases of audio issues
 
     // Prepare buttons to be sent with Aya text
-    var markup = aMenuButtons(ayaId, reciter, recitationMsgId)
+    var markup = aMenuButtonsV1(ayaId, reciter, recitationMsgId)
 
     // send aya text and inline buttons
     bot.telegram.sendMessage(ctx.chat.id, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: markup})
@@ -578,7 +602,129 @@ function sendAyaText(ctx, ayaText, ayaId, reciter, lang, trigger){
         })
 }
 
-function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
+function sendAyaText(chatId, ayaId, reciter, lang, trigger){
+    return new Promise ((resolve, reject) => {
+        log(`Formatting Aya ${ayaId} for chat ${chatId}`)
+        reciter = reciter ? reciter : "None"
+        var preparedAya = prepareAya(ayaId), // Prepare Aya text
+            ayaDualText = `${preparedAya.arText}\n\n${preparedAya.enText}`, // Add an empty line between Arabic and English Aya text
+            buttons = aMenuButtonsV2("t0", ayaId, reciter) // Prepare buttons to be sent with Aya text
+
+        // send aya text and inline buttons
+        bot.telegram.sendMessage(chatId, ayaDualText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: buttons})
+            .then(c => {
+                successSend(c, ayaId, lang, trigger)
+                resolve(c)
+            })
+            .catch(e => reject(e))
+    })
+}
+
+function sendAyaRecitation(ctx, ayaId, reciter){
+    return new Promise ((resolve, reject) => {
+        var audioSuccess, favReciterReady, recitationReady, buttons, chatId = ctx.chat.id
+        getFavReciter(reciter ? 0 : chatId) // getFavReciter will resolve 0 if there's a reciter
+            .then(favReciter => {
+                favReciterReady = true
+                reciter = isValidReciter(favReciter || "None") ? favReciter : (isValidReciter(reciter) ? reciter : random('reciter'))
+                log(`Chat ${chatId} got reciter: ${reciter}`)
+                var suraAyaIndex        = ayaId2suraAya(ayaId),
+                    recitationCaption   = 
+                    `<a href="t.me/${bot.options.username}?start=${suraAyaIndex.sura}-${suraAyaIndex.aya}">@${
+                        bot.options.username} ➔ ${suraAyaIndex.sura}:${suraAyaIndex.aya}</a>`
+                buttons = aMenuButtonsV2("r0", ayaId, reciter)
+                recitation(ayaId, reciter)
+                    .then(recitationUrl => {
+                        recitationReady = true
+                        bot.telegram.sendAudio(chatId, recitationUrl,
+                            {reply_to_message_id: ctx.message_id, caption: recitationCaption, parse_mode: 'HTML', disable_notification: true, reply_markup: buttons})
+                            .then((c) =>{
+                                audioSuccess = true
+                                bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.message_id, undefined, null)
+                                    .then (() => {
+                                        bot.telegram.editMessageReplyMarkup(c.chat.id, c.message_id, undefined, aMenuButtonsV2("r0", ayaId, reciter))
+                                            .then(() => resolve(c))
+                                    })
+                            })
+                            .catch(e => {
+                                log(`Error while sending recitation for aya ${ayaId} by ${reciter} to chat ${chatId} (${preparedAya.caption}): `, e)
+                                if(JSON.stringify(e).includes('blocked by the user')) {
+                                    lastAyaTime(chatId, 'blocked')
+                                } else if(!audioSuccess) {
+                                    sendSorry(chatId, 'audio')
+                                }
+                                reject(e)
+                            })
+                    })
+                    .catch(e => {
+                        log(`Error while getting recitation URL for aya ${ayaId} by ${reciter} for chat ${chatId}: `, e)
+                        if(!recitationReady) {
+                            sendSorry(chatId, 'audio')
+                        }
+                        reject(e)
+                    })
+            })
+            .catch(e => {
+                log(`Error while calling getFavReciter for chat ${chatId}: `, e)
+                if (!favReciterReady){
+                    sendAyaRecitation(ctx, ayaId, "random") // try again with a random reciter
+                }
+            })
+    })
+}
+
+function aMenuButtonsV2(menuState, ayaId, reciter){
+    var buttons = {inline_keyboard: [[]]}
+    switch (menuState) {
+        case "t0": case "r0":
+            buttons.inline_keyboard[0].push({
+                text: "···",
+                callback_data: `{"aMenu2":"${menuState}","a":${ayaId},"r":"${reciter}"}`
+            })
+            if (menuState == "t0") { // Show recitation button only when it's a menu of text
+                buttons.inline_keyboard[0].push({
+                    text: "🔊",
+                    callback_data: `{"recite":${ayaId},"r":"${reciter}"}`
+                })
+            }
+            break
+
+        case "t1": case "r1":
+            var ayaIndex = ayaId2suraAya(ayaId)
+            buttons.inline_keyboard[0].push({
+                text: "•••",
+                callback_data: `{"aMenu2":"${menuState}","a":${ayaId},"r":"${reciter}"}`
+            }
+            // ,{
+            //     text: "⚠️",
+            //     callback_data: `{"aReport":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
+            // }
+            )
+            if (menuState == "r1") { // Show setReciter button only when it's a menu of a recitation
+                buttons.inline_keyboard[0].push({
+                    text: "🗣️",
+                    callback_data: `{"setReciter":"${reciter}","a":${ayaId}}`
+                })
+            }
+            buttons.inline_keyboard[0].push({
+                text: "📖",
+                url: `https://quran.com/${ayaIndex.sura}/${ayaIndex.aya}`
+            })
+            break
+    
+        default:
+            log("Invalid aMenuButtons menuState: ", menuState)
+            break
+    }
+
+    buttons.inline_keyboard[0].push({
+        text: "▼",
+        callback_data: `{"currAya":${ayaId},"r":"${reciter}"}`
+    })
+    return buttons
+}
+
+function aMenuButtonsV1(ayaId, reciter, recitationMsgId, menuState){
     var buttons, menuState = menuState ? menuState : 0
     switch (menuState) {
         case 0:
@@ -586,7 +732,7 @@ function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
                 inline_keyboard:[
                     [{
                         text: "···",
-                        callback_data: `{"aMenu":0,"a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
+                        callback_data: `{"aMenu1":0,"a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
                         // rMsgId to be able to change the audio later when needed (for example: change recitation)
                     },{
                         text: "▼",
@@ -597,12 +743,12 @@ function aMenuButtons(ayaId, reciter, recitationMsgId, menuState){
             break
 
         case 1:
-            var ayaIndex = ayaId2SuraAya(ayaId)
+            var ayaIndex = ayaId2suraAya(ayaId)
             buttons = {
                 inline_keyboard: [
                     [{
                         text: "·",
-                        callback_data: `{"aMenu":1,"a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
+                        callback_data: `{"aMenu1":1,"a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
                     },
                     // {
                     //     text: "⚠️",
@@ -664,7 +810,7 @@ Sorry.. An unknown issue happened.`
         }
 
 
-        bot.telegram.sendMessage(chatId, msg, {disable_notifications: true})
+        bot.telegram.sendMessage(chatId, msg, {disable_notification: true})
         .then(ctx => {
             log(`Sorry message sent to ${chatId} due to ${reason}.`)
             resolve(ctx)
@@ -805,6 +951,7 @@ function numArabicToEnglish(string) {
 // Because returning a promise, must be called with .then().catch()
 function ayaCheck(sura, aya){
     return new Promise((resolve, reject) => {
+
         var url = 'http://api.alquran.cloud/ayah/'+sura+':'+aya
       	    axios(url)
       	        .then(function (res) {
@@ -821,39 +968,29 @@ function ayaCheck(sura, aya){
 
 // Responds to text messages to send the requested Aya or error message if unrecognized
 function handleText(ctx){
-    var txt = ctx.message.text
-    var chatId = ctx.chat.id
+    var txt         = ctx.message.text,
+        foundNums   = numArabicToEnglish(txt).match(/\d+/g),
+        chatId      = ctx.chat.id,
+        ayaId
     log('Message from chat ' + chatId+ ': ' + txt)
-    var foundNums = numArabicToEnglish(txt).match(/\d+/g)
-    
-    // if incoming text doesn't have any valid numbers, send UNRECOGNIZED for reason 1
-    if (foundNums===null || foundNums.length === 0) unrecognized(chatId, 1)
-    
-    // if incoming message contains one or more numbers and the first number is between 1 to 114 (sura number)
-    else if (1 <= foundNums[0] && foundNums[0] <= 114) {
-        if (foundNums.length == 1) { // One number is Sura number only
-            ayaCheck(foundNums[0],1) // to get the Global Aya number of the first Aya in this Sura for "sendAya" function.
-            .then((validAya) => { // it's always valid here.
-                log('ayaCheck: '+ validAya)
-                sendAya(chatId, validAya, "", ctx.from.language_code, 'request')
-            })
-            .catch((e) => log('ayaCheck Error: ', e))
-            
-        } else { // if first number is Sura and there's at least one more number (aya)
-            ayaCheck(foundNums[0], foundNums[1])
-            .then((validAya) => {
-                log('ayaCheck: '+ validAya)
-                
-                if (validAya){ // if valid aya number, send requested Aya
-                    sendAya(chatId, validAya, "", ctx.from.language_code, 'request')
-                
-                // if second number (aya) is invalid, send UNRECOGNIZED for reason 3
-                } else unrecognized(chatId, 3)
-            })
-            .catch((e) => log('ayaCheck Error: ', e))
-        }
-    // if first number is not valid sura number, send UNRECOGNIZED for reason 2
-    } else unrecognized(chatId, 2)
+
+    if (foundNums.length >= 1){
+        ayaId = suraAya2ayaId({sura: foundNums[0], aya: foundNums.length >= 2 ? foundNums[1] : 1})
+    } else {
+        // if incoming text doesn't have any valid numbers, send UNRECOGNIZED for reason 1
+        unrecognized(chatId, 1)
+    }
+
+    if (ayaId > 0 && foundNums.length >= 1) {
+        log('suraAya2ayaId: '+ ayaId)
+        sendAya(chatId, ayaId, "", ctx.from.language_code, 'request')
+    } else if (ayaId == -1) {
+        // if first number is not valid sura number, send UNRECOGNIZED for reason 2
+        unrecognized(chatId, 2)
+    } else if (ayaId == 0){
+        // if first number is valid sura but second number is not valid aya send UNRECOGNIZED for reason 3
+        unrecognized(chatId, 3)
+    }
 }
 
 
@@ -888,7 +1025,8 @@ bot.telegram.setMyCommands([
     {'command':'surpriseme', 'description': '🎁 ꓢurprise ꓟe فاجئني'},
     {'command':'help', 'description': '🤔 𝐈nstructions إرشادات'},
     {'command':'support', 'description': '🤗 ꓢupport دعم'},
-    {'command':'reciters', 'description': '🗣️ ꓢet Reciter اختيار القارئ'}
+    {'command':'reciters', 'description': '🗣️ ꓢet Reciter اختيار القارئ'},
+    {'command':'channel', 'description': '📢 Daily Aya Channel قناة دايلي آية'}
 ])
 
 
@@ -983,6 +1121,19 @@ Who is your favorite Reciter?`
                     inline_keyboard: recitersNavPage(1)
                 }
             })
+        } else {
+            log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
+})
+
+bot.command('channel', ctx => {
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var msg = `https://t.me/DailyAyaGlobal`
+            bot.telegram.sendMessage(ctx.chat.id, msg)
         } else {
             log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
         }
@@ -1097,12 +1248,13 @@ bot.action(/^{"currAya/, ctx => {
     .catch(e => log('Error while checking admin: ', e))
 })
 
-bot.action(/^{"aMenu/ , ctx =>{
+bot.action(/^{"aMenu2/ , ctx =>{
     adminChecker(ctx)
     .then(isAdmin =>{
         if(isAdmin){
-            var callbackData = JSON.parse(ctx.update.callback_query.data)
-            var buttons = aMenuButtons(callbackData.a, callbackData.r, callbackData.rMsgId, callbackData.aMenu ? 0 : 1) // Toggle menu state
+            var callbackData = JSON.parse(ctx.update.callback_query.data),
+                menu = callbackData.aMenu2.includes("1") ? callbackData.aMenu2.replace("1", "0") : callbackData.aMenu2.replace("0", "1"), // Toggle menu state
+                buttons = aMenuButtonsV2(menu, callbackData.a, callbackData.r)
             bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, buttons)
         } else {
             ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
@@ -1111,6 +1263,32 @@ bot.action(/^{"aMenu/ , ctx =>{
     .catch(e => log('Error while checking admin: ', e))
 })
 
+bot.action(/^{"aMenu1/ , ctx =>{
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var callbackData = JSON.parse(ctx.update.callback_query.data)
+            var buttons = aMenuButtonsV1(callbackData.a, callbackData.r, callbackData.rMsgId, callbackData.aMenu1 ? 0 : 1) // Toggle menu state
+            bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, buttons)
+        } else {
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
+})
+
+bot.action(/^{"recite/ , ctx =>{
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var callbackData = JSON.parse(ctx.update.callback_query.data)
+            sendAyaRecitation(ctx, callbackData.a, callbackData.r)
+        } else {
+            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
+})
 
 
 bot.on('text', ctx => {
