@@ -566,17 +566,18 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                         bot.telegram.sendAudio(chatId, recitationUrl, {caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
                             .then((c) =>{
                                 audioSuccess = true
-                                if (c.message_id != 1 + (ctx.update.callback_query.message.message_id || ctx.message.message_id)){ // Refer/Reply to the text if the recitation is not sent right after it
+                                var {message_id} = ctx
+                                if (c.message_id != 1 + message_id){ // Refer/Reply to the text if the recitation is not sent right after it
                                     audioSuccess = false
                                     bot.telegram.deleteMessage(chatId, c.message_id)
                                         .then (() => {
                                             bot.telegram.sendAudio(chatId, recitationUrl, {
-                                                reply_to_message_id: ctx.update.callback_query.message.message_id || ctx.message.message_id,
+                                                reply_to_message_id: message_id,
                                                 caption: recitationCaption, parse_mode: 'HTML', disable_notification: true
                                             })
                                                 .then((r) => {
                                                     audioSuccess = true
-                                                    bot.telegram.editMessageReplyMarkup(chatId, ctx.update.callback_query.message.message_id || ctx.message.message_id, null, null)
+                                                    bot.telegram.editMessageReplyMarkup(chatId, message_id, null, null)
                                                         .then (() => {
                                                             bot.telegram.editMessageReplyMarkup(chatId, r.message_id, null, aMenuButtons("r0", ayaId, reciter))
                                                                 .then(() => resolve(r))
@@ -592,7 +593,7 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                                 }
                             })
                             .catch(e => {
-                                log(`Error while sending recitation for aya ${ayaId} by ${reciter} to chat ${chatId} (${preparedAya.caption}): `, e)
+                                log(`Error while sending recitation for aya ${ayaId} by ${reciter} to chat ${chatId}: `, e)
                                 if(JSON.stringify(e).includes('blocked by the user')) {
                                     lastAyaTime(chatId, 'blocked')
                                 } else if(!audioSuccess) {
