@@ -563,7 +563,10 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                 recitation(ayaId, reciter)
                     .then(recitationUrl => {
                         recitationReady = true
-                        ctx.replyWithAudio(recitationUrl, {reply_to_message_id: ctx.inlineMessageId, caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
+                        log("ctx.message.message_id: " + ctx.message.message_id)
+                        log("ctx.message_id: " + ctx.message_id)
+                        log("ctx.inlineMessageId: " + ctx.inlineMessageId)
+                        ctx.replyWithAudio(recitationUrl, {reply_to_message_id: ctx.message.message_id, caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
                             .then((c) =>{
                                 audioSuccess = true
                                 ctx.editMessageReplyMarkup(null)
