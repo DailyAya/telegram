@@ -585,7 +585,7 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                                                 })
                                         })
                                 } else {
-                                    ctx.editMessageReplyMarkup(null)
+                                    bot.telegram.editMessageReplyMarkup(chatId, message_id, null, null)
                                         .then (() => {
                                             bot.telegram.editMessageReplyMarkup(chatId, c.message_id, null, aMenuButtons("r0", ayaId, reciter))
                                                 .then(() => resolve(c))
