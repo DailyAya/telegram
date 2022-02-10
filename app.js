@@ -563,16 +563,12 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                 recitation(ayaId, reciter)
                     .then(recitationUrl => {
                         recitationReady = true
-                        ctx.replyWithAudio(recitationUrl, {caption: recitationCaption, parse_mode: 'HTML', disable_notification: true, reply_markup: buttons})
-                        // bot.telegram.sendAudio(chatId, recitationUrl,
-                        //     {reply_to_message_id: ctx.message_id, caption: recitationCaption, parse_mode: 'HTML', disable_notification: true, reply_markup: buttons})
+                        ctx.replyWithAudio(recitationUrl, {caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
                             .then((c) =>{
                                 audioSuccess = true
                                 ctx.editMessageReplyMarkup(null)
-                                // bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.message_id, undefined, null)
                                     .then (() => {
                                         c.editMessageReplyMarkup(aMenuButtons("r0", ayaId, reciter))
-                                        // bot.telegram.editMessageReplyMarkup(c.chat.id, c.message_id, undefined, aMenuButtons("r0", ayaId, reciter))
                                             .then(() => resolve(c))
                                     })
                             })
@@ -786,21 +782,9 @@ You can request a specific Aya by sending the numbers of Aya and Sura.
 Example: 2   255
 Or Sura number only: 2`
 
-    bot.telegram.sendMessage(chatId, msg, {
-        reply_markup: {
-            inline_keyboard:[
-                [{
-                    text: "🎁",
-                    callback_data: "surpriseAya"
-                },{
-                    text: "💬",
-                    url: "https://t.me/sherbeeny"
-                }]
-            ]
-        }
-    })
-    .then(log('Sent instructions message to chat '+chatId+'.'))
-    .catch(e=>log('Failed to send instructions message to chat '+chatId+': ', e))
+    bot.telegram.sendMessage(chatId, msg)
+        .then(log('Sent instructions message to chat '+chatId+'.'))
+        .catch(e=>log('Failed to send instructions message to chat '+chatId+': ', e))
 }
 
 
