@@ -527,30 +527,13 @@ function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation){
 
 
 
-function sendAyaTextV1(ctx, ayaText, ayaId, reciter, lang, trigger){
-    recitationMsgId = ctx.audio ? ctx.message_id : 0 // To be able to handle cases of audio issues
-
-    // Prepare buttons to be sent with Aya text
-    var markup = aMenuButtonsV1(ayaId, reciter, recitationMsgId)
-
-    // send aya text and inline buttons
-    bot.telegram.sendMessage(ctx.chat.id, ayaText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: markup})
-        .then(c => successSend(c, ayaId, lang, trigger))
-        .catch(e => {
-            log(`Error while sending Aya ${ayaId} text to chat ${ctx.chat.id}: `, e)
-            if(JSON.stringify(e).includes('blocked by the user')){
-                lastAyaTime(ctx.chat.id, 'blocked')
-            }
-        })
-}
-
 function sendAyaText(chatId, ayaId, reciter, lang, trigger){
     return new Promise ((resolve, reject) => {
         log(`Formatting Aya ${ayaId} for chat ${chatId}`)
         reciter = reciter ? reciter : "None"
         var preparedAya = prepareAya(ayaId), // Prepare Aya text
             ayaDualText = `${preparedAya.arText}\n\n${preparedAya.enText}`, // Add an empty line between Arabic and English Aya text
-            buttons = aMenuButtonsV2("t0", ayaId, reciter) // Prepare buttons to be sent with Aya text
+            buttons = aMenuButtons("t0", ayaId, reciter) // Prepare buttons to be sent with Aya text
 
         // send aya text and inline buttons
         bot.telegram.sendMessage(chatId, ayaDualText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: buttons})
@@ -561,6 +544,8 @@ function sendAyaText(chatId, ayaId, reciter, lang, trigger){
             .catch(e => reject(e))
     })
 }
+
+
 
 function sendAyaRecitation(ctx, ayaId, reciter){
     return new Promise ((resolve, reject) => {
@@ -574,7 +559,7 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                     recitationCaption   = 
                     `<a href="t.me/${bot.options.username}?start=${suraAyaIndex.sura}-${suraAyaIndex.aya}">@${
                         bot.options.username} ➔ ${suraAyaIndex.sura}:${suraAyaIndex.aya}</a>`
-                buttons = aMenuButtonsV2("r0", ayaId, reciter)
+                buttons = aMenuButtons("r0", ayaId, reciter)
                 recitation(ayaId, reciter)
                     .then(recitationUrl => {
                         recitationReady = true
@@ -584,7 +569,7 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                                 audioSuccess = true
                                 bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.message_id, undefined, null)
                                     .then (() => {
-                                        bot.telegram.editMessageReplyMarkup(c.chat.id, c.message_id, undefined, aMenuButtonsV2("r0", ayaId, reciter))
+                                        bot.telegram.editMessageReplyMarkup(c.chat.id, c.message_id, undefined, aMenuButtons("r0", ayaId, reciter))
                                             .then(() => resolve(c))
                                     })
                             })
@@ -615,48 +600,37 @@ function sendAyaRecitation(ctx, ayaId, reciter){
     })
 }
 
-function aMenuButtonsV2(menuState, ayaId, reciter){
-    var buttons = {inline_keyboard: [[]]}
-    switch (menuState) {
-        case "t0": case "r0":
-            buttons.inline_keyboard[0].push({
-                text: "···",
-                callback_data: `{"aMenu2":"${menuState}","a":${ayaId},"r":"${reciter}"}`
-            })
-            if (menuState == "t0") { // Show recitation button only when it's a menu of text
-                buttons.inline_keyboard[0].push({
-                    text: "🔊",
-                    callback_data: `{"recite":${ayaId},"r":"${reciter}"}`
-                })
-            }
-            break
+function aMenuButtons(menuState, ayaId, reciter){
+    var buttons = {inline_keyboard: [[{
+        text: menuState.includes("0") ? "···" : "•••",
+        callback_data: `{"aMenu":"${menuState}","a":${ayaId},"r":"${reciter}"}`
+    }]]}
 
-        case "t1": case "r1":
-            var ayaIndex = ayaId2suraAya(ayaId)
-            buttons.inline_keyboard[0].push({
-                text: "•••",
-                callback_data: `{"aMenu2":"${menuState}","a":${ayaId},"r":"${reciter}"}`
-            }
-            // ,{
-            //     text: "⚠️",
-            //     callback_data: `{"aReport":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
-            // }
-            )
-            if (menuState == "r1") { // Show setReciter button only when it's a menu of a recitation
-                buttons.inline_keyboard[0].push({
-                    text: "🗣️",
-                    callback_data: `{"setReciter":"${reciter}","a":${ayaId}}`
-                })
-            }
-            buttons.inline_keyboard[0].push({
-                text: "📖",
-                url: `https://quran.com/${ayaIndex.sura}/${ayaIndex.aya}`
-            })
-            break
     
-        default:
-            log("Invalid aMenuButtons menuState: ", menuState)
-            break
+
+    if (menuState.includes("1")){
+        var ayaIndex = ayaId2suraAya(ayaId)
+        // buttons.inline_keyboard[0].push({
+        //     text: "⚠️",
+        //     callback_data: `{"aReport":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
+        // })
+        if (menuState == "r1") { // Show setReciter button only when it's a menu of a recitation
+            buttons.inline_keyboard[0].push({
+                text: "🗣️",
+                callback_data: `{"setReciter":"${reciter}","a":${ayaId}}`
+            })
+        }
+        buttons.inline_keyboard[0].push({
+            text: "📖",
+            url: `https://quran.com/${ayaIndex.sura}/${ayaIndex.aya}`
+        })
+    }
+
+    if (menuState.includes("t")) { // Show recitation button only when it's a menu of text
+        buttons.inline_keyboard[0].push({
+            text: "🔊",
+            callback_data: `{"recite":${ayaId},"r":"${reciter}"}`
+        })
     }
 
     buttons.inline_keyboard[0].push({
@@ -666,56 +640,7 @@ function aMenuButtonsV2(menuState, ayaId, reciter){
     return buttons
 }
 
-function aMenuButtonsV1(ayaId, reciter, recitationMsgId, menuState){
-    var buttons, menuState = menuState ? menuState : 0
-    switch (menuState) {
-        case 0:
-            buttons = {
-                inline_keyboard:[
-                    [{
-                        text: "···",
-                        callback_data: `{"aMenu1":0,"a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
-                        // rMsgId to be able to change the audio later when needed (for example: change recitation)
-                    },{
-                        text: "▼",
-                        callback_data: `{"currAya":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
-                    }]
-                ]
-            }
-            break
 
-        case 1:
-            var ayaIndex = ayaId2suraAya(ayaId)
-            buttons = {
-                inline_keyboard: [
-                    [{
-                        text: "·",
-                        callback_data: `{"aMenu1":1,"a":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
-                    },
-                    // {
-                    //     text: "⚠️",
-                    //     callback_data: `{"aReport":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
-                    // },
-                    {
-                        text: "🗣️",
-                        callback_data: `{"setReciter":"${reciter}","a":${ayaId},"rMsgId":${recitationMsgId}}`
-                    },{
-                        text: "📖",
-                        url: `https://quran.com/${ayaIndex.sura}/${ayaIndex.aya}`
-                    },{
-                        text: "▼",
-                        callback_data: `{"currAya":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
-                    }]
-                ]
-            }
-            break
-    
-        default:
-            log("Invalid aMenuButtons menuState: ", menuState)
-            break
-    }
-    return buttons
-}
 
 
 function successSend(ctx, ayaId, lang, trigger){
@@ -887,24 +812,6 @@ function numArabicToEnglish(string) {
 }
 
 
-
-// Check if the requested Aya is valid or not
-// returns Aya number (1 to 6236) if valid, or 0 if not valid.
-// Because returning a promise, must be called with .then().catch()
-function ayaCheck(sura, aya){
-    return new Promise((resolve, reject) => {
-
-        var url = 'http://api.alquran.cloud/ayah/'+sura+':'+aya
-      	    axios(url)
-      	        .then(function (res) {
-      	            resolve(res.data.data.number)
-    	        }).catch(function (e) {
-    	            log('ayaCheck error: ', e)
-                    if (e.response.data.data.match('surah')) resolve(0) // Aya is not valid
-                    else reject(e) // Something else is wrong!
-                })
-    })
-}
 
 
 
@@ -1190,13 +1097,13 @@ bot.action(/^{"currAya/, ctx => {
     .catch(e => log('Error while checking admin: ', e))
 })
 
-bot.action(/^{"aMenu2/ , ctx =>{
+bot.action(/^{"aMenu/ , ctx =>{
     adminChecker(ctx)
     .then(isAdmin =>{
         if(isAdmin){
             var callbackData = JSON.parse(ctx.update.callback_query.data),
-                menu = callbackData.aMenu2.includes("1") ? callbackData.aMenu2.replace("1", "0") : callbackData.aMenu2.replace("0", "1"), // Toggle menu state
-                buttons = aMenuButtonsV2(menu, callbackData.a, callbackData.r)
+                menu = callbackData.aMenu.includes("1") ? callbackData.aMenu.replace("1", "0") : callbackData.aMenu.replace("0", "1"), // Toggle menu state
+                buttons = aMenuButtons(menu, callbackData.a, callbackData.r)
             bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, buttons)
         } else {
             ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
@@ -1205,19 +1112,7 @@ bot.action(/^{"aMenu2/ , ctx =>{
     .catch(e => log('Error while checking admin: ', e))
 })
 
-bot.action(/^{"aMenu1/ , ctx =>{
-    adminChecker(ctx)
-    .then(isAdmin =>{
-        if(isAdmin){
-            var callbackData = JSON.parse(ctx.update.callback_query.data)
-            var buttons = aMenuButtonsV1(callbackData.a, callbackData.r, callbackData.rMsgId, callbackData.aMenu1 ? 0 : 1) // Toggle menu state
-            bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, buttons)
-        } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
-        }
-    })
-    .catch(e => log('Error while checking admin: ', e))
-})
+
 
 bot.action(/^{"recite/ , ctx =>{
     adminChecker(ctx)
