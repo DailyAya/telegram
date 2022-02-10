@@ -566,7 +566,7 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                         bot.telegram.sendAudio(chatId, recitationUrl, {caption: recitationCaption, parse_mode: 'HTML', disable_notification: true})
                             .then((c) =>{
                                 audioSuccess = true
-                                var {message_id} = ctx
+                                var {message_id} = ctx || ctx.update.callback_query.message
                                 if (c.message_id != 1 + message_id){ // Refer/Reply to the text if the recitation is not sent right after it
                                     audioSuccess = false
                                     bot.telegram.deleteMessage(chatId, c.message_id)
