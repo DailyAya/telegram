@@ -839,7 +839,7 @@ function handleText(ctx){
     }
 
     if (ayaId > 0) {
-        sendAya(chatId, ayaId, "", ctx.from.language_code, 'request', ctx.startPayload.includes("r") || false)
+        sendAya(chatId, ayaId, "", ctx.from.language_code, 'request', ctx.startPayload ? ctx.startPayload.includes("r") : false)
     } else if (ayaId == -1) {
         // if first number is not valid sura number, send UNRECOGNIZED for reason 2
         unrecognized(ctx, 2)
