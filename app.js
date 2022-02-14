@@ -536,7 +536,12 @@ function sendAyaText(chatId, ayaId, reciter, lang, trigger){
             buttons = aMenuButtons("t0", ayaId, reciter) // Prepare buttons to be sent with Aya text
 
         // send aya text and inline buttons
-        bot.telegram.sendMessage(chatId, ayaDualText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: buttons})
+        bot.telegram.sendMessage(chatId, ayaDualText, {
+            disable_web_page_preview: true,
+            disable_notification: true,
+            parse_mode: 'HTML',
+            reply_markup: buttons
+        })
             .then(c => {
                 successSend(c, ayaId, lang, trigger)
                 resolve(c)
