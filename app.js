@@ -263,7 +263,7 @@ if(telegramToken){
 
 function start(chatId){
     var msg =
-`دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات والقنوات حتى لا ينقطع وردك اليومي.
+`دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات والقنوات حتى لا ينقطع وردكم اليومي.
 
 Daily Aya sends one Aya daily at the same time of the last Aya you request in private chats or groups and channels so your daily read doesn't stop.`
 
@@ -277,6 +277,7 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
             ]
         }
     })
+	.then(c => successSend(c, 0, "", "request"))
     .catch(e => log("Error while sending start: ", e))
 
 
