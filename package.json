@@ -6,7 +6,8 @@
   
   "scripts": {
     "test": "echo \"No tests to run\" && exit 0",
-    "start": "node app.js"
+    "start": "node app.js",
+    "install": "rasmifize install"
   },
   
   "keywords": [
