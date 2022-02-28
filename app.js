@@ -833,7 +833,8 @@ function handleText(ctx){
         } else {
             var suraNum = 0
             for (let index = 0; index < normalizedSurasArNames.length; index++) {
-                if(normalizedTxt.match(`/(${normalizedSurasArNames[index]})/g`)){
+                let regex = new RegExp(`(${normalizedSurasArNames[index]})`, 'g')
+                if(normalizedTxt.match(regex)){
                     suraNum = 1 + index
                     break
                 }
