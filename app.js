@@ -728,34 +728,23 @@ function unrecognized(ctx, reason){
             switch (reason) {
                 case 1:
                     msg =
-`رسالتك بلا أرقام.
-رجاء إرسال رقم السورة على الأقل.
+`عذرا، لم نتعرف على اسم سورة باللغة العربية أو رقم سورة من 1 إلى 114.
 
-Your message didn't contain numbers.
-Please send Sura number at least.`
+Sorry, we couldn't recognize a Sura name in Arabic or Sura number from 1 to 114.`
                     break;
-                    
+
                 case 2:
                     msg =
-`الرقم الأول ليس رقم سورة.
-يجب أن يكون من 1 إلى 114.
+`عذرا، رقم الآية ليس في السورة المطلوبة.
 
-The first number is not a Sura number.
-It must be from 1 to 114.`
+Sorry, Aya number is not in the requested Sura.`
                     break;
 
                 case 3:
                     msg =
-`الرقم الثاني ليس آية في السورة المطلوبة.
+`عذرا، حاليا نتعرف فقط على أسماء السور باللغة العربية أو أرقام السور والآيات في الرسائل النصية.
 
-The second number is not an Aya in the requested Sura.`
-                    break;
-
-                case 4:
-                    msg =
-`عفوا، حاليا نتعرف فقط على أرقام السور والآيات في الرسائل النصية.
-
-Sorry, we currently only recognize numbers of Sura or Aya in text messages.`
+Sorry, we currently only recognize Sura names in Arabic or numbers of Sura and Aya in text messages.`
                     break;
             
                 default:
@@ -779,8 +768,8 @@ Unknown error!`
                     ]
                 }
             })
-    .then(log('Sent reason of unrecognized request to chat '+chatId+'.'))
-    .catch(e=>log('Failed to send reason of unrecognized request to chat '+chatId+': ', e))
+                .then(log('Sent reason of unrecognized request to chat '+chatId+'.'))
+                .catch(e=>log('Failed to send reason of unrecognized request to chat '+chatId+': ', e))
         } else {
             log(`Ignored message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
         }
@@ -826,27 +815,43 @@ function numArabicToEnglish(string) {
 
 // Responds to text messages to send the requested Aya or error message if unrecognized
 function handleText(ctx){
-    var txt         = ctx.message.text,
-        foundNums   = numArabicToEnglish(txt).match(/\d+/g) || [],
-        chatId      = ctx.chat.id,
-        ayaId       = -2 // Positive for valid ayaId, 0 for valid sura but invalid aya, -1 for invalid sura, -2 or any other negative for initialization.
-    log('Message from chat ' + chatId+ ': ' + txt)
+    var normalizedTxt   = rasmifize(ctx.message.text),
+        foundNums       = numArabicToEnglish(normalizedTxt).match(/\d+/g) || [],
+        chatId          = ctx.chat.id,
+        ayaId           = -2 // Positive for valid ayaId, 0 for valid sura but invalid aya, -1 for invalid sura, -2 or any other negative for initialization.
+    log('Message from chat ' + chatId+ ': ' + ctx.message.text)
+    log('Normalized message from chat: ' + normalizedTxt)
 
-    if (foundNums.length >= 1){
+    if(normalizedTxt.match(/[المهوسصق]/g)) { // All Arabic names of Suras includes at least one character of these
+        if(normalizedTxt.includes(rasmifize("الكرسي"))){
+            ayaId = 262
+        } else {
+            var suraNum = 0
+            for (let index = 0; index < normalizedSurasArNames.length; index++) {
+                if(normalizedTxt.includes(normalizedSurasArNames[index])){
+                    suraNum = 1 + index
+                    break
+                }
+            }
+            if (suraNum){
+                ayaId = suraAya2ayaId({sura: suraNum, aya: foundNums.length ? foundNums[0] : 1})
+            }
+        }
+    } else if (foundNums.length){
         ayaId = suraAya2ayaId({sura: foundNums[0], aya: foundNums.length >= 2 ? foundNums[1] : 1})
     } else {
-        // if incoming text doesn't have any valid numbers, send UNRECOGNIZED for reason 1
+        // if incoming text doesn't have any valid numbers or names, send UNRECOGNIZED for reason 1
         unrecognized(ctx, 1)
     }
 
     if (ayaId > 0) {
         sendAya(chatId, ayaId, "", ctx.from.language_code, 'request', ctx.startPayload.includes("r"))
     } else if (ayaId == -1) {
-        // if first number is not valid sura number, send UNRECOGNIZED for reason 2
-        unrecognized(ctx, 2)
+        // if first number is not valid sura number, send UNRECOGNIZED for reason 1
+        unrecognized(ctx, 1)
     } else if (ayaId == 0){
-        // if first number is valid sura but second number is not valid aya send UNRECOGNIZED for reason 3
-        unrecognized(ctx, 3)
+        // if aya number is not valid aya in the requested Sura send UNRECOGNIZED for reason 3
+        unrecognized(ctx, 2)
     }
 }
 
@@ -1152,15 +1157,15 @@ bot.on('text', ctx => {
 })
 
 
-// Responds to "some" non text messages to send UNRECOGNIZED for reason 4
-// bot.on('sticker', ctx => unrecognized(ctx, 4))
-// bot.on('photo', ctx => unrecognized(ctx, 4))
-// bot.on('location', ctx => unrecognized(ctx, 4))
-// bot.on('document', ctx => unrecognized(ctx, 4))
-// bot.on('audio', ctx => unrecognized(ctx, 4))
-// bot.on('voice', ctx => unrecognized(ctx, 4))
-// bot.on('poll', ctx => unrecognized(ctx, 4))
-// bot.on('contact', ctx => unrecognized(ctx, 4))
+// Responds to "some" non text messages to send UNRECOGNIZED for reason 3
+// bot.on('sticker', ctx => unrecognized(ctx, 3))
+// bot.on('photo', ctx => unrecognized(ctx, 3))
+// bot.on('location', ctx => unrecognized(ctx, 3))
+// bot.on('document', ctx => unrecognized(ctx, 3))
+// bot.on('audio', ctx => unrecognized(ctx, 3))
+// bot.on('voice', ctx => unrecognized(ctx, 3))
+// bot.on('poll', ctx => unrecognized(ctx, 3))
+// bot.on('contact', ctx => unrecognized(ctx, 3))
 
 
 
