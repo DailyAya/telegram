@@ -314,11 +314,14 @@ function random(type){
 
 
 
-const axios = require('axios')
-const arQuran = require('./quran-uthmani.json').data.surahs
-const enQuran = require('./en.ahmedraza.json').data.surahs
-const arReciters = require('./audio.json').data.filter(i => i.language == "ar")
+const axios         = require('axios')
+const arQuran       = require('./quran-uthmani.json').data.surahs
+const enQuran       = require('./en.ahmedraza.json').data.surahs
+const arReciters    = require('./audio.json').data.filter(i => i.language == "ar")
 
+const rasmifize     = require('rasmifize')
+const normalizedSurasArNames  = enQuran.map(s => rasmifize(s.name.substr(8)))
+log("surasArNames count: " + normalizedSurasArNames.length)
 
 function checkSource(){
     var downloadStart = Date.now()
@@ -385,8 +388,6 @@ function suraAya2ayaId(suraAya){ // suraAya = {sura: suraNum, aya: ayaNum}
 
 
 // Prepare an Aya to be sent
-// Because returning a promise, must be called with .then().catch()
-
 function prepareAya(ayaId){
     String.prototype.toArNum = function() {return this.replace(/\d/g, d =>  '٠١٢٣٤٥٦٧٨٩'[d])}
 
@@ -1089,15 +1090,17 @@ bot.action('surpriseAya', ctx => {
 
 // When a user presses "Next Aya" inline keyboard button
 bot.action(/^{"currAya/, ctx => {
+    var callbackData= JSON.parse(ctx.update.callback_query.data)
+    var currentAyaId = Math.floor(callbackData.currAya)
+
     adminChecker(ctx)
     .then(isAdmin =>{
         if(isAdmin){
-            var callbackData= JSON.parse(ctx.update.callback_query.data)
-            var currentAyaId = Math.floor(callbackData.currAya)
             log(`Sending next Aya after Aya ${currentAyaId} with Reciter ${callbackData.r} for chat ${ctx.chat.id}`)
             sendAya(ctx.chat.id, nextAya(currentAyaId), callbackData.r, ctx.from.language_code, 'next')
         } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+            var ayaIndex = ayaId2suraAya(nextAya(currentAyaId))
+            ctx.answerCbQuery("", {url: `t.me/${bot.options.username}?start=r${ayaIndex.sura}-${ayaIndex.aya}`})
         }
     })
     .catch(e => log('Error while checking admin: ', e))
