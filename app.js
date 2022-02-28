@@ -319,7 +319,7 @@ const arQuran       = require('./quran-uthmani.json').data.surahs
 const enQuran       = require('./en.ahmedraza.json').data.surahs
 const arReciters    = require('./audio.json').data.filter(i => i.language == "ar")
 
-const rasmifize     = require('rasmifize')
+const rasmifize     = require('rasmify.js')
 const normalizedSurasArNames  = enQuran.map(s => rasmifize(s.name.substr(8)))
 log("surasArNames count: " + normalizedSurasArNames.length)
 

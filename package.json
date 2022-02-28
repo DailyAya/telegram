@@ -1,13 +1,12 @@
 {
   "name": "dailyAya-telegram-chatbot",
   "version": "2022.02.28",
-  "description": "Sends one random Aya from Quran everyday and when one more (or specific) is requested.",
+  "description": "t.me/DailyAyaBot sends one random Aya from Quran everyday and when requested.",
     "main": "app.js",
   
   "scripts": {
     "test": "echo \"No tests to run\" && exit 0",
-    "start": "node app.js",
-    "install": "rasmifize install"
+    "start": "node app.js"
   },
   
   "keywords": [
@@ -31,6 +30,6 @@
     "axios":"^0.21.3",
     "telegraf": "^4.4.2",
     "mongodb": "^4.1.1",
-    "rasmifize": "^1.0.6"
+    "rasmify.js": "^1.0.1"
   }
 }
