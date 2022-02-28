@@ -784,9 +784,14 @@ Unknown error!`
 // Sends instructions message with buttons to get random aya or contact support
 function instructions(chatId){
     var msg =
-`يمكنك طلب آية محددة بإرسال رقم السورة والآية.
-مثل: ٢   ٢٥٥
-أو رقم السورة فقط مثل : ٢
+`يمكنك طلب آية محددة بإرسال اسم أو رقم السورة ورقم الآية.
+مثل: البقرة   ٢٥٥
+أو مثل: ٢   ٢٥٥
+أو آية الكرسي
+
+وأيضا اسم أو رقم السورة فقط
+مثل : البقرة
+أو مثل : ٢
 
 You can request a specific Aya by sending the numbers of Aya and Sura.
 Example: 2   255
@@ -845,7 +850,7 @@ function handleText(ctx){
     }
 
     if (ayaId > 0) {
-        sendAya(chatId, ayaId, "", ctx.from.language_code, 'request', ctx.startPayload.length ? ctx.startPayload.includes("r") : false)
+        sendAya(chatId, ayaId, "", ctx.from.language_code, 'request', ctx.startPayload.length || false ? ctx.startPayload.includes("r") : false)
     } else if (ayaId == -1) {
         // if first number is not valid sura number, send UNRECOGNIZED for reason 1
         unrecognized(ctx, 1)
