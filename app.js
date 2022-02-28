@@ -833,7 +833,7 @@ function handleText(ctx){
         } else {
             var suraNum = 0
             for (let index = 0; index < normalizedSurasArNames.length; index++) {
-                if(normalizedTxt.includes(normalizedSurasArNames[index])){
+                if(normalizedTxt.match(`/(${normalizedSurasArNames[index]})/g`)){
                     suraNum = 1 + index
                     break
                 }
@@ -855,7 +855,7 @@ function handleText(ctx){
         // if first number is not valid sura number, send UNRECOGNIZED for reason 1
         unrecognized(ctx, 1)
     } else if (ayaId == 0){
-        // if aya number is not valid aya in the requested Sura send UNRECOGNIZED for reason 3
+        // if aya number is not valid aya in the requested Sura send UNRECOGNIZED for reason 2
         unrecognized(ctx, 2)
     }
 }
