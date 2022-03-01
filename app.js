@@ -36,7 +36,8 @@ function log(x, e){
     })
 }
 
-var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${debugging ? 'debugging' : 'normal'} mode of version ${codeVer} until ${instActivetUntil}.
+var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${
+    debugging ? 'debugging' : 'normal'} mode of version ${codeVer} until ${instActivetUntil}.
 Memory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`
 
 
@@ -163,7 +164,7 @@ Current Favorit Reciter: ${requestedFavReciterData[0].englishName}`
             reply_markup: {
                 inline_keyboard:[
                     [{
-                        text: "👍",
+                        text: "🎁",
                         callback_data: "surpriseAya"
                     }]
                 ]
@@ -180,7 +181,7 @@ Sorry.. There's an issue while setting favorite reciters and we hope it gets fix
             reply_markup: {
                 inline_keyboard:[
                     [{
-                        text: "👍",
+                        text: "🎁",
                         callback_data: "surpriseAya"
                     }]
                 ]
@@ -900,10 +901,10 @@ function adminChecker(ctx){
 
 // set the bot menu
 bot.telegram.setMyCommands([
-    {'command':'surpriseme', 'description': '🎁 ꓢurprise ꓟe فاجئني'},
-    {'command':'help', 'description': '🤔 𝐈nstructions إرشادات'},
-    {'command':'support', 'description': '🤗 ꓢupport دعم'},
-    {'command':'reciters', 'description': '🗣️ ꓢet Reciter اختيار القارئ'},
+    {'command':'surpriseme', 'description': '🎁 Surprise Me فاجئني'},
+    {'command':'help', 'description': '🤔 Instructions إرشادات'},
+    {'command':'support', 'description': '🤗 Support دعم'},
+    {'command':'reciters', 'description': '🗣️ Set Reciter اختيار القارئ'},
     {'command':'channel', 'description': '📢 Daily Aya Channel قناة دايلي آية'}
 ])
 
@@ -1229,7 +1230,6 @@ function sigHandler(sig){
         bot.stop(sig)
         process.exit(0)
     })
-    
 }
 
 // Enable graceful stop
