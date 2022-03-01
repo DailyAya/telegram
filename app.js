@@ -833,7 +833,10 @@ function handleText(ctx){
             ayaId = 262
         } else {
             for (let index = 0; index < normalizedSurasArNames.length; index++) {
-                let regex = new RegExp(`(^|\s)(${normalizedSurasArNames[index]})($|\s)`)
+                let regex = new RegExp(
+                    `(^${normalizedSurasArNames[index]}\s)|(^${normalizedSurasArNames[index]}$)|(\s${
+                        normalizedSurasArNames[index]}\s)|(\s${normalizedSurasArNames[index]}$)`
+                    )
                 if(normalizedTxt.search(regex) >= 0){
                     foundArSuraNum = 1 + index
                     break
