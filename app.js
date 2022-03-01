@@ -827,13 +827,13 @@ function handleText(ctx){
     log('Message from chat ' + chatId+ ': ' + ctx.message.text)
     log('Normalized message from chat: ' + normalizedTxt)
 
-    if(normalizedTxt.match(/[المهوسصق]/g)) { // All Arabic names of Suras includes at least one character of these
+    if(normalizedTxt.match(/[المهوسصق]/g)) { // All Arabic names of Suras include at least one character of these
         if(normalizedTxt.includes(rasmifize("الكرسي"))){
             ayaId = 262
         } else {
             var suraNum = 0
             for (let index = 0; index < normalizedSurasArNames.length; index++) {
-                let regex = new RegExp(`\b${normalizedSurasArNames[index]}\b`)
+                let regex = new RegExp(`(^|\s)(${normalizedSurasArNames[index]})($|\s)`)
                 if(normalizedTxt.search(regex) >= 0){
                     suraNum = 1 + index
                     break
@@ -843,7 +843,7 @@ function handleText(ctx){
                 ayaId = suraAya2ayaId({sura: suraNum, aya: foundNums.length ? foundNums[0] : 1})
             }
         }
-    } else if (foundNums.length){
+    } else if (foundNums.length){ // If no Sura Arabic names, look for numbers only
         ayaId = suraAya2ayaId({sura: foundNums[0], aya: foundNums.length >= 2 ? foundNums[1] : 1})
     } else {
         // if incoming text doesn't have any valid numbers or names, send UNRECOGNIZED for reason 1
@@ -852,7 +852,7 @@ function handleText(ctx){
 
     if (ayaId > 0) {
         sendAya(chatId, ayaId, "", ctx.from.language_code, 'request', ctx.startPayload ? ctx.startPayload.includes("r") : false)
-    } else if (ayaId == -1) {
+    } else if (ayaId < 0) {
         // if first number is not valid sura number, send UNRECOGNIZED for reason 1
         unrecognized(ctx, 1)
     } else if (ayaId == 0){
