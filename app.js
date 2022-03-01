@@ -846,10 +846,7 @@ function handleText(ctx){
     }
     if (foundNums.length && !foundArSuraNum){ // If no Sura Arabic names, look for numbers only
         ayaId = suraAya2ayaId({sura: foundNums[0], aya: foundNums.length >= 2 ? foundNums[1] : 1})
-    } else {
-        // if incoming text doesn't have any valid numbers or names, send UNRECOGNIZED for reason 1
-        unrecognized(ctx, 1)
-    }
+    } 
 
     if (ayaId > 0) {
         sendAya(chatId, ayaId, "", ctx.from.language_code, 'request', ctx.startPayload ? ctx.startPayload.includes("r") : false)
