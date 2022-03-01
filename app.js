@@ -271,7 +271,7 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
         reply_markup: {
             inline_keyboard:[
                 [{
-                    text: "👍",
+                    text: "🎁",
                     callback_data: "surpriseAya"
                 }]
             ]
@@ -824,6 +824,7 @@ function handleText(ctx){
         foundNums       = numArabicToEnglish(normalizedTxt).match(/\d+/g) || [],
         chatId          = ctx.chat.id,
         ayaId           = -2 // Positive for valid ayaId, 0 for valid sura but invalid aya, -1 for invalid sura, -2 or any other negative for initialization.
+        foundArSuraNum  = 0
     log('Message from chat ' + chatId+ ': ' + ctx.message.text)
     log('Normalized message from chat: ' + normalizedTxt)
 
@@ -831,19 +832,19 @@ function handleText(ctx){
         if(normalizedTxt.includes(rasmifize("الكرسي"))){
             ayaId = 262
         } else {
-            var suraNum = 0
             for (let index = 0; index < normalizedSurasArNames.length; index++) {
                 let regex = new RegExp(`(^|\s)(${normalizedSurasArNames[index]})($|\s)`)
                 if(normalizedTxt.search(regex) >= 0){
-                    suraNum = 1 + index
+                    foundArSuraNum = 1 + index
                     break
                 }
             }
             if (suraNum){
-                ayaId = suraAya2ayaId({sura: suraNum, aya: foundNums.length ? foundNums[0] : 1})
+                ayaId = suraAya2ayaId({sura: foundArSuraNum, aya: foundNums.length ? foundNums[0] : 1})
             }
         }
-    } else if (foundNums.length){ // If no Sura Arabic names, look for numbers only
+    }
+    if (foundNums.length && !foundArSuraNum){ // If no Sura Arabic names, look for numbers only
         ayaId = suraAya2ayaId({sura: foundNums[0], aya: foundNums.length >= 2 ? foundNums[1] : 1})
     } else {
         // if incoming text doesn't have any valid numbers or names, send UNRECOGNIZED for reason 1
