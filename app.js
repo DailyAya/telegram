@@ -834,9 +834,11 @@ function handleText(ctx){
         } else {
             for (let index = 0; index < normalizedSurasArNames.length; index++) {
                 let regex = new RegExp(
-                    `(^${normalizedSurasArNames[index]}\s+([\S]*))|(^${normalizedSurasArNames[index]}$)|(([\S]*)\s+${
-                        normalizedSurasArNames[index]}\s+([\S]*))|(([\S]*)\s+${normalizedSurasArNames[index]}$)`
+                    `(^${normalizedSurasArNames[index]}$)|(^${
+                    normalizedSurasArNames[index]}( +)(.*))|((.*)( +)${
+                    normalizedSurasArNames[index]}( +)(.*))|((.*)( +)${normalizedSurasArNames[index]}$)`
                     )
+                
                 if(regex.test(normalizedTxt)){
                     foundArSuraNum = 1 + index
                     log("Found Arabic Sura number: " + foundArSuraNum)
