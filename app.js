@@ -11,8 +11,8 @@ const activeInst = process.env.activeInst || "0@Host" //unused for now
 const instActivetUntil = process.env.instActiveUntil || "WHO KNOWS!"
 const branch = process.env.branch || "staging"
 const debugging = process.env.debugging == "true"
-const devChatId = process.env.devChatId  // the group ID of development team on Telegram
-const codeVer = process.env.npm_package_version || "1970.1.1"
+const devChatId = process.env.devChatId || 0  // the group ID of development team on Telegram
+const codeVer = process.env.npm_package_version || "1970.01.01"
 
 
 // Use log(x) instead of log(x) to control debugging mode from env variables
@@ -263,7 +263,7 @@ if(telegramToken){
 
 function start(chatId){
     var msg =
-`دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات والقنوات حتى لا ينقطع وردك اليومي.
+`دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات والقنوات حتى لا ينقطع وردكم اليومي.
 
 Daily Aya sends one Aya daily at the same time of the last Aya you request in private chats or groups and channels so your daily read doesn't stop.`
 
@@ -277,6 +277,7 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
             ]
         }
     })
+	.then(c => successSend(c, 0, "", "request"))
     .catch(e => log("Error while sending start: ", e))
 
 
@@ -537,7 +538,12 @@ function sendAyaText(chatId, ayaId, reciter, lang, trigger){
             buttons = aMenuButtons("t0", ayaId, reciter) // Prepare buttons to be sent with Aya text
 
         // send aya text and inline buttons
-        bot.telegram.sendMessage(chatId, ayaDualText, {disable_web_page_preview: true, parse_mode: 'HTML', reply_markup: buttons})
+        bot.telegram.sendMessage(chatId, ayaDualText, {
+            disable_web_page_preview: true,
+            disable_notification: true,
+            parse_mode: 'HTML',
+            reply_markup: buttons
+        })
             .then(c => {
                 successSend(c, ayaId, lang, trigger)
                 resolve(c)
@@ -857,7 +863,7 @@ function handleText(ctx){
     if (ayaId > 0) {
         sendAya(chatId, ayaId, "", ctx.from.language_code, 'request', ctx.startPayload ? ctx.startPayload.includes("r") : false)
     } else if (ayaId < 0) {
-        // if first number is not valid sura number, send UNRECOGNIZED for reason 1
+        // if no Arabic sura name and first number is not valid sura number, send UNRECOGNIZED for reason 2
         unrecognized(ctx, 1)
     } else if (ayaId == 0){
         // if aya number is not valid aya in the requested Sura send UNRECOGNIZED for reason 2
