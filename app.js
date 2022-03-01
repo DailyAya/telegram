@@ -839,7 +839,7 @@ function handleText(ctx){
                     break
                 }
             }
-            if (suraNum){
+            if (foundArSuraNum){
                 ayaId = suraAya2ayaId({sura: foundArSuraNum, aya: foundNums.length ? foundNums[0] : 1})
             }
         }
