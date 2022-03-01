@@ -1042,6 +1042,11 @@ function recitersNavPage(page){
     return buttons
 }
 
+var nonAdminsAlert =
+`عذرا، هذه الخاصية في المجموعات والقنوات متاحة للمشرفين فقط.
+
+Sorry, this feature in groups and channels is only available for admins.`
+
 bot.action(/^{"recitersNavPage/ , ctx =>{
     adminChecker(ctx)
     .then(isAdmin =>{
@@ -1052,7 +1057,7 @@ bot.action(/^{"recitersNavPage/ , ctx =>{
                 inline_keyboard: recitersNavPage(requestedRecitersNavPage)
             })
         } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+            ctx.answerCbQuery(nonAdminsAlert, {show_alert: true})
         }
     })
     .catch(e => log('Error while checking admin: ', e))
@@ -1067,7 +1072,7 @@ bot.action(/^{"setReciter/ , ctx =>{
             
             setFavReciter(ctx.chat.id, requestedFavReciter)
         } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+            ctx.answerCbQuery(nonAdminsAlert, {show_alert: true})
         }
     })
     .catch(e => log('Error while checking admin: ', e))
@@ -1081,7 +1086,7 @@ bot.action('instructions', ctx => {
         if(isAdmin){
             instructions(ctx.chat.id)
         } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+            ctx.answerCbQuery(nonAdminsAlert, {show_alert: true})
         }
     })
     .catch(e => log('Error while checking admin: ', e))
@@ -1095,7 +1100,7 @@ bot.action('surpriseAya', ctx => {
         if(isAdmin){
             surpriseAya(ctx)
         } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+            ctx.answerCbQuery(nonAdminsAlert, {show_alert: true})
         }
     })
     .catch(e => log('Error while checking admin: ', e))
@@ -1130,7 +1135,7 @@ bot.action(/^{"aMenu/ , ctx =>{
                 buttons = aMenuButtons(menu, callbackData.a, callbackData.r)
             bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, buttons)
         } else {
-            ctx.answerCbQuery("Only admins can interact with DailyAya. \n\nPress on Sura name or number to open DailyAya privately.", {show_alert: true})
+            ctx.answerCbQuery(nonAdminsAlert, {show_alert: true})
         }
     })
     .catch(e => log('Error while checking admin: ', e))
