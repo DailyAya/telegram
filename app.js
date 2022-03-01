@@ -837,7 +837,7 @@ function handleText(ctx){
                     `(^${normalizedSurasArNames[index]}\s+([\S]*))|(^${normalizedSurasArNames[index]}$)|(([\S]*)\s+${
                         normalizedSurasArNames[index]}\s+([\S]*))|(([\S]*)\s+${normalizedSurasArNames[index]}$)`
                     )
-                if(normalizedTxt.search(regex) >= 0){
+                if(regex.test(normalizedTxt)){
                     foundArSuraNum = 1 + index
                     log("Found Arabic Sura number: " + foundArSuraNum)
                     break
