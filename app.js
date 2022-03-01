@@ -839,6 +839,7 @@ function handleText(ctx){
                     )
                 if(normalizedTxt.search(regex) >= 0){
                     foundArSuraNum = 1 + index
+                    log("Found Arabic Sura number: " + foundArSuraNum)
                     break
                 }
             }
