@@ -26,7 +26,14 @@ function log(x, e){
                 break
             case 2:
                 console.error(x, e)
-                if(bot) bot.telegram.sendMessage(devChatId, (x+e.message).substring(0, 4096)).then(resolve())
+                if(bot) {
+                    bot.telegram.sendMessage(devChatId, (x+e.message).substring(0, 4096))
+                        .then(resolve())
+                        .catch(er => {
+                            console.error(`Error while sending log to devChat: `, er)
+                            resolve()
+                        })
+                }
                 break
             default:
                 console.error('Invalid log argument count.')
@@ -186,7 +193,7 @@ Sorry.. There's an issue while setting favorite reciters and we hope it gets fix
                     }]
                 ]
             }
-        })
+        }).catch(er => log(`Error while sending sorry for failing to set fav reciter: `, er))
     })
 }
 
@@ -226,6 +233,7 @@ function timerSend(){
                     reject(err)
                 } else {
                     log(`Used memory: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`)
+                    if(res.length > 20) log('Warning: Almost reaching Telegram sending limits. Max is 30 users/sec. Current: ', res.length)
                     log('Timer will send to ' + res.length + ' chats.')
                     res.forEach(chat => sendAya(chat.chatId, "", chat.favReciter, "", 'timer'))
                     resolve()
@@ -254,9 +262,10 @@ bot.telegram.getMe().then((botInfo) => { // for handling group commands without 
 
 
 
-// Inform "DailyAya Dev" group about the instance state
+// Inform Dev group about the instance state
 if(telegramToken){
     bot.telegram.sendMessage(devChatId, instStateMsg)
+        .catch(er => log(`Error while sending instance state: `, er))
 }
 
 
@@ -291,6 +300,7 @@ Daily Aya sends one Aya daily at the same time of the last Aya you request in pr
             var totalChatsMsg = `${totalActiveChatsMsg}   ${totalBlockedChatsMsg}`
             log(totalChatsMsg)
             bot.telegram.sendMessage(devChatId, totalChatsMsg)
+                .catch(er => log(`Error while sending active stats: `, er))
         }
     })
 }
@@ -328,7 +338,7 @@ function checkSource(){
         if(JSON.stringify(r.data.data.surahs) != JSON.stringify(arQuran)){
             bot.telegram.sendMessage(devChatId,
                 `Remote arQuran has changed. Please update the cached JSON file.`
-            )
+            ).catch(er => log(`Error while sending arQuran change: `, er))
         } else {
             log(`Remote arQuran is the same as the cached JSON file. It took ${((Date.now()-downloadStart)/1000).toFixed(2)} seconds.`)
         }
@@ -340,7 +350,7 @@ function checkSource(){
         if(JSON.stringify(r.data.data.surahs) != JSON.stringify(enQuran)){
             bot.telegram.sendMessage(devChatId,
                 `Remote enQuran has changed. Please update the cached JSON file.`
-            )
+            ).catch(er => log(`Error while sending enQuran change: `, er))
         } else {
             log(`Remote enQuran is the same as the cached JSON file. It took ${((Date.now()-downloadStart)/1000).toFixed(2)} seconds.`)
         }
@@ -352,7 +362,7 @@ function checkSource(){
         if(JSON.stringify(r.data.data.filter(i => i.language == "ar")) != JSON.stringify(arReciters)){
             bot.telegram.sendMessage(devChatId,
                 `Remote arReciters has changed. Please update the cached JSON file.`
-            )
+            ).catch(er => log(`Error while sending arReciters change: `, er))
         } else {
             log(`Remote arReciters is the same as the cached JSON file. It took ${((Date.now()-downloadStart)/1000).toFixed(2)} seconds.`)
         }
@@ -585,15 +595,17 @@ function sendAyaRecitation(ctx, ayaId, reciter){
                                                         .then (() => {
                                                             bot.telegram.editMessageReplyMarkup(chatId, r.message_id, null, aMenuButtons("r0", ayaId, reciter))
                                                                 .then(() => resolve(r))
-                                                        })
-                                                })
+                                                                .catch(er => log(`Error while adding recitation reply buttons: `, er))
+                                                        }).catch(er => log(`Error while deleting text buttons after reply: `, er))
+                                                }).catch(er => log(`Error while resending recitation: `, er))
                                         })
                                 } else {
                                     bot.telegram.editMessageReplyMarkup(chatId, message_id, null, null)
                                         .then (() => {
                                             bot.telegram.editMessageReplyMarkup(chatId, c.message_id, null, aMenuButtons("r0", ayaId, reciter))
                                                 .then(() => resolve(c))
-                                        })
+                                                .catch(er => log(`Error while adding recitation buttons: `, er))
+                                        }).catch(er => log(`Error while deleting text buttons: `, er))
                                 }
                             })
                             .catch(e => {
@@ -976,7 +988,7 @@ Support you or support us?`
                         }]
                     ]
                 }
-            })  
+            }).catch(er => log(`Error while sending support message: `, er))  
         } else {
             log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
         }
@@ -1013,6 +1025,7 @@ bot.command('channel', ctx => {
         if(isAdmin){
             var msg = `https://t.me/DailyAyaGlobal`
             bot.telegram.sendMessage(ctx.chat.id, msg)
+                .catch(er => log(`Error while sending channel message: `, er))
         } else {
             log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
         }
@@ -1062,7 +1075,8 @@ bot.action(/^{"recitersNavPage/ , ctx =>{
             var requestedRecitersNavPage = callbackData.recitersNavPage
             bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, {
                 inline_keyboard: recitersNavPage(requestedRecitersNavPage)
-            })
+            }).catch(er => log(`Error while navigating reciters: `, er))
+            ctx.answerCbQuery()
         } else {
             ctx.answerCbQuery(nonAdminsAlert, {show_alert: true})
         }
@@ -1078,6 +1092,7 @@ bot.action(/^{"setReciter/ , ctx =>{
             var requestedFavReciter = callbackData.setReciter
             
             setFavReciter(ctx.chat.id, requestedFavReciter)
+            ctx.answerCbQuery()
         } else {
             ctx.answerCbQuery(nonAdminsAlert, {show_alert: true})
         }
@@ -1106,6 +1121,7 @@ bot.action('surpriseAya', ctx => {
     .then(isAdmin =>{
         if(isAdmin){
             surpriseAya(ctx)
+            ctx.answerCbQuery()
         } else {
             ctx.answerCbQuery(nonAdminsAlert, {show_alert: true})
         }
@@ -1141,6 +1157,8 @@ bot.action(/^{"aMenu/ , ctx =>{
                 menu = callbackData.aMenu.includes("1") ? callbackData.aMenu.replace("1", "0") : callbackData.aMenu.replace("0", "1"), // Toggle menu state
                 buttons = aMenuButtons(menu, callbackData.a, callbackData.r)
             bot.telegram.editMessageReplyMarkup(ctx.chat.id, ctx.update.callback_query.message.message_id, undefined, buttons)
+                .catch(e => log(`Error while toggling menu: `, e))
+            ctx.answerCbQuery()
         } else {
             ctx.answerCbQuery(nonAdminsAlert, {show_alert: true})
         }
@@ -1157,6 +1175,7 @@ bot.action(/^{"recite/ , ctx =>{
         if(isAdmin){
             log("Button reciter: " + callbackData.r)
             sendAyaRecitation(ctx, callbackData.recite, callbackData.r)
+            ctx.answerCbQuery()
         } else {
             var ayaIndex = ayaId2suraAya(callbackData.recite)
             ctx.answerCbQuery("", {url: `t.me/${bot.options.username}?start=r${ayaIndex.sura}-${ayaIndex.aya}`})
