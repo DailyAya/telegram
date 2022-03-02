@@ -321,10 +321,6 @@ const arQuran       = require('./quran-uthmani.json').data.surahs
 const enQuran       = require('./en.ahmedraza.json').data.surahs
 const arReciters    = require('./audio.json').data.filter(i => i.language == "ar")
 
-const rasmifize     = require('rasmify.js')
-const normalizedSurasArNames  = enQuran.map(s => rasmifize(s.name.substr(8)))
-log("surasArNames count: " + normalizedSurasArNames.length)
-
 function checkSource(){
     var downloadStart = Date.now()
     axios("http://api.alquran.cloud/v1/quran/quran-uthmani")
@@ -823,7 +819,11 @@ function numArabicToEnglish(string) {
 
 
 
+const rasmifize                 = require('rasmify.js')
+const normalizedSurasArNames    = enQuran.map(s => rasmifize(s.name.substr(8)))
+log("surasArNames count: " + normalizedSurasArNames.length)
 
+const ArMagicRegex = new RegExp(`[${rasmifize('المهوسصق')}]`) // All Arabic names of Suras include at least one character of these
 
 // Responds to text messages to send the requested Aya or error message if unrecognized
 function handleText(ctx){
@@ -831,11 +831,11 @@ function handleText(ctx){
         foundNums       = numArabicToEnglish(normalizedTxt).match(/\d+/g) || [],
         chatId          = ctx.chat.id,
         ayaId           = -2 // Positive for valid ayaId, 0 for valid sura but invalid aya, -1 for invalid sura, -2 or any other negative for initialization.
-        foundArSuraNum  = 0
+        foundArSuraNum  = 0 
     log('Message from chat ' + chatId+ ': ' + ctx.message.text)
     log('Normalized message from chat: ' + normalizedTxt)
 
-    if(normalizedTxt.match(/[المهوسصق]/g)) { // All Arabic names of Suras include at least one character of these
+    if(ArMagicRegex.test(normalizedTxt)) { 
         if(normalizedTxt.includes(rasmifize("الكرسي"))){
             ayaId = 262
         } else {
