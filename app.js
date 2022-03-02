@@ -842,8 +842,8 @@ function handleText(ctx){
             for (let index = 0; index < normalizedSurasArNames.length; index++) {
                 let regex = new RegExp(
                     `(^${normalizedSurasArNames[index]}$)|(^${
-                    normalizedSurasArNames[index]}( +)(.*))|((.*)( +)${
-                    normalizedSurasArNames[index]}( +)(.*))|((.*)( +)${normalizedSurasArNames[index]}$)`
+                    normalizedSurasArNames[index]}([: \d\-]+)(.*))|((.*)( +)${
+                    normalizedSurasArNames[index]}([: \d\-]+)(.*))|((.*)( +)${normalizedSurasArNames[index]}$)`
                     )
                 
                 if(regex.test(normalizedTxt)){
