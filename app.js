@@ -827,8 +827,8 @@ const ArMagicRegex = new RegExp(`[${rasmifize('المهوسصق')}]`) // All Ara
 
 // Responds to text messages to send the requested Aya or error message if unrecognized
 function handleText(ctx){
-    var normalizedTxt   = rasmifize(ctx.message.text),
-        foundNums       = numArabicToEnglish(normalizedTxt).match(/\d+/g) || [],
+    var normalizedTxt   = rasmifize(numArabicToEnglish(ctx.message.text)),
+        foundNums       = normalizedTxt.match(/\d+/g) || [],
         chatId          = ctx.chat.id,
         ayaId           = -2 // Positive for valid ayaId, 0 for valid sura but invalid aya, -1 for invalid sura, -2 or any other negative for initialization.
         foundArSuraNum  = 0 
