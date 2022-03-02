@@ -1145,7 +1145,7 @@ bot.action(/^{"currAya/, ctx => {
             ctx.answerCbQuery()
         } else {
             var ayaIndex = ayaId2suraAya(nextAya(currentAyaId))
-            ctx.answerCbQuery("", {url: `t.me/${bot.options.username}?start=r${ayaIndex.sura}-${ayaIndex.aya}`})
+            ctx.answerCbQuery("", {url: `t.me/${bot.options.username}?start=${ayaIndex.sura}-${ayaIndex.aya}`})
         }
     })
     .catch(e => log('Error while checking admin: ', e))
