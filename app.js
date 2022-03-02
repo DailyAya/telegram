@@ -1107,6 +1107,7 @@ bot.action('instructions', ctx => {
     .then(isAdmin =>{
         if(isAdmin){
             instructions(ctx.chat.id)
+            ctx.answerCbQuery()
         } else {
             ctx.answerCbQuery(nonAdminsAlert, {show_alert: true})
         }
@@ -1141,6 +1142,7 @@ bot.action(/^{"currAya/, ctx => {
         if(isAdmin){
             log(`Sending next Aya after Aya ${currentAyaId} with Reciter ${callbackData.r} for chat ${ctx.chat.id}`)
             sendAya(ctx.chat.id, nextAya(currentAyaId), callbackData.r, ctx.from.language_code, 'next')
+            ctx.answerCbQuery()
         } else {
             var ayaIndex = ayaId2suraAya(nextAya(currentAyaId))
             ctx.answerCbQuery("", {url: `t.me/${bot.options.username}?start=r${ayaIndex.sura}-${ayaIndex.aya}`})
