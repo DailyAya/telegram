@@ -390,7 +390,8 @@ function suraAya2ayaId(suraAya){ // suraAya = {sura: suraNum, aya: ayaNum}
         ayaId
     
     if (1 <= sura && sura <= 114){
-        ayaId = enQuran[sura-1].ayahs.find(a => a.numberInSurah == aya).number ?? 0 // return 0 if valid Sura but invalid Aya
+        var ayaData = enQuran[sura-1].ayahs.find(a => a.numberInSurah == aya)
+        ayaId = ayaData ? ayaData.number : 0 // return 0 if valid Sura but invalid Aya
     } else {
         ayaId = -1 // return -1 if invalid Sura
     }
