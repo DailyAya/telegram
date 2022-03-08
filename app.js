@@ -375,8 +375,12 @@ if(!debugging) {
 
 
 function ayaId2suraAya(ayaId){
-    var sura = enQuran.find(s => s.ayahs.find(a => a.number == ayaId)).number || 0
-    var aya = enQuran[sura-1].ayahs.find(a => a.number == ayaId).numberInSurah || 0
+    var sura = 0,
+        aya = 0
+    if(1 <= ayaId && ayaId <= 6236){
+        sura = enQuran.find(s => s.ayahs.find(a => a.number == ayaId)).number
+        aya = enQuran[sura-1].ayahs.find(a => a.number == ayaId).numberInSurah
+    }
     return {sura: sura, aya: aya} // Returns {sura: 0, aya: 0} if not valid ayaId
 }
 
@@ -385,8 +389,8 @@ function suraAya2ayaId(suraAya){ // suraAya = {sura: suraNum, aya: ayaNum}
         aya     = suraAya.aya,
         ayaId
     
-    if (sura >= 1 && sura <= 114){
-        ayaId = enQuran[sura-1].ayahs.find(a => a.numberInSurah == aya).number || 0 // return 0 if valid Sura but invalid Aya
+    if (1 <= sura && sura <= 114){
+        ayaId = enQuran[sura-1].ayahs.find(a => a.numberInSurah == aya).number ?? 0 // return 0 if valid Sura but invalid Aya
     } else {
         ayaId = -1 // return -1 if invalid Sura
     }
