@@ -1,4 +1,4 @@
-//"use strict"
+//"use strict" // Causes memory issues in Heroku free plan
 
 const numCPUs = require('os').cpus().length
 console.log(`Number of CPUs is: ${numCPUs}`)
@@ -12,7 +12,7 @@ const instActivetUntil = process.env.instActiveUntil || "WHO KNOWS!"
 const branch = process.env.branch || "staging"
 const debugging = process.env.debugging == "true"
 const devChatId = process.env.devChatId || 0  // the group ID of development team on Telegram
-const codeVer = process.env.npm_package_version || "1970.01.01"
+const codeVer = process.env.npm_package_version || "1970.1.1-0"
 
 
 // Use log(x) instead of log(x) to control debugging mode from env variables
@@ -274,8 +274,12 @@ if(telegramToken){
 function start(chatId){
     var msg =
 `دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات والقنوات حتى لا ينقطع وردكم اليومي.
+لمعرفة الأوامر المتاحة:
+/commands
 
-Daily Aya sends one Aya daily at the same time of the last Aya you request in private chats or groups and channels so your daily read doesn't stop.`
+Daily Aya sends one Aya daily at the same time of the last Aya you request in private chats or groups and channels so your daily read doesn't stop.
+For available commands:
+/commands`
 
     bot.telegram.sendMessage(chatId, msg, {
         reply_markup: {
@@ -1037,6 +1041,26 @@ bot.command('channel', ctx => {
     })
     .catch(e => log('Error while checking admin: ', e))
 })
+
+bot.command('commands', ctx => {
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var msg = ``
+            bot.telegram.getMyCommands().then(commands =>{
+                commands.forEach(item =>{
+                    msg += `/${item.command}\n${item.description}\n\n`
+                })
+                bot.telegram.sendMessage(ctx.chat.id, msg)
+                    .catch(er => log(`Error while sending channel message: `, er))
+            })
+        } else {
+            log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
+})
+
 
 // bot.command(`restart`, ctx =>{
 //     bot.telegram.sendMessage(ctx.chat.id, `Restarting...`)
