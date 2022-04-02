@@ -923,6 +923,7 @@ function adminChecker(ctx){
 // set the bot menu
 bot.telegram.setMyCommands([
     {'command':'surpriseme', 'description': '🎁 Surprise Me فاجئني'},
+    {'command':'khatma', 'description': '💪 Group Khatma ختمة مجموعة'},
     {'command':'help', 'description': '🤔 Instructions إرشادات'},
     {'command':'support', 'description': '🤗 Support دعم'},
     {'command':'reciters', 'description': '🗣️ Set Reciter اختيار القارئ'},
@@ -1034,6 +1035,36 @@ bot.command('channel', ctx => {
         if(isAdmin){
             var msg = `https://t.me/DailyAyaGlobal`
             bot.telegram.sendMessage(ctx.chat.id, msg)
+                .catch(er => log(`Error while sending channel message: `, er))
+        } else {
+            log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
+        }
+    })
+    .catch(e => log('Error while checking admin: ', e))
+})
+
+bot.command('khatma', ctx => {
+    adminChecker(ctx)
+    .then(isAdmin =>{
+        if(isAdmin){
+            var msg = `كم جزء قرأت؟\n\nHow many ajza did you read?`
+            var quran30btns = [[], [], [], [], [], []] // 6 rows
+            let juzBtn = juz => {
+                return {
+                    text: juz,
+                    callback_data: `{"groupkhatma": ${juz}}`
+                }
+            }
+            quran30btns.forEach((row, i) =>{
+                for (let juz = 1+(5*i); juz <= 5+(5*i); juz++) { // 5 buttons per row = 30 Juz
+                    row.push(juzBtn(juz))
+                }
+            })
+            
+                
+
+
+            bot.telegram.sendMessage(ctx.chat.id, {reply_markup: {inline_keyboard: quran30btns}})
                 .catch(er => log(`Error while sending channel message: `, er))
         } else {
             log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
