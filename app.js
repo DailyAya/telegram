@@ -1074,7 +1074,8 @@ bot.action(/^{"groupkhatma/ , ctx =>{
     var callbackData = JSON.parse(ctx.update.callback_query.data)
     var juz = callbackData.groupkhatma
     ctx.replyWithHTML(
-        `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name}</a>: ${juz} 💪`
+        `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name}</a>: ${juz} 💪`,
+        {disable_notification: true, reply_to_message_id: ctx.update.callback_query.message.message_id}
     ).catch(e => log(`Error while navigating reciters: `, e))
     ctx.answerCbQuery(`Done`, {show_alert: true})
 })
