@@ -1064,7 +1064,7 @@ bot.command('khatma', ctx => {
                 
 
 
-            bot.telegram.sendMessage(ctx.chat.id, {reply_markup: {inline_keyboard: quran30btns}})
+            bot.telegram.sendMessage(ctx.chat.id, msg, {reply_markup: {inline_keyboard: quran30btns}})
                 .catch(er => log(`Error while sending channel message: `, er))
         } else {
             log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
