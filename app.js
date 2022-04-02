@@ -1060,9 +1060,6 @@ bot.command('khatma', ctx => {
                     row.push(juzBtn(juz))
                 }
             })
-            
-                
-
 
             bot.telegram.sendMessage(ctx.chat.id, msg, {reply_markup: {inline_keyboard: quran30btns}})
                 .catch(er => log(`Error while sending channel message: `, er))
@@ -1071,6 +1068,15 @@ bot.command('khatma', ctx => {
         }
     })
     .catch(e => log('Error while checking admin: ', e))
+})
+
+bot.action(/^{"groupkhatma/ , ctx =>{
+    var callbackData = JSON.parse(ctx.update.callback_query.data)
+    var juz = callbackData.groupkhatma
+    ctx.replyWithHTML(
+        `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name}</a>: ${juz} 💪`
+    ).catch(e => log(`Error while navigating reciters: `, e))
+    ctx.answerCbQuery(`Done`, {show_alert: true})
 })
 
 bot.command('commands', ctx => {
