@@ -1111,7 +1111,7 @@ function khatmaUpdate({text: text, firstName:firstName, userId: userId, juz: juz
         textArray.push(update)
     } else {
         textArray.filter(item => !item.includes(userId)) // remove old update
-        let index = textArray.findIndex(item =>{item.match(/(\d+)(?: ..$)/)[0] < juz}) // find the first item with lower juz (".." for the emoji)
+        let index = textArray.findIndex(item =>{item.match(/(\d+)(?: ..$)/)[1] < juz}) // find the first item with lower juz (".." for the emoji)
         if (index == -1){
             textArray.push(update)
         } else {
