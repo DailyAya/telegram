@@ -1081,13 +1081,13 @@ bot.action(/^{"groupkhatma/ , ctx =>{
         ctx.editMessageText(edit, {parse_mode: 'HTML', reply_markup: ctx.update.callback_query.message.reply_markup})
             .then(() => ctx.answerCbQuery(
                 `تم التحديث ✔️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n`
-                +`Updated ✔️\nMay Allah accept from us and you 🤲`,
+                +`✔️ Updated!\n🤲 May Allah accept from us and you.`,
                 {show_alert: true}
             ), e =>{
                 log(`Error while updating khatma: `, e)
                 ctx.answerCbQuery(
                     `تم الإرسال ✔️\nلكن الملخص مملتئ ⚠️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n`
-                    +`Sent ✔️\nbut summary is full ⚠️\nMay Allah accept from us and you 🤲`,
+                    +`✔️ Sent!\n⚠️ Summary is full.\n🤲 May Allah accept from us and you.`,
                     {show_alert: true}
                 )
             })
