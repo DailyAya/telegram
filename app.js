@@ -1061,7 +1061,7 @@ bot.command('khatma', ctx => {
                 }
             })
 
-            bot.telegram.sendMessage(ctx.chat.id, msg, {parse_mode: 'HTML', reply_markup: {inline_keyboard: quran30btns}})
+            bot.telegram.sendMessage(ctx.chat.id, msg, {reply_markup: {inline_keyboard: quran30btns}})
                 .catch(er => log(`Error while sending channel message: `, er))
         } else {
             log(`Ignored command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`)
@@ -1078,7 +1078,7 @@ bot.action(/^{"groupkhatma/ , ctx =>{
         {disable_notification: true, reply_to_message_id: ctx.update.callback_query.message.message_id}
     ).then(() =>{
         let edit = khatmaUpdate({text: ctx.update.callback_query.message.text, firstName:ctx.from.first_name, userId: ctx.from.id, juz: juz})
-        ctx.editMessageText(edit)
+        ctx.editMessageText(edit, {parse_mode: 'HTML'})
             .then(() => ctx.answerCbQuery(
                 `تم التحديث ✔️ نسأل الله أن يتقبل منا ومنكم 🤲\n\n`
                 +`Updated ✔️ May Allah accept from us and you 🤲`,
