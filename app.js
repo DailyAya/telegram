@@ -1105,7 +1105,9 @@ bot.action(/^{"groupkhatma/ , ctx =>{
 function khatmaUpdate({text: text, firstName:firstName, userId: userId, juz: juz}){
     let update = `<a href="tg://user?id=${userId}">${firstName}</a> ➔ ${juz} ${juz == 30 ? "🏆": "💪"}`
     let textArray = text.split("\n\n")
-    if (textArray.length == 1){
+    let header = textArray.shift()
+    
+    if (textArray.length == 0){
         textArray.push(update)
     } else {
         textArray.filter(item => !item.includes(userId)) // remove old update
@@ -1116,6 +1118,7 @@ function khatmaUpdate({text: text, firstName:firstName, userId: userId, juz: juz
             textArray.splice(index, 0, update) // insert before the lower juz
         }
     }
+    textArray.splice(0, 0, header)
     return textArray.join("\n\n")
 }
 
