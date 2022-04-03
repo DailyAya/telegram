@@ -1112,7 +1112,7 @@ function khatmaUpdate({ctx: ctx, juz: juz}){
 
     entities.forEach(entity =>{ // adding HTML mentions in text
         let mention = `<a href="tg://user?id=${entity.user.id}">${entity.user.first_name}</a>`
-        text = text.substr(0, textOffset+entity.offset-1) + mention + text.substr(textOffset+entity.offset+entity.length+1)
+        text = text.substr(0, textOffset+entity.offset) + mention + text.substr(textOffset+entity.offset+entity.length)
         textOffset += mention.length - entity.length
     })
 
