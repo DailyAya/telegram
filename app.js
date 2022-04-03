@@ -1078,17 +1078,17 @@ bot.action(/^{"groupkhatma/ , ctx =>{
         `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name}</a> ➔ ${juz} ${juz == 30 ? "🏆": "💪"}`,
         {disable_notification: true, reply_to_message_id: ctx.update.callback_query.message.message_id}
     ).then(() =>{
-        let edit = khatmaUpdate({text: ctx.update.callback_query.message.text, firstName:ctx.from.first_name, userId: ctx.from.id, juz: juz})
+        let edit = khatmaUpdate({ctx: ctx, juz: juz})
         ctx.editMessageText(edit, {parse_mode: 'HTML', reply_markup: ctx.update.callback_query.message.reply_markup})
             .then(() => ctx.answerCbQuery(
-                `تم التحديث ✔️ نسأل الله أن يتقبل منا ومنكم 🤲\n\n`
-                +`Updated ✔️ May Allah accept from us and you 🤲`,
+                `تم التحديث ✔️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n`
+                +`Updated ✔️\nMay Allah accept from us and you 🤲`,
                 {show_alert: true}
             ), e =>{
                 log(`Error while updating khatma: `, e)
                 ctx.answerCbQuery(
-                    `تم الإرسال ✔️ لكن الملخص مملتئ ⚠️ نسأل الله أن يتقبل منا ومنكم 🤲\n\n`
-                    +`Sent ✔️ but summary is full ⚠️ May Allah accept from us and you 🤲`,
+                    `تم الإرسال ✔️\nلكن الملخص مملتئ ⚠️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n`
+                    +`Sent ✔️\nbut summary is full ⚠️\nMay Allah accept from us and you 🤲`,
                     {show_alert: true}
                 )
             })
@@ -1103,10 +1103,22 @@ bot.action(/^{"groupkhatma/ , ctx =>{
     })
 })
 
-function khatmaUpdate({text: text, firstName:firstName, userId: userId, juz: juz}){
+function khatmaUpdate({ctx: ctx, juz: juz}){
+    let userId      = ctx.from.id,
+        firstName   = ctx.from.first_name,
+        text        = ctx.update.callback_query.message.text,
+        entities    = ctx.update.callback_query.message.entities || []
+    var textOffset  = 0
+
+    entities.forEach(entity =>{ // adding HTML mentions in text
+        let mention = `<a href="tg://user?id=${entity.user.id}">${entity.user.first_name}</a>`
+        text = text.substr(0, textOffset+entity.offset-1) + mention + text.substr(textOffset+entity.offset+entity.length+1)
+        textOffset += mention.length - entity.length
+    })
+
     let update = `<a href="tg://user?id=${userId}">${firstName}</a> ➔ ${juz} ${juz == 30 ? "🏆": "💪"}`
     let textArray = text.split("\n\n")
-    let header = textArray.shift()
+    let header = textArray.shift() // split header
     
     if (textArray.length == 0){
         textArray.push(update)
@@ -1119,7 +1131,7 @@ function khatmaUpdate({text: text, firstName:firstName, userId: userId, juz: juz
             textArray.splice(index, 0, update) // insert before the lower juz
         }
     }
-    textArray.splice(0, 0, header)
+    textArray.splice(0, 0, header) // add header
     return textArray.join("\n\n")
 }
 
