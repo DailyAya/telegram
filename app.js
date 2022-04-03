@@ -1077,7 +1077,7 @@ bot.action(/^{"groupkhatma/ , ctx =>{
         `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name}</a> ➔ ${juz} ${juz == 30 ? "🏆": "💪"}`,
         {disable_notification: true, reply_to_message_id: ctx.update.callback_query.message.message_id}
     ).then(() =>{
-        let edit = khatmaUpdate({text: ctx.message.text, firstName:ctx.from.first_name, userId: ctx.from.id, juz: juz})
+        let edit = khatmaUpdate({text: ctx.update.callback_query.message.text, firstName:ctx.from.first_name, userId: ctx.from.id, juz: juz})
         ctx.editMessageText(edit)
             .then(() => ctx.answerCbQuery(
                 `تم التحديث ✔️ نسأل الله أن يتقبل منا ومنكم 🤲\n\n`
