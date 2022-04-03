@@ -1071,6 +1071,7 @@ bot.command('khatma', ctx => {
 })
 
 bot.action(/^{"groupkhatma/ , ctx =>{
+    log(JSON.stringify(ctx.update))
     var callbackData = JSON.parse(ctx.update.callback_query.data)
     var juz = callbackData.groupkhatma
     ctx.replyWithHTML(
@@ -1111,7 +1112,7 @@ function khatmaUpdate({text: text, firstName:firstName, userId: userId, juz: juz
         textArray.push(update)
     } else {
         textArray.filter(item => !item.includes(userId)) // remove old update
-        let index = textArray.findIndex(item =>item.match(/(\d+)(?: ..$)/)[1] < juz) // find the first item with lower juz (".." for the emoji)
+        let index = textArray.findIndex(item => item.match(/(\d+)(?: ..$)/)[1] < juz) // find the first item with lower juz (".." for the emoji)
         if (index == -1){
             textArray.push(update)
         } else {
