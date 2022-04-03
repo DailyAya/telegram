@@ -1047,7 +1047,7 @@ bot.command('khatma', ctx => {
     adminChecker(ctx)
     .then(isAdmin =>{
         if(isAdmin){
-            var msg = `كم جزء قرأت؟\n\nHow many ajza did you read?`
+            var msg = `كم جزء قرأت؟ \nHow many ajza did you read?`
             var quran30btns = [[], [], [], [], [], []] // 6 rows
             let juzBtn = juz => {
                 return {
@@ -1074,11 +1074,50 @@ bot.action(/^{"groupkhatma/ , ctx =>{
     var callbackData = JSON.parse(ctx.update.callback_query.data)
     var juz = callbackData.groupkhatma
     ctx.replyWithHTML(
-        `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name}</a>: ${juz} 💪`,
+        `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name}</a> ➔ ${juz} ${juz == 30 ? "🏆": "💪"}`,
         {disable_notification: true, reply_to_message_id: ctx.update.callback_query.message.message_id}
-    ).catch(e => log(`Error while navigating reciters: `, e))
-    ctx.answerCbQuery(`Done`, {show_alert: true})
+    ).then(() =>{
+        let edit = khatmaUpdate({text: ctx.message.text, firstName:ctx.from.first_name, userId: ctx.from.id, juz: juz})
+        ctx.editMessageText(edit)
+            .then(() => ctx.answerCbQuery(
+                `تم التحديث ✔️ نسأل الله أن يتقبل منا ومنكم 🤲\n\n`
+                +`Updated ✔️ May Allah accept from us and you 🤲`,
+                {show_alert: true}
+            ), e =>{
+                log(`Error while updating khatma: `, e)
+                ctx.answerCbQuery(
+                    `تم الإرسال ✔️ لكن الملخص مملتئ ⚠️ نسأل الله أن يتقبل منا ومنكم 🤲\n\n`
+                    +`Sent ✔️ but summary is full ⚠️ May Allah accept from us and you 🤲`,
+                    {show_alert: true}
+                )
+            })
+        
+    }, e => {
+        log(`Error while replying to khatma: `, e)
+        ctx.answerCbQuery(
+            `عذرا.. لدينا مشكلة وسنحاول إصلاحها.. يرجى إعادة المحاولة لاحقا.\n\n`
+            +`Sorry, we have an issue and we will try to fix it... Please retry later.`,
+            {show_alert: true}
+        )
+    })
 })
+
+function khatmaUpdate({text: text, firstName:firstName, userId: userId, juz: juz}){
+    let update = `<a href="tg://user?id=${userId}">${firstName}</a> ➔ ${juz} ${juz == 30 ? "🏆": "💪"}`
+    let textArray = text.split("\n\n")
+    if (textArray.length == 1){
+        textArray.push(update)
+    } else {
+        textArray.filter(item => !item.includes(userId)) // remove old update
+        let index = textArray.findIndex(item =>{item.match(/(\d+)(?: \D$)/)[0] < juz}) // find the first item with lower juz
+        if (index == -1){
+            textArray.push(update)
+        } else {
+            textArray.splice(index, 0, update) // insert before the lower juz
+        }
+    }
+    return textArray.join("\n\n")
+}
 
 bot.command('commands', ctx => {
     adminChecker(ctx)
