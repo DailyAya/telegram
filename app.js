@@ -1054,7 +1054,7 @@ bot.command('khatma', ctx => {
     adminChecker(ctx)
     .then(isAdmin =>{
         if(isAdmin){
-            var msg = `كم جزء قرأت؟ \nHow many ajza did you read?`
+            var msg = `كم جزء قرأت؟ \nHow many ajzaa did you read?`
             var quran30btns = [[], [], [], [], [], []] // 6 rows
             let juzBtn = juz => {
                 return {
@@ -1080,33 +1080,41 @@ bot.command('khatma', ctx => {
 bot.action(/^{"groupkhatma/ , ctx =>{
     var callbackData = JSON.parse(ctx.update.callback_query.data)
     var juz = callbackData.groupkhatma
-    ctx.replyWithHTML(
-        `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name}</a> ➔ ${juz} ${juz == 30 ? "🏆": "💪"}`,
-        {disable_notification: true, reply_to_message_id: ctx.update.callback_query.message.message_id}
-    ).then(() =>{
-        let edit = khatmaUpdate({ctx: ctx, juz: juz})
-        ctx.editMessageText(edit, {parse_mode: 'HTML', reply_markup: ctx.update.callback_query.message.reply_markup})
-            .then(() => ctx.answerCbQuery(
-                `تم التحديث ✔️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n`
-                +`✔️ Updated!\n🤲 May Allah accept from us and you.`,
-                {show_alert: true}
-            ), e =>{
-                log(`Error while updating khatma: `, e)
-                ctx.answerCbQuery(
-                    `تم الإرسال ✔️\nلكن الملخص مملتئ ⚠️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n`
-                    +`✔️ Sent!\n⚠️ Summary is full.\n🤲 May Allah accept from us and you.`,
+    let edit = khatmaUpdate({ctx: ctx, juz: juz})
+    if (edit){
+        ctx.replyWithHTML(
+            `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name}</a> ➔ ${juz} ${juz == 30 ? "🏆": "💪"}`,
+            {disable_notification: true, reply_to_message_id: ctx.update.callback_query.message.message_id}
+        ).then(() =>{
+            ctx.editMessageText(edit, {parse_mode: 'HTML', reply_markup: ctx.update.callback_query.message.reply_markup})
+                .then(() => ctx.answerCbQuery(
+                    `تم التحديث ✔️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n`
+                    +`✔️ Updated!\n🤲 May Allah accept from us and you.`,
                     {show_alert: true}
-                )
-            })
-        
-    }, e => {
-        log(`Error while replying to khatma: `, e)
+                ), e =>{
+                    log(`Error while updating khatma: `, e)
+                    ctx.answerCbQuery(
+                        `تم الإرسال ✔️\nالملخص قد يكون ممتلئ ⚠️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n`
+                        +`✔️ Sent!\n⚠️ Summary might be full.\n🤲 May Allah accept from us and you.`,
+                        {show_alert: true}
+                    )
+                })
+            
+        }, e => {
+            log(`Error while replying to khatma: `, e)
+            ctx.answerCbQuery(
+                `عذرا.. لدينا مشكلة وسنحاول إصلاحها.. يرجى إعادة المحاولة لاحقا.\n\n`
+                +`Sorry, we have an issue and we will try to fix it... Please retry later.`,
+                {show_alert: true}
+            )
+        })
+    } else {
         ctx.answerCbQuery(
-            `عذرا.. لدينا مشكلة وسنحاول إصلاحها.. يرجى إعادة المحاولة لاحقا.\n\n`
-            +`Sorry, we have an issue and we will try to fix it... Please retry later.`,
+            `هذا الجزء هو اختيارك الحالي بالفعل ⚠️\n\n`
+            +`⚠️ This Juz is already your current selection.`,
             {show_alert: true}
-        )
-    })
+        ) 
+    }
 })
 
 function khatmaUpdate({ctx: ctx, juz: juz}){
@@ -1124,6 +1132,13 @@ function khatmaUpdate({ctx: ctx, juz: juz}){
 
     let update = `<a href="tg://user?id=${userId}">${firstName}</a> ➔ ${juz} ${juz == 30 ? "🏆": "💪"}`
     let textArray = text.split("\n\n")
+
+    let userState = textArray.filter(item => item.indexOf(userId) > -1)[0]
+    if (userState == update){
+        return false // function returns here
+    }
+
+
     let header = textArray.shift() // split header
     
     if (textArray.length == 0){
