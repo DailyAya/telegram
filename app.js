@@ -565,7 +565,7 @@ function sendAyaText(chatId, ayaId, reciter, lang, trigger){
                 resolve(c)
             })
             .catch(e => {
-                log(JSON.stringify(e))
+                log("SendAya error:", JSON.stringify(e))
                 if (e.description.includes('upgraded to supergroup')){
                     sendAyaText(e.parameters.migrate_to_chat_id, ayaId, reciter, lang, trigger)
                     lastAyaTime(chatId, 'blocked')
