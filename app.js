@@ -1103,8 +1103,8 @@ bot.action(/^{"groupkhatma/ , ctx =>{
         }, e => {
             log(`Error while replying to khatma: `, e)
             ctx.answerCbQuery(
-                `عذرا.. لدينا مشكلة وسنحاول إصلاحها.. يرجى إعادة المحاولة لاحقا.\n\n`
-                +`Sorry, we have an issue and we will try to fix it... Please retry later.`,
+                `عذرا، يبدو أن لدينا مشكلة 😳\nسنحاول إصلاحها قريبا.\n\n`
+                +`😳 Sorry, we might have an issue.\nWe will try to fix it soon.`,
                 {show_alert: true}
             )
         })
