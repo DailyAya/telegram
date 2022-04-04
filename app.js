@@ -564,7 +564,15 @@ function sendAyaText(chatId, ayaId, reciter, lang, trigger){
                 successSend(c, ayaId, lang, trigger)
                 resolve(c)
             })
-            .catch(e => reject(e))
+            .catch(e => {
+                log(JSON.stringify(e))
+                if (e.description.includes('upgraded to supergroup')){
+                    sendAyaText(e.parameters.migrate_to_chat_id, ayaId, reciter, lang, trigger)
+                    lastAyaTime(chatId, 'blocked')
+                } else {
+                    reject(e)
+                }
+            })
     })
 }
 
