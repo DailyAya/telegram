@@ -661,10 +661,10 @@ function aMenuButtons(menuState, ayaId, reciter){
 
     if (menuState.includes("1")){
         var ayaIndex = ayaId2suraAya(ayaId)
-        // buttons.inline_keyboard[0].push({
-        //     text: "⚠️",
-        //     callback_data: `{"aReport":${ayaId},"r":"${reciter}","rMsgId":${recitationMsgId}}`
-        // })
+        buttons.inline_keyboard[0].push({
+            text: "⚠️",
+            callback_data: `{"aReport":${ayaId},"r":"${reciter}"}`
+        })
         if (menuState == "r1") { // Show setReciter button only when it's a menu of a recitation
             buttons.inline_keyboard[0].push({
                 text: "🗣️",
@@ -1327,6 +1327,18 @@ bot.action(/^{"recite/ , ctx =>{
         }
     })
     .catch(e => log('Error while checking admin: ', e))
+})
+
+
+bot.action(/^{"aReport/ , ctx =>{
+    log(`Aya report from user ${ctx.from.username ? '@'+ctx.from.username+', ID ': ''}${ctx.from.id}: `,
+     ctx.update.callback_query.data
+    )
+    ctx.answerCbQuery(
+        `تم إرسال بلاغكم عن هذه الآية للفريق المسؤول.\nجزاكم الله خيرا.\n\n`
+        +`Your report about this Aya has been sent to our team.\nMay Allah reward you good.`,
+        {show_alert: true}
+    )
 })
 
 
