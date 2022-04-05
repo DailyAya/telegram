@@ -1337,7 +1337,7 @@ bot.action(/^{"aReport/ , ctx =>{
      `Aya: ${ayaIndex.sura}-${ayaIndex.aya}, Reciter: ${callbackData.r}`
     )
     ctx.answerCbQuery(
-        `تم إرسال بلاغكم عن هذه الآية للفريق المختص.\nقد نتواصل معكم قريبا\nجزاكم الله خيرا.\n\n`
+        `تم إرسال بلاغكم عن هذه الآية للفريق المختص.\nقد نتواصل معكم قريبا.\nجزاكم الله خيرا.\n\n`
         +`Your report about this Aya has been sent to our team.\nWe might contact you soon.\nMay Allah reward you good.`,
         {show_alert: true}
     )
