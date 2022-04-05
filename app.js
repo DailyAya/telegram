@@ -1332,7 +1332,7 @@ bot.action(/^{"recite/ , ctx =>{
 
 bot.action(/^{"aReport/ , ctx =>{
     log(`Aya report from user ${ctx.from.username ? '@'+ctx.from.username+', ID ': ''}${ctx.from.id}: `,
-     ctx.update.callback_query.data
+     JSON.stringify(ctx.update.callback_query.data)
     )
     ctx.answerCbQuery(
         `تم إرسال بلاغكم عن هذه الآية للفريق المسؤول.\nجزاكم الله خيرا.\n\n`
