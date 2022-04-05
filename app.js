@@ -27,7 +27,7 @@ function log(x, e){
             case 2:
                 console.error(x, e)
                 if(bot) {
-                    bot.telegram.sendMessage(devChatId, (x+e.message).substring(0, 4096))
+                    bot.telegram.sendMessage(devChatId, (x+(e.message || e)).substring(0, 4096))
                         .then(resolve())
                         .catch(er => {
                             console.error(`Error while sending log to devChat: `, er)
