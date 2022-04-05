@@ -1331,8 +1331,9 @@ bot.action(/^{"recite/ , ctx =>{
 
 
 bot.action(/^{"aReport/ , ctx =>{
+    var callbackData = JSON.parse(ctx.update.callback_query.data)
     log(`Aya report from user ${ctx.from.username ? '@'+ctx.from.username+', ID ': ''}${ctx.from.id}: `,
-     JSON.stringify(ctx.update.callback_query.data)
+     `Aya: ${callbackData.aReport}, Reciter: ${callbackData.r}`
     )
     ctx.answerCbQuery(
         `تم إرسال بلاغكم عن هذه الآية للفريق المسؤول.\nجزاكم الله خيرا.\n\n`
