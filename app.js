@@ -3,16 +3,16 @@
 const numCPUs = require('os').cpus().length
 console.log(`Number of CPUs is: ${numCPUs}`)
 
-const telegramToken = process.env.telegramToken || 0
-const inst = process.env.inst || 0
-const host = process.env.host || "Host"
-const totalInst = process.env.totalInst || 0
-const activeInst = process.env.activeInst || "0@Host" //unused for now
-const instActivetUntil = process.env.instActiveUntil || "WHO KNOWS!"
-const branch = process.env.branch || "staging"
-const debugging = process.env.debugging == "true"
-const devChatId = process.env.devChatId || 0  // the group ID of development team on Telegram
-const codeVer = process.env.npm_package_version || "1970.1.1-0"
+const telegramToken = process.env.telegramToken ?? 0
+const inst = process.env.inst ?? 0
+const host = process.env.host ?? "Host"
+const totalInst = process.env.totalInst ?? 0
+const activeInst = process.env.activeInst ?? "0@Host" //unused for now
+const instActivetUntil = process.env.instActiveUntil ?? "WHO KNOWS!"
+const branch = process.env.branch ?? "staging"
+const debugging = process.env.debugging ?? true
+const devChatId = process.env.devChatId ?? 0  // the group ID of development team on Telegram
+const codeVer = process.env.npm_package_version ?? "1970.1.1-0"
 
 
 // Use log(x) instead of log(x) to control debugging mode from env variables
@@ -52,7 +52,7 @@ Memory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`
 // just for heroku web dyno and to manage sleep and balance between multiple instances
 const express = require('express')
 const expressApp = express()
-const port = process.env.PORT || 3000
+const port = process.env.PORT ?? 3000
 
 // main route will respond instStateMsg when requested.
 // we call it every 15 minutes using a google app script to prevent the app from sleeping.
@@ -92,15 +92,16 @@ client.connect((err, db) => {
 
 
 // Records the last time an aya was sent to a chat so we can send again periodically (daily, for example)
-function lastAyaTime(chatId, status, chatName, lang, trigger){
+function lastAyaTime(chatId, status, chatName, chatType, lang, trigger){
     var setObj = {}
-    status = status || "success" // Function can be called with chatId only if not blocked
+    status = status ?? "success" // Function can be called with chatId only if not blocked
     
     setObj.since = {$cond: [{$not: ["$since"]}, new Date(), "$since"]} // Add "Since" date only once
     setObj.lastAyaTime = Date.now()
     setObj.blocked = status.toLowerCase().includes('block')
     if(chatName) setObj.name = chatName // Only update the name when it's known
     if(lang) setObj.language_code = lang // Only update the language_code when it's known
+    if(chatType) setObj.chatType = chatType // Only update the language_code when it's known
     if(trigger){
         setObj.lastTrigger = trigger
         switch (trigger) {
@@ -207,7 +208,7 @@ function getFavReciter(chatId){
                     log(`Error while getting favReciter for chat ${chatId}: `, err)
                     reject(err)
                 } else {
-                    resolve(res[0] ? (res[0].favReciter ? res[0].favReciter : 0) : 0) // Resolve with favReciter if it exists, or 0 if not
+                    resolve(res[0]?.favReciter ?? 0) // Resolve with favReciter if it exists, or 0 if not
                 }
             })
         } else {
@@ -219,8 +220,8 @@ function getFavReciter(chatId){
 
 
 //timer to fetch database every 15 minutes to send aya every 24 hours to chats who didn't block the bot.
-const checkMinutes = process.env.TimerCheckMinutes || 15 // Edit this if needed, instead of editing the numbers below
-const sendHours = process.env.TimerSendHours || 24 // Edit this if needed, instead of editing the numbers below
+const checkMinutes = process.env.TimerCheckMinutes ?? 15 // Edit this if needed, instead of editing the numbers below
+const sendHours = process.env.TimerSendHours ?? 24 // Edit this if needed, instead of editing the numbers below
 var checkMillis = checkMinutes * 60 * 1000
 var sendMillis = (sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 hours - 15 minutes) to keep each chat near the same hour, otherwise it will keep shifting
 
@@ -271,7 +272,7 @@ if(telegramToken){
 
 
 
-function start(chatId){
+async function start(chatId){
     var msg =
 `دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات والقنوات حتى لا ينقطع وردكم اليومي.
 لمعرفة الأوامر المتاحة:
@@ -295,18 +296,18 @@ For available commands:
     .catch(e => log("Error while sending start: ", e))
 
 
-    // Informing "DailyAya Dev" of total active and blocked chats when /start is sent
-    dbConn.db('dailyAyaTelegram').collection('chats').find({}).toArray((err, res) =>{
-        if (err) log('Error getting total chats: ', err);
-        else {
-            var totalActiveChatsMsg = 'Active: ' + res.filter(i => i.blocked == false).length
-            var totalBlockedChatsMsg = 'Blocked: ' + res.filter(i => i.blocked == true).length
-            var totalChatsMsg = `${totalActiveChatsMsg}   ${totalBlockedChatsMsg}`
-            log(totalChatsMsg)
-            bot.telegram.sendMessage(devChatId, totalChatsMsg)
-                .catch(er => log(`Error while sending active stats: `, er))
-        }
-    })
+    // Informing "DailyAya Dev" of total active and blocked chats when /start is called by any user
+    try {
+        var totalActiveChatsMsg = await dbConn.db('dailyAyaTelegram').collection('chats').countDocuments({blocked: false})
+        var totalBlockedChatsMsg = await dbConn.db('dailyAyaTelegram').collection('chats').countDocuments({blocked: true})
+        var totalChatsMsg = `Active: ${totalActiveChatsMsg}   Blocked: ${totalBlockedChatsMsg}`
+        log(totalChatsMsg)
+
+        bot.telegram.sendMessage(devChatId, totalChatsMsg)
+        .catch(err => log(`Error while sending active stats: `, err))
+    } catch (e) {
+        log('Error while getting total chats: ', e)
+    }
 }
 
 
@@ -336,7 +337,7 @@ const enQuran       = require('./en.ahmedraza.json').data.surahs
 const arReciters    = require('./audio.json').data.filter(i => i.language == "ar")
 
 function checkSource(){
-    var downloadStart = Date.now()
+    var downloadStart = process.uptime()
     axios("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
         if(JSON.stringify(r.data.data.surahs) != JSON.stringify(arQuran)){
@@ -344,7 +345,7 @@ function checkSource(){
                 `Remote arQuran has changed. Please update the cached JSON file.`
             ).catch(er => log(`Error while sending arQuran change: `, er))
         } else {
-            log(`Remote arQuran is the same as the cached JSON file. It took ${((Date.now()-downloadStart)/1000).toFixed(2)} seconds.`)
+            log(`Remote arQuran is the same as the cached JSON file. It took ${((process.uptime()-downloadStart)/1000).toFixed(2)} seconds.`)
         }
     })
     .catch(e => log('Error while comparing arQuran cached vs remote: ', e))
@@ -356,7 +357,7 @@ function checkSource(){
                 `Remote enQuran has changed. Please update the cached JSON file.`
             ).catch(er => log(`Error while sending enQuran change: `, er))
         } else {
-            log(`Remote enQuran is the same as the cached JSON file. It took ${((Date.now()-downloadStart)/1000).toFixed(2)} seconds.`)
+            log(`Remote enQuran is the same as the cached JSON file. It took ${((process.uptime()-downloadStart)/1000).toFixed(2)} seconds.`)
         }
     })
     .catch(e => log('Error while checking enQuran cached vs remote: ', e))
@@ -368,7 +369,7 @@ function checkSource(){
                 `Remote arReciters has changed. Please update the cached JSON file.`
             ).catch(er => log(`Error while sending arReciters change: `, er))
         } else {
-            log(`Remote arReciters is the same as the cached JSON file. It took ${((Date.now()-downloadStart)/1000).toFixed(2)} seconds.`)
+            log(`Remote arReciters is the same as the cached JSON file. It took ${((process.uptime()-downloadStart)/1000).toFixed(2)} seconds.`)
         }
     })
     .catch(e => log('Error while checking arReciters cached vs remote: ', e))
@@ -695,9 +696,10 @@ function aMenuButtons(menuState, ayaId, reciter){
 
 
 function successSend(ctx, ayaId, lang, trigger){
-    var chatName = ctx.chat.type == 'private' ? ctx.chat.first_name : ctx.chat.title
+    var chatType = ctx.chat.type 
+    var chatName = chatType == 'private' ? ctx.chat.first_name : ctx.chat.title
     log(`Successfully sent Aya ${ayaId} has been sent to chat ${ctx.chat.id}`)
-    lastAyaTime(ctx.chat.id, 'success', chatName, lang, trigger)
+    lastAyaTime(ctx.chat.id, 'success', chatName, chatType, lang, trigger)
 }
 
 
