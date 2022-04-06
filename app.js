@@ -383,7 +383,7 @@ function checkSource(){
     })
     .catch(e => log('Error while checking arReciters cached vs remote: ', e))
 }
-if(!debugging) {
+if(debugging) {
     checkSource()
 }
 
