@@ -10,10 +10,17 @@ const totalInst = process.env.totalInst ?? 0
 const activeInst = process.env.activeInst ?? "0@Host" //unused for now
 const instActivetUntil = process.env.instActiveUntil ?? "WHO KNOWS!"
 const branch = process.env.branch ?? "staging"
-const debugging = process.env.debugging ?? true
+const debugging = toBoolean(process.env.debugging)
 const devChatId = process.env.devChatId ?? 0  // the group ID of development team on Telegram
 const codeVer = process.env.npm_package_version ?? "1970.1.1-0"
 
+const toBoolean = (x) => {
+    if (typeof x === 'object') {
+      for (var i in x) return true
+      return false
+    }
+    return (x !== null) && (x !== undefined) && !['false', '', '0', 'no', 'off'].includes(x.toString().toLowerCase())
+}
 
 // Use log(x) instead of log(x) to control debugging mode from env variables
 // Use log(x, e) for errors
@@ -101,7 +108,7 @@ function lastAyaTime(chatId, status, chatName, chatType, lang, trigger){
     setObj.blocked = status.toLowerCase().includes('block')
     if(chatName) setObj.name = chatName // Only update the name when it's known
     if(lang) setObj.language_code = lang // Only update the language_code when it's known
-    if(chatType) setObj.chatType = chatType // Only update the language_code when it's known
+    if(chatType) setObj.chatType = chatType // Only update the chatType when it's known
     if(trigger){
         setObj.lastTrigger = trigger
         switch (trigger) {
