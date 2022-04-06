@@ -354,7 +354,7 @@ function checkSource(){
                 `Remote arQuran has changed. Please update the cached JSON file.`
             ).catch(er => log(`Error while sending arQuran change: `, er))
         } else {
-            log(`Remote arQuran is the same as the cached JSON file. It took ${((process.uptime()-downloadStart)/1000).toFixed(2)} seconds.`)
+            log(`Remote arQuran is the same as the cached JSON file. It took ${((process.uptime()-downloadStart)).toFixed(2)} seconds.`)
         }
     })
     .catch(e => log('Error while comparing arQuran cached vs remote: ', e))
@@ -366,7 +366,7 @@ function checkSource(){
                 `Remote enQuran has changed. Please update the cached JSON file.`
             ).catch(er => log(`Error while sending enQuran change: `, er))
         } else {
-            log(`Remote enQuran is the same as the cached JSON file. It took ${((process.uptime()-downloadStart)/1000).toFixed(2)} seconds.`)
+            log(`Remote enQuran is the same as the cached JSON file. It took ${((process.uptime()-downloadStart)).toFixed(2)} seconds.`)
         }
     })
     .catch(e => log('Error while checking enQuran cached vs remote: ', e))
@@ -378,7 +378,7 @@ function checkSource(){
                 `Remote arReciters has changed. Please update the cached JSON file.`
             ).catch(er => log(`Error while sending arReciters change: `, er))
         } else {
-            log(`Remote arReciters is the same as the cached JSON file. It took ${((process.uptime()-downloadStart)/1000).toFixed(2)} seconds.`)
+            log(`Remote arReciters is the same as the cached JSON file. It took ${((process.uptime()-downloadStart)).toFixed(2)} seconds.`)
         }
     })
     .catch(e => log('Error while checking arReciters cached vs remote: ', e))
