@@ -3,6 +3,14 @@
 const numCPUs = require('os').cpus().length
 console.log(`Number of CPUs is: ${numCPUs}`)
 
+function toBoolean(x) {
+    if (typeof x === 'object') {
+      for (var i in x) return true
+      return false
+    }
+    return (x !== null) && (x !== undefined) && !['false', '', '0', 'no', 'off'].includes(x.toString().toLowerCase())
+}
+
 const telegramToken = process.env.telegramToken ?? 0
 const inst = process.env.inst ?? 0
 const host = process.env.host ?? "Host"
@@ -14,13 +22,7 @@ const debugging = toBoolean(process.env.debugging)
 const devChatId = process.env.devChatId ?? 0  // the group ID of development team on Telegram
 const codeVer = process.env.npm_package_version ?? "1970.1.1-0"
 
-const toBoolean = (x) => {
-    if (typeof x === 'object') {
-      for (var i in x) return true
-      return false
-    }
-    return (x !== null) && (x !== undefined) && !['false', '', '0', 'no', 'off'].includes(x.toString().toLowerCase())
-}
+
 
 // Use log(x) instead of log(x) to control debugging mode from env variables
 // Use log(x, e) for errors
