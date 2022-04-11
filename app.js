@@ -303,13 +303,17 @@ For available commands:
     })
 	.then(c => successSend(c, 0, "", "request"))
     .catch(e => log("Error while sending start: ", e))
+    summaryStats()
+}
 
-
+async function summaryStats(){
     // Informing "DailyAya Dev" of total active and blocked chats when /start is called by any user
     try {
-        var totalActiveChatsMsg = await dbConn.db('dailyAyaTelegram').collection('chats').countDocuments({blocked: false})
-        var totalBlockedChatsMsg = await dbConn.db('dailyAyaTelegram').collection('chats').countDocuments({blocked: true})
-        var totalChatsMsg = `Active: ${totalActiveChatsMsg}   Blocked: ${totalBlockedChatsMsg}`
+        var privateActiveChats = await dbConn.db('dailyAyaTelegram').collection('chats').countDocuments({blocked: false, chatType: "private"})
+        var otherActiveChats = await dbConn.db('dailyAyaTelegram').collection('chats').countDocuments({blocked: false, chatType: {$ne: "private"}})
+        var totalBlockedChats = await dbConn.db('dailyAyaTelegram').collection('chats').countDocuments({blocked: true})
+        var totalChatsMsg = `Total Active: ${privateActiveChats+otherActiveChats}   Blocked: ${totalBlockedChats}\n`
+                            + `Private Active: ${privateActiveChats}    Others: ${otherActiveChats}`
         log(totalChatsMsg)
 
         bot.telegram.sendMessage(devChatId, totalChatsMsg)
