@@ -1416,6 +1416,8 @@ bot.launch()
 .then(console.log('Bot launched.')) // using console.log() to log it regardless of debugging flag
 .catch(e => log('Failed to launch bot: ', e))
 
+bot.catch(e => log('bot error: ', e)) // to prevent the bot from restarting due to errors
+
 function sigHandler(sig){
     log(`Exiting after ${+(process.uptime()/3600).toFixed(2)} hours and Used Memory ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB due to: `, sig)
     .then(() => {
