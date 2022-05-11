@@ -38,8 +38,8 @@ function log(x, e){
                 if(bot) {
                     bot.telegram.sendMessage(devChatId, (x+(JSON.stringify(e))).substring(0, 4096))
                         .then(resolve())
-                        .catch(er => {
-                            console.error(`Error while sending log to devChat: `, er)
+                        .catch(err => {
+                            console.error(`Error while sending log to devChat: `, err)
                             resolve()
                         })
                 }
