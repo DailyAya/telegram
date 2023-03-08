@@ -2,34 +2,36 @@
   "name": "dailyaya-telegram-chatbot",
   "version": "2022.5.11-593",
   "description": "t.me/DailyAyaBot sends one random Aya from Quran everyday and when requested.",
-    "main": "app.js",
-  
+  "main": "app.js",
   "scripts": {
     "test": "echo \"No tests to run\" && exit 0",
-    "start": "node app.js"
+    "start": "node index.js"
   },
-  
   "keywords": [
     "telegram",
     "bot",
     "chatbot",
     "Quran",
     "Aya",
-    "Daily", 
+    "Daily",
     "recite"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/DailyAya/telegram.git"
+    "url": "git+https://github.com/DailyAya/telegram.git"
   },
   "author": "m.Sherbeeny.com",
   "license": "ISC",
-  
   "dependencies": {
     "express": "^4.17.1",
-    "axios":"^0.21.3",
+    "axios": "^0.21.3",
     "telegraf": "^4.8.1",
     "mongodb": "^4.1.1",
     "rasmify.js": "^1.0.1"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/DailyAya/telegram/issues"
+  },
+  "homepage": "https://github.com/DailyAya/telegram#readme",
+  "devDependencies": {}
 }
