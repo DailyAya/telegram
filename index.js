@@ -52,9 +52,7 @@ function log(x, e){
     })
 }
 
-var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${
-    debugging ? 'debugging' : 'normal'} mode of version ${codeVer} until ${instActivetUntil}.
-Memory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`
+
 
 
 
@@ -66,6 +64,11 @@ const port = process.env.PORT ?? 3000
 // main route will respond instStateMsg when requested.
 // we call it every 15 minutes using a google app script to prevent the app from sleeping.
 expressApp.get('/', (req, res) => {
+	var instStateMsg = `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${
+    debugging ? 'debugging' : 'normal'} mode of version ${codeVer} until ${instActivetUntil}.\n
+Memory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB\n
+Uptime: ${+(process.uptime()/3600).toFixed(2)} hours`
+	
   res.send(instStateMsg)
 })
 expressApp.listen(port, () => {
