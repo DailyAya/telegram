@@ -81,11 +81,11 @@ expressApp.listen(port, () => {
 
 // MongoDB is a pool and always open
 var dbConn
-const { MongoClient } = require('mongodb')
+const { MongoClient, ServerApiVersion } = require('mongodb')
 const mongoDbCredentials = process.env.mongoDbCredentials
 const mongoSubdomain = process.env.mongoSubdomain
 const uri = `mongodb+srv://${mongoDbCredentials}@cluster0.${mongoSubdomain}.mongodb.net/?retryWrites=true&w=majority&maxPoolSize=50&keepAlive=true`
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 })
 log('Connecting to MongoDB...')
 client.connect((err, db) => {
     if (err) log('MongoDbConn ERROR: ', err)
