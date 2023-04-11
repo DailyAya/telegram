@@ -61,7 +61,7 @@ Uptime: ${+(process.uptime()/3600).toFixed(2)} hours`
 }
 
 
-// just for heroku web dyno and to manage sleep and balance between multiple instances
+// just for web to manage sleep and balance between multiple instances
 const express = require('express')
 const expressApp = express()
 const port = process.env.PORT ?? 3000
