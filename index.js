@@ -16,7 +16,7 @@ const inst = process.env.inst ?? 0
 const host = process.env.host ?? "Host"
 const totalInst = process.env.totalInst ?? 0
 const activeInst = process.env.activeInst ?? "0@Host" //unused for now
-const instActivetUntil = process.env.instActiveUntil ?? "WHO KNOWS!"
+const instActivetUntil = process.env.instActiveUntil ?? "🤷"
 const branch = process.env.branch ?? "staging"
 const debugging = toBoolean(process.env.debugging)
 const devChatId = process.env.devChatId ?? 0  // the group ID of development team on Telegram
@@ -232,8 +232,8 @@ function getFavReciter(chatId){
 
 
 //timer to fetch database every 15 minutes to send aya every 24 hours to chats who didn't block the bot.
-const checkMinutes = process.env.TimerCheckMinutes ?? 15 // Edit this if needed, instead of editing the numbers below
-const sendHours = process.env.TimerSendHours ?? 24 // Edit this if needed, instead of editing the numbers below
+const checkMinutes = process.env.TimerCheckMinutes ?? 15 // That means checking database every 15 minutes
+const sendHours = process.env.TimerSendHours ?? 24 // That means sending an Aya every 24 hours, for example
 var checkMillis = checkMinutes * 60 * 1000
 var sendMillis = (sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 hours - 15 minutes) to keep each chat near the same hour, otherwise it will keep shifting
 
@@ -246,9 +246,16 @@ function timerSend(){
                     reject(err)
                 } else {
                     log(`Used memory: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`)
-                    if(res.length > 20) log('Warning: Almost reaching Telegram sending limits. Max is 30 users/sec. Current: ', res.length)
+			
+			// removed this warning as we spread sending by putting a 50ms delay between each message (20 msg/sec)
+                    // if(res.length > 20) log('Warning: Almost reaching Telegram sending limits. Max is 30 users/sec. Current: ', res.length)
+			
                     log('Timer will send to ' + res.length + ' chats.')
-                    res.forEach(chat => sendAya(chat.chatId, "", chat.favReciter, "", 'timer'))
+                    res.forEach((chat, index) => {
+			    setTimeout(() => {
+				    sendAya(chat.chatId, "", chat.favReciter, "", 'timer')
+			    }, 50 * index) // 50ms delay between messages for 20 msg/sec
+		    })
                     resolve()
                 }
             })
@@ -260,7 +267,16 @@ function timerSend(){
         }
     })
 }
-var dailyTimer = setInterval(timerSend, checkMillis)
+
+// Delay first timerSend until next quarter hour
+const timerNow = new Date()
+const timerDelay = (15 - timerNow.getMinutes() % 15) * 60 * 1000 - timerNow.getSeconds() * 1000 - timerNow.getMilliseconds()
+setTimeout(() => {
+  timerSend()
+  // Call timerSend every 15 minutes after the first execution
+  var dailyTimer = setInterval(timerSend, checkMillis)
+}, timerDelay)
+
 
 
 
