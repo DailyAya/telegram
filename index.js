@@ -234,8 +234,8 @@ function getFavReciter(chatId){
 //timer to fetch database every 15 minutes to send aya every 24 hours to chats who didn't block the bot.
 const checkMinutes = process.env.TimerCheckMinutes ?? 15 // That means checking database every 15 minutes
 const sendHours = process.env.TimerSendHours ?? 24 // That means sending an Aya every 24 hours, for example
-var checkMillis = checkMinutes * 60 * 1000
-var sendMillis = (sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 hours - 15 minutes) to keep each chat near the same hour, otherwise it will keep shifting
+const checkMillis = checkMinutes * 60 * 1000
+const sendMillis = (sendHours * 60 * 60 * 1000)-checkMillis // For example, (24 hours - 15 minutes) to keep each chat near the same hour, otherwise it will keep shifting
 
 function timerSend(){
     return new Promise((resolve, reject) =>{
@@ -250,7 +250,7 @@ function timerSend(){
 			// removed this warning as we spread sending by putting a 50ms delay between each message (20 msg/sec)
                     // if(res.length > 20) log('Warning: Almost reaching Telegram sending limits. Max is 30 users/sec. Current: ', res.length)
 			
-                    log('Timer will send to ' + res.length + ' chats.')
+                    log(`Timer will send to ${res.length} chats.`)
                     res.forEach((chat, index) => {
 			    setTimeout(() => {
 				    sendAya(chat.chatId, "", chat.favReciter, "", 'timer')
@@ -270,12 +270,12 @@ function timerSend(){
 
 // Delay first timerSend until next quarter hour
 const timerNow = new Date()
-const timerDelay = (15 - timerNow.getMinutes() % 15) * 60 * 1000 - timerNow.getSeconds() * 1000 - timerNow.getMilliseconds()
+const timerFirstDelay = (15 - timerNow.getMinutes() % 15) * 60 * 1000 - timerNow.getSeconds() * 1000 - timerNow.getMilliseconds()
 setTimeout(() => {
   timerSend()
   // Call timerSend every 15 minutes after the first execution
-  var dailyTimer = setInterval(timerSend, checkMillis)
-}, timerDelay)
+  const dailyTimer = setInterval(timerSend, checkMillis)
+}, timerFirstDelay)
 
 
 
