@@ -1024,20 +1024,19 @@ bot.command('support', ctx => {
     .then(isAdmin =>{
         if(isAdmin){
             var msg =
-`ندعمك أم تدعمنا؟
+`فلندعم بعضنا البعض.
 
-Support you or support us?`
+Let's support each other.`
             bot.telegram.sendMessage(ctx.chat.id, msg, {
                 reply_markup: {
-                    inline_keyboard:[
+                    inline_keyboard:
                         [{
-                            text: "💰",
-                            url: "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=sherbeeny@me.com&lc=US&item_name=Support+DailyAya&no_note=0&cn=&currency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted"
-                        },{
-                            text: "💬",
+                            text: "Contact Us 💬 تواصل معنا",
                             url: "https://t.me/sherbeeny"
+                        },{
+                            text: "Development Support 🌱 دعم التطوير",
+                            url: "https://www.paypal.me/sherbeeny/10"
                         }]
-                    ]
                 }
             }).catch(er => log(`Error while sending support message: `, er))  
         } else {
