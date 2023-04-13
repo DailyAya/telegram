@@ -1029,14 +1029,16 @@ bot.command('support', ctx => {
 Let's support each other.`
             bot.telegram.sendMessage(ctx.chat.id, msg, {
                 reply_markup: {
-                    inline_keyboard:
+                    inline_keyboard:[
                         [{
                             text: "Contact Us 💬 تواصل معنا",
                             url: "https://t.me/sherbeeny"
-                        },{
+                        }],
+                        [{
                             text: "Development Support 🌱 دعم التطوير",
                             url: "https://www.paypal.me/sherbeeny/10"
                         }]
+                    ]
                 }
             }).catch(er => log(`Error while sending support message: `, er))  
         } else {
