@@ -707,7 +707,7 @@ function aMenuButtons(menuState, ayaId, reciter){
         }
         buttons.inline_keyboard[0].push({
             text: "📖",
-            url: `https://quran.com/${ayaIndex.sura}/${ayaIndex.aya}`
+            url: `https://quran.com/${ayaIndex.sura}:${ayaIndex.aya}/tafsirs/ar-tafsir-muyassar`
         })
     }
 
