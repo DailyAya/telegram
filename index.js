@@ -1025,9 +1025,7 @@ bot.command('support', ctx => {
     .then(isAdmin =>{
         if(isAdmin){
             var msg =
-`فلندعم بعضنا البعض.
-
-Let's support each other.`
+`👨‍💻`
             bot.telegram.sendMessage(ctx.chat.id, msg, {
                 reply_markup: {
                     inline_keyboard:[
@@ -1036,7 +1034,7 @@ Let's support each other.`
                             url: "https://t.me/sherbeeny"
                         }],
                         [{
-                            text: "Development Support 🌱 دعم التطوير",
+                            text: "Support Us 🌱 دعم استمرارنا",
                             url: "https://www.paypal.me/sherbeeny/10"
                         }]
                     ]
