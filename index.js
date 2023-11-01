@@ -322,7 +322,7 @@ For available commands:
     })
 	.then(c => successSend(c, 0, "", "request"))
     .catch(e => log("Error while sending start: ", e))
-    summaryStats()
+    .finally(f => summaryStats())
 }
 
 async function summaryStats(){
