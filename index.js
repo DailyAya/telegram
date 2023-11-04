@@ -570,7 +570,7 @@ function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation){
         })
         .catch(e => {
             log(`Error while sending Aya ${ayaId} text to chat ${chatId}: `, e)
-			let asBlocked = /blocked by the user|user is deactivated|need administrator rights|not enough rights/
+			let asBlocked = /blocked by the user|user is deactivated|need administrator rights|not enough rights|chat not found/
                 if(asBlocked.test(JSON.stringify(e))){
                     lastAyaTime(chatId, 'blocked')
                 }
