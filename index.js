@@ -111,7 +111,7 @@ function lastAyaTime(chatId, status, chatName, chatType, lang, trigger){
     setObj.since = {$cond: [{$not: ["$since"]}, new Date(), "$since"]} // Add "Since" date only once
     setObj.lastAyaTime = Date.now()
     setObj.blocked = status.toLowerCase().includes('block')
-    if(chatName) setObj.name = chatName // Only update the name when it's known
+    if(chatName) setObj.name = { $literal: chatName } // Only update the name when it's known and don't interpert "$" as a field path
     if(lang) setObj.language_code = lang // Only update the language_code when it's known
     if(chatType) setObj.chatType = chatType // Only update the chatType when it's known
     if(trigger){
