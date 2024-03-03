@@ -144,7 +144,7 @@ function lastAyaTime(chatId, status, chatName, chatType, lang, trigger){
         [{$set: setObj}],
         {upsert: true}
     ).then(log('Recorded Last Aya Time for chat '+chatId+' as '+ (setObj.blocked ? "blocked." : "successfuly sent.")))
-    .catch(e => log('Failed to record Last Aya Time for chat '+chatId+': ', e))
+    .catch(e => log('Failed to record Last Aya Time for chat '+chatId+' and object '+JSON.stringify(setObj)+': ', e))
 }
 
 
