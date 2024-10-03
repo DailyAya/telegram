@@ -696,8 +696,9 @@ function aMenuButtons(menuState, ayaId, reciter){
     if (menuState.includes("1")){
         var ayaIndex = ayaId2suraAya(ayaId)
         buttons.inline_keyboard[0].push({
-            text: "⚠️",
-            callback_data: `{"aReport":${ayaId},"r":"${reciter}"}`
+        	text: "⚠️",
+            url: `https://sherbeeny.t.me?text=%D8%A7%D9%84%D8%B3%D9%84%D8%A7%D9%85%20%D8%B9%D9%84%D9%8A%D9%83%D9%85%20%D9%8A%D8%A7%20%D9%85%D8%B7%D9%88%D8%B1%20%D8%AF%D8%A7%D9%8A%D9%84%D9%8A%20%D8%A2%D9%8A%D8%A9%0A%D8%B1%D8%AC%D8%A7%D8%A1%20%D9%85%D8%B1%D8%A7%D8%AC%D8%B9%D8%A9%20%D8%A7%D9%84%D8%A2%D9%8A%D8%A9%20${ayaIndex.sura}:${ayaIndex.aya}%0A%0APeace%20upon%20you%2C%20Daily%20Aya%20developer%0APlease%20revise%20Aya%20${ayaIndex.sura}:${ayaIndex.aya}`
+            //callback_data: `{"aReport":${ayaId},"r":"${reciter}"}`
         })
         if (menuState == "r1") { // Show setReciter button only when it's a menu of a recitation
             buttons.inline_keyboard[0].push({
@@ -1363,7 +1364,7 @@ bot.action(/^{"recite/ , ctx =>{
     .catch(e => log('Error while checking admin: ', e))
 })
 
-
+/*
 bot.action(/^{"aReport/ , ctx =>{
     var callbackData = JSON.parse(ctx.update.callback_query.data)
     let ayaIndex = ayaId2suraAya(callbackData.aReport)
@@ -1376,6 +1377,7 @@ bot.action(/^{"aReport/ , ctx =>{
         {show_alert: true}
     )
 })
+*/
 
 
 bot.on('text', ctx => {
