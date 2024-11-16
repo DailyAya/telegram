@@ -370,6 +370,9 @@ const arReciters    = require('./audio.json').data.filter(i => i.language == "ar
 
 function checkSource(){
     var downloadStart = process.uptime()
+    
+// Cancelling checking Arabic source due to needed manual fixes in some Ayas in the JSON file directly
+/*
     axios("http://api.alquran.cloud/v1/quran/quran-uthmani")
     .then(r =>{
         if(JSON.stringify(r.data.data.surahs) != JSON.stringify(arQuran)){
@@ -381,6 +384,7 @@ function checkSource(){
         }
     })
     .catch(e => log('Error while comparing arQuran cached vs remote: ', e))
+*/
 
     axios("http://api.alquran.cloud/v1/quran/en.ahmedraza")
     .then(r =>{
