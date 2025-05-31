@@ -2,6 +2,9 @@ import axios from 'axios';
 import rasmifize from 'rasmify.js';
 import { logger } from './logger.js';
 import config from './config.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * @module quranService
@@ -10,10 +13,20 @@ import config from './config.js';
  * from local JSON files and interacts with external APIs for audio and source checks.
  */
 
-// Load Quran data from JSON files
-import arQuranData from '../quran-uthmani.json' assert { type: 'json' };
-import enQuranData from '../en.ahmedraza.json' assert { type: 'json' };
-import audioData from '../audio.json' assert { type: 'json' };
+// Determine base path for loading JSON files
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function loadJsonData(filePath) {
+    const absolutePath = path.resolve(__dirname, '..', filePath); // Goes one level up from src
+    const fileContent = fs.readFileSync(absolutePath, 'utf8');
+    return JSON.parse(fileContent);
+}
+
+// Load Quran data using fs
+const arQuranData = loadJsonData('quran-uthmani.json');
+const enQuranData = loadJsonData('en.ahmedraza.json');
+const audioData = loadJsonData('audio.json');
 
 /**
  * Arabic Quran surah data, loaded from JSON.
