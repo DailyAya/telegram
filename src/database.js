@@ -32,6 +32,7 @@ export async function connectDB() {
         // Kept serverApi for compatibility if specific features are used.
         const client = new MongoClient(config.mongoURI, {
             serverApi: ServerApiVersion.v1,
+            maxPoolSize: 50, // Added maxPoolSize
         });
         await client.connect();
         dbInstance = client.db(DB_NAME);

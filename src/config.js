@@ -46,7 +46,7 @@ const config = {
 };
 
 // Construct mongoURI using the fetched credentials and subdomain
-config.mongoURI = `mongodb+srv://${config.mongoDbCredentials}@cluster0.${config.mongoSubdomain}.mongodb.net/?retryWrites=true&w=majority&maxPoolSize=50&keepAlive=true`;
+config.mongoURI = `mongodb+srv://${config.mongoDbCredentials}@cluster0.${config.mongoSubdomain}.mongodb.net/?retryWrites=true&w=majority`;
 
 // Add a check for critical variables and throw error if not set
 if (!config.telegramToken || config.telegramToken === 'YOUR_TELEGRAM_TOKEN_DEFAULT') {
