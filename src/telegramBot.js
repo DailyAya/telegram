@@ -1023,7 +1023,7 @@ bot.action(/^{"currAya":\d+,"r":"[^"]+"}$/, async (ctx) => {
                 callbackData.r,
                 adminCtx.from?.language_code,
                 'next',
-                true
+                false // <--- Changed value
             );
         },
         async (nonAdminCtx) => {
