@@ -43,6 +43,10 @@ const config = {
     mongoSubdomain: process.env.mongoSubdomain ?? null,
     timerCheckMinutes: parseInt(process.env.TimerCheckMinutes ?? '15', 10),
     timerSendHours: parseInt(process.env.TimerSendHours ?? '24', 10),
+    pingTargetGeneral: process.env.PING_TARGET_GENERAL ?? 'https://www.google.com',
+    pingTargetTelegramApiBase: process.env.PING_TARGET_TELEGRAM_API_BASE ?? 'https://api.telegram.org',
+    botLaunchRetryDelay: parseInt(process.env.BOT_LAUNCH_RETRY_DELAY_MS ?? '30000', 10), // 30 seconds
+    maxBotLaunchRetries: parseInt(process.env.MAX_BOT_LAUNCH_RETRIES ?? '5', 10), // 5 retries, 0 for indefinite
 };
 
 // Construct mongoURI using the fetched credentials and subdomain

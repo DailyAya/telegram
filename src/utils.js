@@ -1,8 +1,10 @@
 /**
  * @module utils
  * @description Provides utility functions for various common tasks such as type conversion,
- * random number generation, and text manipulation.
+ * random number generation, text manipulation, and network checks.
  */
+
+import axios from 'axios';
 
 /**
  * Converts a value to its boolean representation with extended string handling.
@@ -68,4 +70,28 @@ export function numArabicToEnglish(string) {
     return string.replace(/[٠-٩]/g, function (c) {
         return c.charCodeAt(0) - 0x0660;
     });
+}
+
+/**
+ * Checks network connectivity to a given URL using a GET request.
+ * @async
+ * @function checkConnectivity
+ * @param {string} url - The URL to check.
+ * @param {number} [timeout=5000] - Timeout in milliseconds.
+ * @returns {Promise<boolean>} True if the URL is reachable (status 200-299), false otherwise.
+ */
+export async function checkConnectivity(url, timeout = 5000) {
+    try {
+        const response = await axios.get(url, {
+            timeout: timeout,
+            // `validateStatus` defaults to `status >= 200 && status < 300`.
+            // If the request completes with a status outside this range, it will throw an error
+            // and be caught by the catch block, returning false, which is the desired behavior.
+        });
+        return true; // If axios.get doesn't throw, status is implicitly 200-299
+    } catch (error) {
+        // Minimal logging, or let the caller decide on logging strategy.
+        // console.error(`Connectivity check to ${url} failed: ${error.message}`);
+        return false;
+    }
 }

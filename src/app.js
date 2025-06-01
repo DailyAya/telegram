@@ -4,6 +4,7 @@ import { logger, bootstrapLogger } from './logger.js';
 import { connectDB, getDB } from './database.js';
 import { startExpressServer } from './expressApp.js';
 import { launchBot, bot, sendAya as sendAyaFromBot } from './telegramBot.js';
+import { checkConnectivity } from './utils.js'; // Added import
 
 /**
  * @module app
@@ -79,6 +80,94 @@ async function runTimerSend() {
     }
 }
 
+/**
+ * Initializes the periodic timer for sending Ayas.
+ * Calculates the delay until the next appropriate interval.
+ * @private
+ * @function initializeTimer
+ */
+function initializeTimer() {
+    if (timerIntervalId) { // Clear any existing timer before starting a new one
+        clearInterval(timerIntervalId);
+        timerIntervalId = null;
+        bootstrapLogger('Timer: Cleared existing timer interval.');
+    }
+
+    const timerCheckMillis = config.timerCheckMinutes * 60 * 1000;
+    const timerNow = new Date();
+    const minutesIntoCycle = timerNow.getMinutes() % config.timerCheckMinutes;
+    const secondsIntoMinute = timerNow.getSeconds();
+    const millisIntoSecond = timerNow.getMilliseconds();
+
+    let timerFirstDelay = (config.timerCheckMinutes - minutesIntoCycle) * 60 * 1000;
+    timerFirstDelay -= secondsIntoMinute * 1000 + millisIntoSecond;
+
+    if (timerFirstDelay < 0) {
+        timerFirstDelay += config.timerCheckMinutes * 60 * 1000;
+    }
+
+    bootstrapLogger(
+        `Timer: Initializing. First run in ${+(timerFirstDelay / 1000 / 60).toFixed(2)} minutes. Subsequent checks every ${config.timerCheckMinutes} minutes.`
+    );
+
+    setTimeout(() => {
+        runTimerSend();
+        timerIntervalId = setInterval(runTimerSend, timerCheckMillis);
+    }, timerFirstDelay);
+}
+
+
+/**
+ * Attempts to launch the Telegram bot with retries if initial attempts fail.
+ * If successful, it initializes the timer for sending daily Ayas.
+ * @async
+ * @private
+ * @function attemptBotLaunchWithRetriesAndInitializeTimer
+ */
+async function attemptBotLaunchWithRetriesAndInitializeTimer() {
+    let attempt = 0;
+    const maxAttempts = config.maxBotLaunchRetries === 0 ? Infinity : config.maxBotLaunchRetries; // 0 for indefinite
+
+    while (attempt < maxAttempts) {
+        attempt++;
+        bootstrapLogger(`Bot launch attempt ${attempt}${maxAttempts === Infinity ? '' : `/${maxAttempts}`}...`);
+        try {
+            // Before each launch attempt, quickly check Telegram API again
+            const telegramApiUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken}/getMe`;
+            const isTelegramReachable = await checkConnectivity(telegramApiUrl, 3000); // Shorter timeout for retry check
+
+            if (!isTelegramReachable) {
+                 throw new Error('Telegram API not reachable before launch attempt.');
+            }
+
+            await launchBot();
+            bootstrapLogger('Bot launched successfully after retries.');
+            initializeTimer(); // Initialize timer only after successful bot launch
+            return; // Success, exit function
+        } catch (error) {
+            logger(`Bot launch attempt ${attempt} failed:`, error.message); // Log only error message for brevity in retries
+
+            if (attempt >= maxAttempts) {
+                bootstrapLogger(`Max bot launch retries (${maxAttempts}) reached. Giving up on automatic launch.`);
+                // The application will continue running with the Express server, but the bot won't be operational.
+                // Manual intervention would be required.
+                return;
+            }
+
+            // Before retrying, check general internet again.
+            const generalInternetStillOk = await checkConnectivity(config.pingTargetGeneral, 3000);
+            if (!generalInternetStillOk) {
+                bootstrapLogger('CRITICAL: General internet connectivity lost during bot launch retries. Stopping retries.');
+                // Similar to above, bot won't be operational.
+                return;
+            }
+            bootstrapLogger(`Will retry bot launch in ${config.botLaunchRetryDelay / 1000} seconds.`);
+            await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
+        }
+    }
+}
+
+
 // --- Graceful Shutdown ---
 /**
  * Handles graceful shutdown of the application upon receiving termination signals.
@@ -128,10 +217,11 @@ process.on('unhandledRejection', (reason, promise) => {
 /**
  * Initializes and starts all components of the application:
  * 1. Connects to the database.
- * 2. Starts the Express server.
- * 3. Launches the Telegram bot.
- * 4. Schedules the periodic timer for sending Ayas.
- * If any critical startup step fails, it logs the error and exits the process.
+ * 2. Starts the Express server (for health checks).
+ * 3. Checks general internet and Telegram API connectivity.
+ * 4. Launches the Telegram bot (with retries if necessary).
+ * 5. Schedules the periodic timer for sending Ayas (only after successful bot launch).
+ * If critical initial steps fail (DB, Express, general internet), it exits.
  * @async
  * @private
  * @function startApp
@@ -141,37 +231,49 @@ async function startApp() {
         bootstrapLogger('Application startup sequence initiated...');
 
         await connectDB();
+        bootstrapLogger('Database connected.');
 
-        startExpressServer();
+        startExpressServer(); // Non-blocking, starts listening for health checks
+        bootstrapLogger('Express server startup initiated.');
 
-        await launchBot();
+        const generalInternetOk = await checkConnectivity(config.pingTargetGeneral);
+        if (!generalInternetOk) {
+            bootstrapLogger('CRITICAL: General internet connectivity check failed. Exiting.');
+            await sigHandler('generalInternetFail'); // Attempt graceful shutdown of what's up
+            return;
+        }
+        bootstrapLogger('General internet connectivity OK.');
 
-        const timerCheckMillis = config.timerCheckMinutes * 60 * 1000;
-        const timerNow = new Date();
-        const minutesIntoCycle = timerNow.getMinutes() % config.timerCheckMinutes;
-        const secondsIntoMinute = timerNow.getSeconds();
-        const millisIntoSecond = timerNow.getMilliseconds();
+        // Construct Telegram API URL carefully to avoid logging the token if the URL itself is logged by checkConnectivity
+        const telegramApiUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken.substring(0,10)}.../getMe`; // Log-safe version for display
+        const actualTelegramApiCheckUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken}/getMe`;
 
-        let timerFirstDelay = (config.timerCheckMinutes - minutesIntoCycle) * 60 * 1000;
-        timerFirstDelay -= secondsIntoMinute * 1000 + millisIntoSecond;
+        bootstrapLogger(`Checking Telegram API reachability at: ${config.pingTargetTelegramApiBase}/bot[TOKEN_HIDDEN]/getMe`);
+        const telegramApiOk = await checkConnectivity(actualTelegramApiCheckUrl);
 
-        if (timerFirstDelay < 0) {
-            timerFirstDelay += config.timerCheckMinutes * 60 * 1000;
+        if (telegramApiOk) {
+            bootstrapLogger('Telegram API reachable. Proceeding with normal bot launch.');
+            await launchBot();
+            bootstrapLogger('Bot launched successfully on first attempt.');
+            initializeTimer();
+        } else {
+            bootstrapLogger('Telegram API not reachable, but general internet is OK. Starting bot launch retry loop (will not block further execution of startApp).');
+            attemptBotLaunchWithRetriesAndInitializeTimer(); // Runs in background, logs its own progress/failures
         }
 
-        bootstrapLogger(
-            `Timer: First run in ${+(timerFirstDelay / 1000 / 60).toFixed(2)} minutes. Subsequent checks every ${config.timerCheckMinutes} minutes.`
-        );
+        // If we reach here, Express is running, DB is connected.
+        // Bot might be running directly or retrying in the background.
+        // Timer will only start if/when bot launch is successful.
+        bootstrapLogger('Main startup sequence complete. Express server is running.');
+        // Note: The application will not exit here if the bot is in a retry loop.
+        // It relies on process signals or unhandled exceptions for termination if retries ultimately fail
+        // and no other mechanism (like a supervisor) restarts it.
 
-        setTimeout(() => {
-            runTimerSend();
-            timerIntervalId = setInterval(runTimerSend, timerCheckMillis);
-        }, timerFirstDelay);
-
-        bootstrapLogger('Application started successfully and timer scheduled.');
     } catch (error) {
-        bootstrapLogger('CRITICAL: Application startup failed:', error);
-        process.exit(1);
+        // This catch handles errors from connectDB, startExpressServer (if it were to throw synchronously),
+        // initial connectivity checks, or if launchBot() is directly awaited and fails.
+        bootstrapLogger('CRITICAL: Application startup failed in main sequence:', error);
+        await sigHandler('startupError');
     }
 }
 
