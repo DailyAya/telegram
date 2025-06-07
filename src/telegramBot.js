@@ -762,9 +762,11 @@ bot.start(async (ctx) => {
 });
 
 bot.help(async (ctx) => {
-    const isUserAdmin = await adminChecker(ctx);
-    if (!isUserAdmin)
-        return ctx.reply(NON_ADMINS_ALERT).catch((e) => logger('Error replying NON_ADMINS_ALERT to /help:', e));
+    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+        logger(`Ignored /help command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+        return; // Silently ignore in groups if not admin
+    }
+    // If in private chat, or if admin in group, proceed:
     await instructions(ctx.chat.id);
 });
 
