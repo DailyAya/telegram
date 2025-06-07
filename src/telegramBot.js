@@ -971,35 +971,35 @@ bot.action(/^{"groupkhatma":\d+}$/, async (ctx) => {
 bot.action(/^{"recitersNavPage":\d+}$/, async (ctx) => {
     await adminProtectedAction(ctx, async (adminCtx) => {
         const rawCallbackData = adminCtx.update.callback_query.data;
-        logger.info(`recitersNavPage: Received raw callback_data: ${rawCallbackData}`);
+        logger(`recitersNavPage: Received raw callback_data: ${rawCallbackData}`);
 
         let callbackData;
         try {
             callbackData = JSON.parse(rawCallbackData);
         } catch (e) {
-            logger.error(`recitersNavPage: Failed to parse callback_data: ${rawCallbackData}`, e);
-            adminCtx.answerCbQuery('Error processing request.').catch(err => logger.error('recitersNavPage: Error answering CBQ on parse fail', err));
+            logger(`recitersNavPage: Failed to parse callback_data: ${rawCallbackData}`, e);
+            adminCtx.answerCbQuery('Error processing request.').catch(err => logger('recitersNavPage: Error answering CBQ on parse fail', err));
             return;
         }
 
         const targetPage = callbackData.recitersNavPage;
-        logger.info(`recitersNavPage: Parsed targetPage: ${targetPage}`);
+        logger(`recitersNavPage: Parsed targetPage: ${targetPage}`);
 
         if (typeof targetPage !== 'number') {
-            logger.error(`recitersNavPage: targetPage is not a number. Callback data:`, callbackData);
-            adminCtx.answerCbQuery('Error: Invalid page number.').catch(err => logger.error('recitersNavPage: Error answering CBQ on invalid page type', err));
+            logger('recitersNavPage: targetPage is not a number.', new Error(`Callback data: ${JSON.stringify(callbackData)}`));
+            adminCtx.answerCbQuery('Error: Invalid page number.').catch(err => logger('recitersNavPage: Error answering CBQ on invalid page type', err));
             return;
         }
 
         const newMarkup = recitersNavPageMarkup(targetPage);
-        logger.info(`recitersNavPage: Generated newMarkup for page ${targetPage}: ${JSON.stringify(newMarkup, null, 2)}`);
+        logger(`recitersNavPage: Generated newMarkup for page ${targetPage}: ${JSON.stringify(newMarkup, null, 2)}`);
 
         try {
             await adminCtx.editMessageReplyMarkup(newMarkup);
-            logger.info(`recitersNavPage: Successfully called editMessageReplyMarkup for page ${targetPage}`);
+            logger(`recitersNavPage: Successfully called editMessageReplyMarkup for page ${targetPage}`);
         } catch (e) {
-            logger.error(`recitersNavPage: Error calling editMessageReplyMarkup for page ${targetPage}. Markup was: ${JSON.stringify(newMarkup, null, 2)}`, e);
-            // adminCtx.answerCbQuery('Error updating list.').catch(eCb => logger.error('recitersNavPage: Error answering CBQ on edit fail', eCb));
+            logger(`recitersNavPage: Error calling editMessageReplyMarkup for page ${targetPage}. Markup was: ${JSON.stringify(newMarkup, null, 2)}`, e);
+            // adminCtx.answerCbQuery('Error updating list.').catch(eCb => logger('recitersNavPage: Error answering CBQ on edit fail', eCb));
         }
     });
 });
