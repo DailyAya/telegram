@@ -644,44 +644,52 @@ function populateRecitersButtons() {
 }
 populateRecitersButtons(); // Call at setup
 
-/**
- * Generates the markup for a paginated reciter selection menu.
- * @private
- * @function recitersNavPageMarkup
- * @param {number} [page=1] - The page number to display.
- * @returns {import('telegraf').Markup.Markup<import('telegraf/typings/core/types/typegram').InlineKeyboardMarkup>} The Telegraf inline keyboard markup.
- */
-function recitersNavPageMarkup(page = 1) {
+// (Place this function where recitersNavPageMarkup was, or in a suitable location)
+function recitersNavPage(page) { // Adapted from original index.js
     const recitersPerPage = 5;
-    // Ensure totalPages is at least 1, especially for empty cache, to align with display like "1/1"
-    const totalPages = Math.max(1, Math.ceil(recitersInlineButtonsCache.length / recitersPerPage));
-    const currentPage = Math.min(Math.max(page, 1), totalPages); // totalPages will now always be >= 1
+    if (!recitersInlineButtonsCache || recitersInlineButtonsCache.length === 0) {
+        logger('recitersNavPage: recitersInlineButtonsCache is empty or not initialized.');
+        // Return a minimal navigation row even if there are no reciters
+        return [[{
+            text: `🎲`,
+            callback_data: JSON.stringify({ setReciter: 'surprise' })
+        },{
+            text: `＜`,
+            callback_data:  JSON.stringify({ recitersNavPage: 1 })
+        },{
+            text: `1/1`, // Show 1/1 if no reciters
+            callback_data:  JSON.stringify({ inactive: true })
+        },{
+            text: `＞`,
+            callback_data:  JSON.stringify({ recitersNavPage: 1 })
+        }]];
+    }
 
+    const totalPages = Math.max(1, Math.ceil(recitersInlineButtonsCache.length / recitersPerPage)); // Ensure totalPages is at least 1
+    const currentPage = Math.min(Math.max(page, 1), totalPages); // Normalize currentPage
+
+    // Slice the cache, which contains arrays of buttons (rows)
     const buttonsSlice = recitersInlineButtonsCache.slice(
         (currentPage - 1) * recitersPerPage,
         currentPage * recitersPerPage
     );
 
-    const navRow = [
-        {
-            text: `🎲`,
-            callback_data: JSON.stringify({ setReciter: 'surprise' }),
-        },
-        {
-            text: `＜`,
-            callback_data: JSON.stringify({ recitersNavPage: currentPage > 1 ? currentPage - 1 : totalPages }),
-        },
-        {
-            text: `${currentPage}/${totalPages}`, // totalPages will now always be >= 1
-            callback_data: JSON.stringify({ inactive: true }),
-        },
-        {
-            text: `＞`,
-            callback_data: JSON.stringify({ recitersNavPage: currentPage < totalPages ? currentPage + 1 : 1 }),
-        },
-    ];
+    const navRow = [{
+        text: `🎲`,
+        callback_data: JSON.stringify({ setReciter: 'surprise' })
+    },{
+        text: `＜`,
+        callback_data:  JSON.stringify({ recitersNavPage: currentPage > 1 ? currentPage - 1 : totalPages })
+    },{
+        text: `${currentPage}/${totalPages}`,
+        callback_data:  JSON.stringify({ inactive: true })
+    },{
+        text: `＞`,
+        callback_data:  JSON.stringify({ recitersNavPage: currentPage < totalPages ? currentPage + 1 : 1 })
+    }];
 
-    return Markup.inlineKeyboard([...buttonsSlice, navRow]);
+    // buttonsSlice is an array of rows. Add navRow as the last row.
+    return [...buttonsSlice, navRow];
 }
 
 // --- Khatma Command Helpers ---
@@ -969,37 +977,39 @@ bot.action(/^{"groupkhatma":\d+}$/, async (ctx) => {
 });
 
 bot.action(/^{"recitersNavPage":\d+}$/, async (ctx) => {
+bot.action(/^{"recitersNavPage":\s*\d+\s*}$/, async (ctx) => { // Regex adapted slightly for potential spaces
     await adminProtectedAction(ctx, async (adminCtx) => {
-        const rawCallbackData = adminCtx.update.callback_query.data;
-        logger(`recitersNavPage: Received raw callback_data: ${rawCallbackData}`);
-
         let callbackData;
         try {
-            callbackData = JSON.parse(rawCallbackData);
+            callbackData = JSON.parse(adminCtx.update.callback_query.data);
         } catch (e) {
-            logger(`recitersNavPage: Failed to parse callback_data: ${rawCallbackData}`, e);
-            adminCtx.answerCbQuery('Error processing request.').catch(err => logger('recitersNavPage: Error answering CBQ on parse fail', err));
+            logger('recitersNavPage (action): Failed to parse callback_data', e);
+            adminCtx.answerCbQuery('Error processing request.').catch(eAns => logger('recitersNavPage (action): Error answering CBQ on parse fail', eAns));
             return;
         }
 
-        const targetPage = callbackData.recitersNavPage;
-        logger(`recitersNavPage: Parsed targetPage: ${targetPage}`);
-
-        if (typeof targetPage !== 'number') {
-            logger('recitersNavPage: targetPage is not a number.', new Error(`Callback data: ${JSON.stringify(callbackData)}`));
-            adminCtx.answerCbQuery('Error: Invalid page number.').catch(err => logger('recitersNavPage: Error answering CBQ on invalid page type', err));
+        const requestedRecitersNavPage = callbackData.recitersNavPage;
+        if (typeof requestedRecitersNavPage !== 'number') {
+            logger('recitersNavPage (action): requestedRecitersNavPage is not a number.', new Error(`Callback data: ${JSON.stringify(callbackData)}`));
+            adminCtx.answerCbQuery('Error: Invalid page number.').catch(eAns => logger('recitersNavPage (action): Error answering CBQ on invalid page type', eAns));
             return;
         }
 
-        const newMarkup = recitersNavPageMarkup(targetPage);
-        logger(`recitersNavPage: Generated newMarkup for page ${targetPage}: ${JSON.stringify(newMarkup, null, 2)}`);
-
+        logger(`recitersNavPage (action): Navigating to page ${requestedRecitersNavPage}`);
         try {
-            await adminCtx.editMessageReplyMarkup(newMarkup);
-            logger(`recitersNavPage: Successfully called editMessageReplyMarkup for page ${targetPage}`);
+            const newKeyboard = recitersNavPage(requestedRecitersNavPage);
+            // Log the generated keyboard for debugging if needed
+            // logger(`recitersNavPage (action): Generated keyboard: ${JSON.stringify(newKeyboard)}`);
+
+            await adminCtx.editMessageReplyMarkup({ inline_keyboard: newKeyboard });
+            // No need to explicitly answerCbQuery if editMessageReplyMarkup succeeds,
+            // unless there's specific feedback to give. Telegraf often handles this.
+            // However, the original code had ctx.answerCbQuery(), so keeping it for consistency if it doesn't cause issues.
+            adminCtx.answerCbQuery().catch(eAns => logger('recitersNavPage (action): Error answering CBQ post-edit (non-critical)', eAns));
+
         } catch (e) {
-            logger(`recitersNavPage: Error calling editMessageReplyMarkup for page ${targetPage}. Markup was: ${JSON.stringify(newMarkup, null, 2)}`, e);
-            // adminCtx.answerCbQuery('Error updating list.').catch(eCb => logger('recitersNavPage: Error answering CBQ on edit fail', eCb));
+            logger('recitersNavPage (action): Error editing message reply markup', e);
+            adminCtx.answerCbQuery('Error updating list.').catch(eAns => logger('recitersNavPage (action): Error answering CBQ on edit error', eAns));
         }
     });
 });
