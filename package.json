@@ -1,6 +1,6 @@
 {
     "name": "dailyaya-telegram-chatbot",
-    "version": "07.06.2025-2116",
+    "version": "2025.06.07-2119",
     "description": "t.me/DailyAyaBot sends one random Aya from Quran everyday and when requested.",
     "type": "module",
     "main": "src/app.js",

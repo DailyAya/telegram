@@ -43,7 +43,7 @@ const config = {
     debugging: toBoolean(process.env.debugging ?? 'false'),
     devChatId: process.env.devChatId ?? 'YOUR_DEV_CHAT_ID_DEFAULT',
     // codeVer is sourced from npm_package_version (set via package.json).
-    // Update package.json's "version" field to dd.mm.yyyy-HHMM (commit timestamp) before committing.
+    // Update package.json's "version" field to yyyy.mm.dd-HHMM (UTC commit timestamp) before committing.
     codeVer: process.env.npm_package_version ?? '1970.01.01-local',
     port: process.env.PORT ?? 3000,
     mongoDbCredentials: process.env.mongoDbCredentials ?? null,
