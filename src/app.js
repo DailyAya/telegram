@@ -134,7 +134,7 @@ async function attemptBotLaunchWithRetriesAndInitializeTimer() {
         try {
             // Before each launch attempt, quickly check Telegram API again
             const telegramApiUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken}/getMe`;
-            const isTelegramReachable = await checkConnectivity(telegramApiUrl, 3000); // Shorter timeout for retry check
+            const isTelegramReachable = await checkConnectivity(telegramApiUrl); // Shorter timeout for retry check
 
             if (!isTelegramReachable) {
                  throw new Error('Telegram API not reachable before launch attempt.');
@@ -155,7 +155,7 @@ async function attemptBotLaunchWithRetriesAndInitializeTimer() {
             }
 
             // Before retrying, check general internet again.
-            const generalInternetStillOk = await checkConnectivity(config.pingTargetGeneral, 3000);
+            const generalInternetStillOk = await checkConnectivity(config.pingTargetGeneral);
             if (!generalInternetStillOk) {
                 bootstrapLogger('CRITICAL: General internet connectivity lost during bot launch retries. Stopping retries.');
                 // Similar to above, bot won't be operational.

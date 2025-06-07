@@ -4,7 +4,9 @@
  * random number generation, text manipulation, and network checks.
  */
 
-import axios from 'axios';
+import dns from 'dns';
+import net from 'net';
+import { URL } from 'url';
 
 /**
  * Converts a value to its boolean representation with extended string handling.
@@ -74,37 +76,97 @@ export function numArabicToEnglish(string) {
 
 /**
  * Checks network connectivity to a given URL using a GET request.
+/**
+ * Checks network connectivity to a given URL by performing a DNS lookup
+ * on the hostname and then attempting a TCP socket connection to the resolved IP address.
+ * It retries the entire process (DNS + TCP) up to 3 times if failures occur.
  * @async
  * @function checkConnectivity
- * @param {string} url - The URL to check.
- * @param {string} url - The URL to check.
- * @returns {Promise<boolean>} True if the URL is reachable (status 200-299) after retries, false otherwise.
+ * @param {string} url - The URL to check (e.g., "https://www.google.com").
+ * @returns {Promise<boolean>} True if DNS resolution and TCP connection are successful within 3 attempts, false otherwise.
  */
 export async function checkConnectivity(url) {
     const maxAttempts = 3;
     const delayBetweenAttempts = 2000; // 2 seconds
-    const axiosTimeoutPerAttempt = 10000; // 10 seconds for each axios attempt
+    const tcpConnectionTimeout = 7000; // 7 seconds for each TCP connection attempt (increased from 5s)
+
+    let lastError = null; // To store the last error message for logging, if needed
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        let hostname, port;
         try {
-            await axios.get(url, {
-                timeout: axiosTimeoutPerAttempt,
-                // `validateStatus` defaults to `status >= 200 && status < 300`.
-                // If the request completes with a status outside this range, it will throw an error
-                // and be caught by the catch block.
-            });
-            return true; // Successful connection
-        } catch (error) {
-            // Optional: Log the error for the specific attempt if a logger is available/imported
-            // logger.warn(`Connectivity attempt ${attempt}/${maxAttempts} to ${url} failed: ${error.message}`);
+            const parsedUrl = new URL(url);
+            hostname = parsedUrl.hostname;
+            // Ensure port is an integer; default to 443 for https, 80 for http
+            port = parseInt(parsedUrl.port || (parsedUrl.protocol === 'https:' ? '443' : '80'), 10);
+            if (!hostname) { // Basic validation for hostname
+                throw new Error('Hostname could not be derived from URL.');
+            }
+        } catch (parseError) {
+            lastError = `URL parsing error: ${parseError.message}`;
+            // In a real scenario, log this: logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Invalid URL "${url}". Error: ${lastError}`);
             if (attempt < maxAttempts) {
                 await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
+                continue; // Move to the next attempt
+            }
+            return false; // All attempts failed due to URL parse error
+        }
+
+        let ipAddress;
+        try {
+            // logger.debug(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Resolving DNS for ${hostname}`);
+            ipAddress = await new Promise((resolve, reject) => {
+                // dns.lookup can sometimes be slow, give it its own reasonable timeout if possible, though Node's default is OS-dependent
+                dns.lookup(hostname, (err, address) => {
+                    if (err) reject(err);
+                    else resolve(address);
+                });
+            });
+            // logger.debug(`Connectivity Check Attempt ${attempt}/${maxAttempts}: DNS for ${hostname} resolved to ${ipAddress}`);
+        } catch (dnsError) {
+            lastError = `DNS lookup for ${hostname} failed: ${dnsError.message}`;
+            // logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: ${lastError}`);
+            if (attempt < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
+                continue; // Move to the next attempt
+            }
+            return false; // All attempts failed due to DNS error
+        }
+
+        try {
+            // logger.debug(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Attempting TCP connection to ${ipAddress}:${port}`);
+            await new Promise((resolve, reject) => {
+                const socket = new net.Socket();
+                socket.setTimeout(tcpConnectionTimeout);
+                socket.connect(port, ipAddress, () => {
+                    socket.destroy(); // Clean up the socket
+                    resolve(true);  // TCP connection successful
+                });
+                socket.on('timeout', () => {
+                    socket.destroy(); // Clean up the socket
+                    reject(new Error(`TCP connection to ${ipAddress}:${port} timed out after ${tcpConnectionTimeout}ms`));
+                });
+                socket.on('error', (err) => {
+                    socket.destroy(); // Clean up the socket
+                    reject(err);     // TCP connection error
+                });
+            });
+            // logger.info(`Connectivity Check Attempt ${attempt}/${maxAttempts}: TCP connection to ${ipAddress}:${port} for URL "${url}" successful.`);
+            return true; // Successfully connected
+        } catch (tcpError) {
+            lastError = `TCP connection to ${ipAddress}:${port} (for ${hostname}) failed: ${tcpError.message}`;
+            // logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: ${lastError}`);
+            if (attempt < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
+                // Continue to the next attempt (handled by the loop)
             } else {
-                // All attempts failed
-                // logger.error(`All ${maxAttempts} connectivity attempts to ${url} failed.`);
-                return false;
+                // All TCP attempts failed for this DNS resolution
+                // logger.error(`Connectivity Check: All ${maxAttempts} TCP attempts to connect to "${url}" (IP: ${ipAddress}) failed. Last error: ${lastError}`);
+                return false; // All attempts for this cycle failed
             }
         }
     }
-    return false; // Fallback, though the loop should always return true or false from within.
+    // If loop finishes, all attempts failed for different reasons or last one failed.
+    // logger.error(`Connectivity Check: All ${maxAttempts} attempts to connect to "${url}" failed. Last error: ${lastError || 'Unknown error after loop completion.'}`);
+    return false;
 }
