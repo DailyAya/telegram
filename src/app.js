@@ -236,13 +236,17 @@ async function startApp() {
         startExpressServer(); // Non-blocking, starts listening for health checks
         bootstrapLogger('Express server startup initiated.');
 
-        const generalInternetOk = await checkConnectivity(config.pingTargetGeneral);
-        if (!generalInternetOk) {
-            bootstrapLogger('CRITICAL: General internet connectivity check failed. Exiting.');
-            await sigHandler('generalInternetFail'); // Attempt graceful shutdown of what's up
-            return;
+        bootstrapLogger('Checking initial general internet connectivity...');
+        let generalInternetOk = false;
+        while (!generalInternetOk) {
+            generalInternetOk = await checkConnectivity(config.pingTargetGeneral);
+            if (generalInternetOk) {
+                bootstrapLogger('General internet connectivity established.');
+                break; // Exit loop and proceed
+            }
+            bootstrapLogger(`Initial general internet check failed. Retrying in ${config.botLaunchRetryDelay / 1000} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
         }
-        bootstrapLogger('General internet connectivity OK.');
 
         // Construct Telegram API URL carefully to avoid logging the token if the URL itself is logged by checkConnectivity
         const telegramApiUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken.substring(0,10)}.../getMe`; // Log-safe version for display
