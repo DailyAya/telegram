@@ -145,7 +145,7 @@ async function attemptBotLaunchWithRetriesAndInitializeTimer() {
             initializeTimer(); // Initialize timer only after successful bot launch
             return; // Success, exit function
         } catch (error) {
-            logger(`Bot launch attempt ${attempt} failed:`, error.message); // Log only error message for brevity in retries
+            logger(`Bot launch attempt ${attempt} failed. Reason: ${error.message}.`); // Log only error message for brevity in retries
 
             if (attempt >= maxAttempts) {
                 bootstrapLogger(`Max bot launch retries (${maxAttempts}) reached. Giving up on automatic launch.`);
