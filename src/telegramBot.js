@@ -796,7 +796,7 @@ bot.command('reciters', async (ctx) => {
     if (!isUserAdmin)
         return ctx.reply(NON_ADMINS_ALERT).catch((e) => logger('Error replying NON_ADMINS_ALERT to /reciters:', e));
     const msg = `من هو قارئك المفضل؟\n\nWho is your favorite Reciter?`;
-    await ctx.reply(msg, recitersNavPageMarkup(1)).catch((e) => logger('Error sending /reciters message:', e));
+    await ctx.reply(msg, { reply_markup: { inline_keyboard: recitersNavPage(1) } }).catch((e) => logger('Error sending /reciters message:', e));
 });
 
 bot.command('channel', async (ctx) => {
