@@ -976,7 +976,6 @@ bot.action(/^{"groupkhatma":\d+}$/, async (ctx) => {
     }
 });
 
-bot.action(/^{"recitersNavPage":\d+}$/, async (ctx) => {
 bot.action(/^{"recitersNavPage":\s*\d+\s*}$/, async (ctx) => { // Regex adapted slightly for potential spaces
     await adminProtectedAction(ctx, async (adminCtx) => {
         let callbackData;
