@@ -26,6 +26,11 @@ import { toBoolean } from './utils.js';
  * @property {string} mongoURI - Fully constructed MongoDB connection URI.
  * @property {number} timerCheckMinutes - Interval in minutes for checking if timed Ayas need to be sent.
  * @property {number} timerSendHours - Interval in hours for sending a timed Aya to a chat.
+ * @property {string} pingTargetGeneral - Primary URL for general internet connectivity checks.
+ * @property {string} pingTargetAlternative - Alternative URL for general internet connectivity checks.
+ * @property {string} pingTargetTelegramApiBase - Base URL for Telegram API connectivity checks.
+ * @property {number} botLaunchRetryDelay - Delay in milliseconds between bot launch retries.
+ * @property {number} maxBotLaunchRetries - Maximum number of bot launch retries (0 for indefinite).
  */
 const config = {
     telegramToken: process.env.telegramToken ?? 'YOUR_TELEGRAM_TOKEN_DEFAULT',
@@ -46,6 +51,7 @@ const config = {
     timerCheckMinutes: parseInt(process.env.TimerCheckMinutes ?? '15', 10),
     timerSendHours: parseInt(process.env.TimerSendHours ?? '24', 10),
     pingTargetGeneral: process.env.PING_TARGET_GENERAL ?? 'https://www.google.com',
+    pingTargetAlternative: process.env.PING_TARGET_ALTERNATIVE ?? 'https://1.1.1.1',
     pingTargetTelegramApiBase: process.env.PING_TARGET_TELEGRAM_API_BASE ?? 'https://api.telegram.org',
     botLaunchRetryDelay: parseInt(process.env.BOT_LAUNCH_RETRY_DELAY_MS ?? '30000', 10), // 30 seconds
     maxBotLaunchRetries: parseInt(process.env.MAX_BOT_LAUNCH_RETRIES ?? '5', 10), // 5 retries, 0 for indefinite

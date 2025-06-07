@@ -239,12 +239,22 @@ async function startApp() {
         bootstrapLogger('Checking initial general internet connectivity...');
         let generalInternetOk = false;
         while (!generalInternetOk) {
-            generalInternetOk = await checkConnectivity(config.pingTargetGeneral);
-            if (generalInternetOk) {
-                bootstrapLogger('General internet connectivity established.');
-                break; // Exit loop and proceed
+            bootstrapLogger(`Attempting primary connectivity check: ${config.pingTargetGeneral}`);
+            if (await checkConnectivity(config.pingTargetGeneral)) {
+                generalInternetOk = true; // Set flag before logging and breaking
+                bootstrapLogger(`General internet connectivity established via primary target: ${config.pingTargetGeneral}`);
+                break; // Connectivity established
             }
-            bootstrapLogger(`Initial general internet check failed. Retrying in ${config.botLaunchRetryDelay / 1000} seconds...`);
+
+            bootstrapLogger(`Primary connectivity check failed: ${config.pingTargetGeneral}. Attempting alternative: ${config.pingTargetAlternative}`);
+            if (await checkConnectivity(config.pingTargetAlternative)) {
+                generalInternetOk = true; // Set flag before logging and breaking
+                bootstrapLogger(`General internet connectivity established via alternative target: ${config.pingTargetAlternative}`);
+                break; // Connectivity established
+            }
+
+            // If both checks failed
+            bootstrapLogger(`Both primary and alternative connectivity checks failed. Retrying in ${config.botLaunchRetryDelay / 1000} seconds...`);
             await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
         }
 
