@@ -932,14 +932,23 @@ async function adminConditionalAction(ctx, adminFn, nonAdminCb, nonAdminAlert = 
 
 // Action handlers using the new structure
 bot.action(/^{"groupkhatma":\d+}$/, async (ctx) => {
-    const isUserAdmin = await adminChecker(ctx);
-    if (!isUserAdmin)
-        return ctx
-            .answerCbQuery(NON_ADMINS_ALERT, { show_alert: true })
-            .catch((e) => logger('Error CBQ non-admin khatma:', e));
+    // Admin check removed - all users can press these buttons
 
-    const callbackData = JSON.parse(ctx.update.callback_query.data);
+    let callbackData;
+    try {
+        callbackData = JSON.parse(ctx.update.callback_query.data);
+    } catch (parseError) {
+        logger('groupkhatma action: Failed to parse callback_data', parseError);
+        ctx.answerCbQuery('Error processing your request.').catch(e => logger('groupkhatma action: CbQ error on parse fail', e));
+        return;
+    }
+
     const juz = callbackData.groupkhatma;
+    if (typeof juz !== 'number' || juz < 1 || juz > 30) {
+         logger('groupkhatma action: Invalid Juz number in callback.', new Error(`Data: ${JSON.stringify(callbackData)}`));
+         ctx.answerCbQuery('Error: Invalid Juz number.').catch(e => logger('groupkhatma action: CbQ error on invalid Juz', e));
+         return;
+    }
 
     const updatedText = khatmaUpdate({
         userId: ctx.from.id,
@@ -949,7 +958,7 @@ bot.action(/^{"groupkhatma":\d+}$/, async (ctx) => {
         juz: juz,
     });
 
-    if (updatedText === false) {
+    if (updatedText === false) { // No change, user selected same Juz
         return ctx
             .answerCbQuery(`هذا الجزء هو اختيارك الحالي بالفعل ⚠️\n\n⚠️ This Juz is already your current selection.`, {
                 show_alert: true,
@@ -960,21 +969,20 @@ bot.action(/^{"groupkhatma":\d+}$/, async (ctx) => {
     try {
         await ctx.editMessageText(updatedText, {
             parse_mode: 'HTML',
-            reply_markup: ctx.update.callback_query.message.reply_markup,
+            reply_markup: ctx.update.callback_query.message.reply_markup, // Keep existing buttons
         });
         await ctx
             .replyWithHTML(
                 `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name || `User${ctx.from.id}`}</a> ➔ ${juz} ${juz === 30 ? '🏆' : '💪'}`,
                 { disable_notification: true, reply_to_message_id: ctx.update.callback_query.message.message_id }
             )
-            .catch((e) => logger('Error replying to Khatma update:', e)); // Catch error for reply, but main flow continues
+            .catch((e) => logger('Error replying to Khatma update:', e));
         await ctx.answerCbQuery(
             `تم التحديث ✔️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n✔️ Updated!\n🤲 May Allah accept from us and you.`,
             { show_alert: true }
         );
     } catch (e) {
         logger(`Error while updating khatma message or replying:`, e);
-        // Try to answer callback query even if message edit fails
         await ctx
             .answerCbQuery(
                 `تم الإرسال ✔️\nالملخص قد يكون ممتلئ ⚠️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n✔️ Sent!\n⚠️ Summary might be full.\n🤲 May Allah accept from us and you.`,
