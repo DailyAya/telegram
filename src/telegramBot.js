@@ -411,7 +411,7 @@ async function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation = f
  */
 export async function surpriseAya(ctx) {
     const lang = ctx.from?.language_code;
-    await sendAya(ctx.chat.id, null, null, lang, 'surprise', true);
+    await sendAya(ctx.chat.id, null, null, lang, 'surprise', false);
 }
 
 /**
@@ -653,8 +653,9 @@ populateRecitersButtons(); // Call at setup
  */
 function recitersNavPageMarkup(page = 1) {
     const recitersPerPage = 5;
-    const totalPages = Math.ceil(recitersInlineButtonsCache.length / recitersPerPage);
-    const currentPage = Math.min(Math.max(page, 1), totalPages || 1);
+    // Ensure totalPages is at least 1, especially for empty cache, to align with display like "1/1"
+    const totalPages = Math.max(1, Math.ceil(recitersInlineButtonsCache.length / recitersPerPage));
+    const currentPage = Math.min(Math.max(page, 1), totalPages); // totalPages will now always be >= 1
 
     const buttonsSlice = recitersInlineButtonsCache.slice(
         (currentPage - 1) * recitersPerPage,
@@ -671,7 +672,7 @@ function recitersNavPageMarkup(page = 1) {
             callback_data: JSON.stringify({ recitersNavPage: currentPage > 1 ? currentPage - 1 : totalPages }),
         },
         {
-            text: `${currentPage}/${totalPages || 1}`,
+            text: `${currentPage}/${totalPages}`, // totalPages will now always be >= 1
             callback_data: JSON.stringify({ inactive: true }),
         },
         {
