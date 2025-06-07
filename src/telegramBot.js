@@ -749,11 +749,11 @@ function khatmaUpdate({ userId, firstName, currentText, currentEntities, juz }) 
 
 // --- Command Handlers ---
 bot.start(async (ctx) => {
-    const isUserAdmin = await adminChecker(ctx);
-    if (!isUserAdmin) {
-        logger(`Ignored /start from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`);
-        return ctx.reply(NON_ADMINS_ALERT).catch((e) => logger('Error replying NON_ADMINS_ALERT to /start:', e));
+    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+        logger(`Ignored /start command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+        return;
     }
+    // If in private chat, or if admin in group, proceed:
     if (ctx.startPayload && ctx.startPayload.length) {
         logger(`/start with payload: ${ctx.startPayload} from chat ${ctx.chat.id}`);
         return handleText(ctx);
@@ -769,16 +769,18 @@ bot.help(async (ctx) => {
 });
 
 bot.command('surpriseme', async (ctx) => {
-    const isUserAdmin = await adminChecker(ctx);
-    if (!isUserAdmin)
-        return ctx.reply(NON_ADMINS_ALERT).catch((e) => logger('Error replying NON_ADMINS_ALERT to /surpriseme:', e));
+    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+        logger(`Ignored /surpriseme command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+        return;
+    }
     await surpriseAya(ctx);
 });
 
 bot.command('support', async (ctx) => {
-    const isUserAdmin = await adminChecker(ctx);
-    if (!isUserAdmin)
-        return ctx.reply(NON_ADMINS_ALERT).catch((e) => logger('Error replying NON_ADMINS_ALERT to /support:', e));
+    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+        logger(`Ignored /support command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+        return;
+    }
     const msg = `👨‍💻`;
     await ctx
         .reply(
@@ -792,24 +794,27 @@ bot.command('support', async (ctx) => {
 });
 
 bot.command('reciters', async (ctx) => {
-    const isUserAdmin = await adminChecker(ctx);
-    if (!isUserAdmin)
-        return ctx.reply(NON_ADMINS_ALERT).catch((e) => logger('Error replying NON_ADMINS_ALERT to /reciters:', e));
+    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+        logger(`Ignored /reciters command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+        return;
+    }
     const msg = `من هو قارئك المفضل؟\n\nWho is your favorite Reciter?`;
     await ctx.reply(msg, { reply_markup: { inline_keyboard: recitersNavPage(1) } }).catch((e) => logger('Error sending /reciters message:', e));
 });
 
 bot.command('channel', async (ctx) => {
-    const isUserAdmin = await adminChecker(ctx);
-    if (!isUserAdmin)
-        return ctx.reply(NON_ADMINS_ALERT).catch((e) => logger('Error replying NON_ADMINS_ALERT to /channel:', e));
+    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+        logger(`Ignored /channel command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+        return;
+    }
     await ctx.reply('https://t.me/DailyAyaGlobal').catch((e) => logger('Error sending /channel message:', e));
 });
 
 bot.command('khatma', async (ctx) => {
-    const isUserAdmin = await adminChecker(ctx);
-    if (!isUserAdmin)
-        return ctx.reply(NON_ADMINS_ALERT).catch((e) => logger('Error replying NON_ADMINS_ALERT to /khatma:', e));
+    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+        logger(`Ignored /khatma command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+        return;
+    }
     const msg = `كم جزء قرأت؟ \nHow many ajzaa did you read?`;
     const quran30btns = [];
     for (let i = 0; i < 6; i++) {
@@ -823,9 +828,10 @@ bot.command('khatma', async (ctx) => {
 });
 
 bot.command('commands', async (ctx) => {
-    const isUserAdmin = await adminChecker(ctx);
-    if (!isUserAdmin)
-        return ctx.reply(NON_ADMINS_ALERT).catch((e) => logger('Error replying NON_ADMINS_ALERT to /commands:', e));
+    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+        logger(`Ignored /commands command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+        return;
+    }
     try {
         const myCommands = await bot.telegram.getMyCommands();
         let msg = myCommands.map((c) => `/${c.command}\n${c.description}`).join('\n\n');
@@ -1107,7 +1113,11 @@ bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
 
 // --- Other Event Handlers ---
 bot.on('text', async (ctx) => {
-    // adminChecker is called within handleText or its sub-functions like unrecognized
+    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+        logger(`Ignored text message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+        return; // Silently ignore text from non-admins in groups
+    }
+    // If in private chat, or if admin in group, proceed:
     await handleText(ctx);
 });
 
