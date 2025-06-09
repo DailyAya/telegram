@@ -38,26 +38,37 @@ let timerIntervalId = null;
 async function runTimerSend() {
     bootstrapLogger('runTimerSend: Cycle started.');
     const sendMillisThreshold = config.timerSendHours * 60 * 60 * 1000 - config.timerCheckMinutes * 60 * 1000;
+    const comparisonTimestamp = Date.now() - sendMillisThreshold;
+
+    logger(`runTimerSend: timerSendHours: ${config.timerSendHours}, timerCheckMinutes: ${config.timerCheckMinutes}`);
+    logger(`runTimerSend: Calculated sendMillisThreshold: ${sendMillisThreshold}`);
+    logger(`runTimerSend: Current Date.now(): ${Date.now()}`);
+    logger(`runTimerSend: Querying for chats with lastAyaTime <= ${comparisonTimestamp} (i.e., older than ${new Date(comparisonTimestamp).toISOString()})`);
 
     try {
         const db = getDB();
         if (!db) {
             logger('runTimerSend: Database not available, skipping cycle.');
+            bootstrapLogger('runTimerSend: Cycle finished (DB not available).');
             return;
         }
 
         const chats = await db
             .collection('chats')
             .find({
-                lastAyaTime: { $lte: Date.now() - sendMillisThreshold },
+                lastAyaTime: { $lte: comparisonTimestamp },
                 blocked: false,
             })
             .toArray();
 
+        logger(`runTimerSend: Found ${chats.length} eligible chats.`);
+
         if (chats.length > 0) {
-            logger(`Timer: Found ${chats.length} chats to send Aya to.`);
-        } else {
-            logger(`Timer: No chats eligible for a timed Aya in this cycle.`);
+            // Log details for a few chats
+            for (let i = 0; i < Math.min(chats.length, 5); i++) { // Log up to 5 chats
+                const chat = chats[i];
+                logger(`runTimerSend: Eligible chat[${i}]: chatId: ${chat.chatId}, lastAyaTime: ${chat.lastAyaTime} (${new Date(chat.lastAyaTime).toISOString()}), favReciter: ${chat.favReciter}`);
+            }
         }
 
         for (let i = 0; i < chats.length; i++) {
@@ -67,17 +78,18 @@ async function runTimerSend() {
             setTimeout(async () => {
                 try {
                     logger(
-                        `Timer: Attempting to send Aya to chat ${chat.chatId} (FavReciter: ${chat.favReciter || 'surprise'})`
+                        `runTimerSend: Attempting to send timed Aya to chat ${chat.chatId} (FavReciter: ${chat.favReciter || 'surprise'}, withRecitation: false)`
                     );
-                    await sendAyaFromBot(chat.chatId, null, chat.favReciter, null, 'timer', true);
+                    await sendAyaFromBot(chat.chatId, null, chat.favReciter, null, 'timer', false);
                 } catch (e) {
-                    logger(`Timer: Error sending Aya to chat ${chat.chatId} individually:`, e);
+                    logger(`runTimerSend: Error sending timed Aya to chat ${chat.chatId} individually:`, e);
                 }
             }, delay);
         }
     } catch (e) {
         logger('runTimerSend: General error during timer cycle:', e);
     }
+    bootstrapLogger('runTimerSend: Cycle finished.');
 }
 
 /**
@@ -87,6 +99,7 @@ async function runTimerSend() {
  * @function initializeTimer
  */
 function initializeTimer() {
+    bootstrapLogger('Timer: initializeTimer() called.'); // Log invocation
     if (timerIntervalId) { // Clear any existing timer before starting a new one
         clearInterval(timerIntervalId);
         timerIntervalId = null;
@@ -107,12 +120,14 @@ function initializeTimer() {
     }
 
     bootstrapLogger(
-        `Timer: Initializing. First run in ${+(timerFirstDelay / 1000 / 60).toFixed(2)} minutes. Subsequent checks every ${config.timerCheckMinutes} minutes.`
-    );
+        `Timer: Initializing. timerCheckMinutes: ${config.timerCheckMinutes}, timerCheckMillis: ${timerCheckMillis}, timerFirstDelay: ${timerFirstDelay}ms (${+(timerFirstDelay / 1000 / 60).toFixed(2)} minutes).`
+    ); // Log parameters
 
     setTimeout(() => {
+        bootstrapLogger('Timer: Initial setTimeout for first runTimerSend triggered.'); // Log when first run is due
         runTimerSend();
         timerIntervalId = setInterval(runTimerSend, timerCheckMillis);
+        bootstrapLogger('Timer: setInterval for subsequent runTimerSend calls established.'); // Log interval setup
     }, timerFirstDelay);
 }
 
