@@ -248,6 +248,17 @@ async function startApp() {
         await connectDB();
         bootstrapLogger('Database connected.');
 
+            // Ensure getDB() is valid before first runTimerSend
+            if (getDB()) {
+                bootstrapLogger('Initial runTimerSend() call after DB connection.');
+                runTimerSend().catch(e => { // Call and forget, but log errors
+                    logger('Error during initial runTimerSend() call:', e);
+                });
+            } else {
+                bootstrapLogger('CRITICAL: DB not available after connectDB(), cannot run initial timer send.');
+                // This case should ideally not happen if connectDB() resolves successfully without error.
+            }
+
         startExpressServer(); // Non-blocking, starts listening for health checks
         bootstrapLogger('Express server startup initiated.');
 
