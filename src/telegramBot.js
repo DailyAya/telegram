@@ -1207,12 +1207,16 @@ export async function launchBot() {
                 .catch((e) => logger('Error during initial Quran source check:', e));
         }
 
-        await bot.launch(); // Start Telegraf polling
-        bootstrapLogger('Bot launched successfully via Telegraf polling.');
+        bootstrapLogger('launchBot: Attempting to start Telegraf polling via bot.launch()...'); // Log before
+        await bot.launch();
+        bootstrapLogger('Bot launched successfully via Telegraf polling.'); // Log after (if successful)
 
-    } catch (e) { // This catch is for errors from awaiting botUsernameReady or bot.launch() itself
-        bootstrapLogger('Failed to launch bot critically in launchBot function:', e);
-        throw e; // Re-throw to be caught by app.js, which handles retries or exit
+    } catch (e) {
+        // Check if the error specifically came from bot.launch() or earlier stages like botUsernameReady
+        // However, the structure implies if botUsernameReady rejects, it's caught here.
+        // If bot.launch() rejects, it's also caught here.
+        bootstrapLogger('Failed to launch bot critically within launchBot function. Error:', e);
+        throw e;
     }
 
     // General error handler for the bot (catches runtime errors after successful launch)
