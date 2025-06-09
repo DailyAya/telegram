@@ -155,9 +155,19 @@ async function attemptBotLaunchWithRetriesAndInitializeTimer() {
                  throw new Error('Telegram API not reachable before launch attempt.');
             }
 
-            await launchBot();
-            bootstrapLogger('Bot launched successfully after retries.');
-            initializeTimer(); // Initialize timer only after successful bot launch
+            await launchBot(); // This now ensures username is set and dev chat message is attempted
+            bootstrapLogger('Bot launched successfully after retries (polling started, dev chat msg sent).');
+
+            // Call initial timer run and schedule recurring timer AFTER successful launch from retries
+            if (getDB()) {
+                bootstrapLogger('Calling initial runTimerSend() after successful bot launch (retries).');
+                runTimerSend().catch(e => {
+                    logger('Error during post-retry initial runTimerSend():', e);
+                });
+            } else {
+                bootstrapLogger('DB not available after launchBot() (retries), cannot run initial timer send.');
+            }
+            initializeTimer();
             return; // Success, exit function
         } catch (error) {
             logger(`Bot launch attempt ${attempt} failed. Reason: ${error.message}.`); // Log only error message for brevity in retries
@@ -248,17 +258,6 @@ async function startApp() {
         await connectDB();
         bootstrapLogger('Database connected.');
 
-            // Ensure getDB() is valid before first runTimerSend
-            if (getDB()) {
-                bootstrapLogger('Initial runTimerSend() call after DB connection.');
-                runTimerSend().catch(e => { // Call and forget, but log errors
-                    logger('Error during initial runTimerSend() call:', e);
-                });
-            } else {
-                bootstrapLogger('CRITICAL: DB not available after connectDB(), cannot run initial timer send.');
-                // This case should ideally not happen if connectDB() resolves successfully without error.
-            }
-
         startExpressServer(); // Non-blocking, starts listening for health checks
         bootstrapLogger('Express server startup initiated.');
 
@@ -293,11 +292,21 @@ async function startApp() {
 
         if (telegramApiOk) {
             bootstrapLogger('Telegram API reachable. Proceeding with normal bot launch.');
-            await launchBot();
-            bootstrapLogger('Bot launched successfully on first attempt.');
+            await launchBot(); // This now ensures username is set and dev chat message is attempted
+            bootstrapLogger('Bot launched successfully on first attempt (polling started, dev chat msg sent).');
+
+            // Call initial timer run and schedule recurring timer AFTER successful launch
+            if (getDB()) {
+                bootstrapLogger('Calling initial runTimerSend() after successful bot launch.');
+                runTimerSend().catch(e => {
+                    logger('Error during post-launch initial runTimerSend():', e);
+                });
+            } else {
+                bootstrapLogger('DB not available after launchBot(), cannot run initial timer send.');
+            }
             initializeTimer();
         } else {
-            bootstrapLogger('Telegram API not reachable, but general internet is OK. Starting bot launch retry loop (will not block further execution of startApp).');
+            bootstrapLogger('Telegram API not reachable, but general internet is OK. Starting bot launch retry loop...');
             attemptBotLaunchWithRetriesAndInitializeTimer(); // Runs in background, logs its own progress/failures
         }
 

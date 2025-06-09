@@ -48,15 +48,27 @@ export const NON_ADMINS_ALERT = `عذرا، هذه الخاصية في المج�
 const bot = new Telegraf(config.telegramToken);
 setBotInstance(bot); // Enable Telegram logging via logger.js
 
+// Promise for ensuring bot username is available
+let botUsernamePromiseResolve;
+export const botUsernameReady = new Promise(resolve => {
+    botUsernamePromiseResolve = resolve;
+});
+
 // Store bot username after getMe()
 bot.telegram
     .getMe()
     .then((botInfo) => {
         bot.options.username = botInfo.username;
         bootstrapLogger(`Bot username set to: ${bot.options.username}`);
+        if (botUsernamePromiseResolve) {
+            botUsernamePromiseResolve(botInfo.username); // Resolve with username
+        }
     })
     .catch((err) => {
         bootstrapLogger('Failed to get bot info:', err);
+        if (botUsernamePromiseResolve) {
+            botUsernamePromiseResolve(null); // Resolve with null if getMe() failed
+        }
     });
 
 /**
@@ -1167,31 +1179,48 @@ export { bot, sendAya }; // Exporting sendAya for timer use by app.js
  */
 export async function launchBot() {
     try {
-        if (config.devChatId && bot.options.username) {
-            const instStateMsg = `DailyAyaTelegram ${config.branch} instance ${config.inst}@${config.host} (of total ${config.totalInst}) is active in ${config.debugging ? 'debugging' : 'normal'} mode of version ${config.codeVer} until ${config.instActiveUntil}.\nMemory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB\nUptime: ${+(process.uptime() / 3600).toFixed(2)} hours`;
-            bot.telegram
-                .sendMessage(config.devChatId, instStateMsg)
-                .then(() => bootstrapLogger('Startup state message sent to dev group.'))
-                .catch((e) => bootstrapLogger('Error sending startup state message:', e));
-        } else if (!bot.options.username) {
-            bootstrapLogger('Cannot send initial state message: Bot username not yet available.');
+        const username = await botUsernameReady; // Wait for username to be processed by the getMe() call
+
+        if (!username) { // botUsernameReady might resolve with null if getMe() failed
+            bootstrapLogger('launchBot: Bot username could not be determined from getMe(). Some features like dev chat message might be affected or skipped.');
+            // Depending on how critical getMe() is, one might choose to throw an error here.
+            // For now, we'll allow the bot to attempt to launch, but the dev chat message might not send if username is needed.
         }
 
+        // Attempt to send dev chat message only if config and username are available
+        if (config.devChatId && bot.options.username) {
+            const instStateMsg = `DailyAyaTelegram ${config.branch} instance ${config.inst}@${config.host} (of total ${config.totalInst}) is active in ${config.debugging ? 'debugging' : 'normal'} mode of version ${config.codeVer} until ${config.instActiveUntil}.\nMemory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB\nUptime: ${+(process.uptime() / 3600).toFixed(2)} hours`;
+            try {
+                await bot.telegram.sendMessage(config.devChatId, instStateMsg);
+                bootstrapLogger('Startup state message sent to dev group.');
+            } catch (e) {
+                bootstrapLogger('Error sending startup state message to dev group (will proceed with launch):', e);
+            }
+        } else if (config.devChatId && !bot.options.username) {
+            bootstrapLogger('launchBot: Cannot send startup state message to dev group - bot username not available (getMe failed or devChatId not set).');
+        }
+
+        // Quran source check (can run without awaited completion before bot.launch)
         if (!config.debugging) {
             checkSource((chatId, message) => bot.telegram.sendMessage(chatId, message))
                 .then(() => logger('Initial Quran source check scheduled/done.'))
                 .catch((e) => logger('Error during initial Quran source check:', e));
         }
 
-        await bot.launch();
-        bootstrapLogger('Bot launched successfully via Telegraf.');
-    } catch (e) {
-        bootstrapLogger('Failed to launch bot:', e);
-        throw e;
+        await bot.launch(); // Start Telegraf polling
+        bootstrapLogger('Bot launched successfully via Telegraf polling.');
+
+    } catch (e) { // This catch is for errors from awaiting botUsernameReady or bot.launch() itself
+        bootstrapLogger('Failed to launch bot critically in launchBot function:', e);
+        throw e; // Re-throw to be caught by app.js, which handles retries or exit
     }
 
-    // General error handler for the bot
-    bot.catch((err, ctx) => {
-        logger(`Telegraf bot error for ${ctx.updateType}:`, err);
-    });
+    // General error handler for the bot (catches runtime errors after successful launch)
+    // This is correctly placed at the end of the file in the original structure.
+    // Moving it here if it was accidentally removed or if ensuring it's after the new launchBot.
+    // On review, the original file has it at the very end, which is fine.
+    // This comment block serves as a reminder of its placement and purpose.
+    // bot.catch((err, ctx) => {
+    // logger(`Telegraf bot error for ${ctx.updateType}:`, err);
+    // });
 }
