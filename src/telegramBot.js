@@ -1179,37 +1179,36 @@ export { bot, sendAya }; // Exporting sendAya for timer use by app.js
  */
 export async function launchBot() {
     try {
-        const username = await botUsernameReady; // Wait for username to be processed by the getMe() call
+        const username = await botUsernameReady;
 
-        if (!username) { // botUsernameReady might resolve with null if getMe() failed
-            bootstrapLogger('launchBot: Bot username could not be determined from getMe(). Some features like dev chat message might be affected or skipped.');
-            // Depending on how critical getMe() is, one might choose to throw an error here.
-            // For now, we'll allow the bot to attempt to launch, but the dev chat message might not send if username is needed.
+        if (!username) {
+            bootstrapLogger('launchBot: Bot username could not be determined. Dev chat message might be affected.');
         }
+        // bootstrapLogger for username set is already in getMe().then()
 
-        // Attempt to send dev chat message only if config and username are available
+        bootstrapLogger('launchBot: Attempting to start Telegraf polling via bot.launch()...');
+        bot.launch();
+        bootstrapLogger('launchBot: Telegraf polling initiated in background.');
+
         if (config.devChatId && bot.options.username) {
             const instStateMsg = `DailyAyaTelegram ${config.branch} instance ${config.inst}@${config.host} (of total ${config.totalInst}) is active in ${config.debugging ? 'debugging' : 'normal'} mode of version ${config.codeVer} until ${config.instActiveUntil}.\nMemory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB\nUptime: ${+(process.uptime() / 3600).toFixed(2)} hours`;
             try {
                 await bot.telegram.sendMessage(config.devChatId, instStateMsg);
                 bootstrapLogger('Startup state message sent to dev group.');
             } catch (e) {
-                bootstrapLogger('Error sending startup state message to dev group (will proceed with launch):', e);
+                bootstrapLogger('Error sending startup state message to dev group (proceeding):', e);
             }
         } else if (config.devChatId && !bot.options.username) {
-            bootstrapLogger('launchBot: Cannot send startup state message to dev group - bot username not available (getMe failed or devChatId not set).');
+            bootstrapLogger('launchBot: Cannot send startup state message to dev group - bot username not available or devChatId not set.');
         }
 
-        // Quran source check (can run without awaited completion before bot.launch)
         if (!config.debugging) {
             checkSource((chatId, message) => bot.telegram.sendMessage(chatId, message))
-                .then(() => logger('Initial Quran source check scheduled/done.'))
+                .then(() => logger('Initial Quran source check scheduled/done.')) // Regular logger for this async task's result
                 .catch((e) => logger('Error during initial Quran source check:', e));
         }
 
-        bootstrapLogger('launchBot: Attempting to start Telegraf polling via bot.launch()...');
-        bot.launch(); // Call without await
-        bootstrapLogger('launchBot: Telegraf polling initiated in background.'); // New log message
+        bootstrapLogger('launchBot: Core setup complete, polling initiated.');
 
     } catch (e) {
         bootstrapLogger('Failed to complete critical launchBot setup steps. Error:', e);

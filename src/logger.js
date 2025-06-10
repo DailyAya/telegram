@@ -81,7 +81,7 @@ export function logger(message, error) {
 export function bootstrapLogger(message, error) {
     const timestamp = new Date().toISOString();
     if (error === undefined) {
-        console.log(`[${timestamp}] BOOTSTRAP: ${message}`);
+        console.log(`[${timestamp}] ${message}`); // Prefix removed
     } else {
         let errorString;
         if (error instanceof Error) {
@@ -93,6 +93,6 @@ export function bootstrapLogger(message, error) {
         } else {
             errorString = String(error);
         }
-        console.error(`[${timestamp}] BOOTSTRAP_ERROR: ${message}`, errorString);
+        console.error(`[${timestamp}] ${message}`, errorString); // Prefix removed
     }
 }
