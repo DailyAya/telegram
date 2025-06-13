@@ -36,6 +36,7 @@ let timerIntervalId = null;
  * @function runTimerSend
  */
 async function runTimerSend() {
+    let numberOfChatsProcessed = 0;
     bootstrapLogger('runTimerSend: Cycle started.');
     const sendMillisThreshold = config.timerSendHours * 60 * 60 * 1000;
     const comparisonTimestamp = Date.now() - sendMillisThreshold;
@@ -49,7 +50,7 @@ async function runTimerSend() {
         const db = getDB();
         if (!db) {
             logger('runTimerSend: Database not available, skipping cycle.');
-            bootstrapLogger('runTimerSend: Cycle finished (DB not available).');
+            bootstrapLogger(`runTimerSend: Cycle finished (DB not available). Processed ${numberOfChatsProcessed} chats.`);
             return;
         }
 
@@ -61,7 +62,8 @@ async function runTimerSend() {
             })
             .toArray();
 
-        logger(`runTimerSend: Found ${chats.length} eligible chats for this cycle.`);
+        numberOfChatsProcessed = chats.length;
+        logger(`runTimerSend: Found ${numberOfChatsProcessed} eligible chats for this cycle.`);
 
         if (chats.length > 0) {
             // Log details for a few chats
@@ -89,7 +91,7 @@ async function runTimerSend() {
     } catch (e) {
         logger('runTimerSend: General error during timer cycle:', e);
     }
-    bootstrapLogger('runTimerSend: Cycle finished.');
+    bootstrapLogger(`runTimerSend: Cycle finished. Processed ${numberOfChatsProcessed} chats.`);
 }
 
 /**
