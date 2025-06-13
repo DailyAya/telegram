@@ -37,7 +37,7 @@ let timerIntervalId = null;
  */
 async function runTimerSend() {
     bootstrapLogger('runTimerSend: Cycle started.');
-    const sendMillisThreshold = config.timerSendHours * 60 * 60 * 1000 - config.timerCheckMinutes * 60 * 1000;
+    const sendMillisThreshold = config.timerSendHours * 60 * 60 * 1000;
     const comparisonTimestamp = Date.now() - sendMillisThreshold;
 
     logger(`runTimerSend: timerSendHours: ${config.timerSendHours}, timerCheckMinutes: ${config.timerCheckMinutes}`);
@@ -61,7 +61,7 @@ async function runTimerSend() {
             })
             .toArray();
 
-        logger(`runTimerSend: Found ${chats.length} eligible chats.`);
+        logger(`runTimerSend: Found ${chats.length} eligible chats for this cycle.`);
 
         if (chats.length > 0) {
             // Log details for a few chats
@@ -251,78 +251,91 @@ process.on('unhandledRejection', (reason, promise) => {
  * @private
  * @function startApp
  */
+// Critical prerequisites for the bot to run properly:
+// 1. Internet connectivity (general and to Telegram API).
+// 2. Database connection (MongoDB).
+// 3. Telegram API reachability (bot token valid, API up).
+// 4. Bot username resolvable (via getMe on Telegram API).
+// 5. Express server starts for health checks.
 async function startApp() {
     try {
         bootstrapLogger('Application startup sequence initiated...');
 
-        await connectDB();
-        bootstrapLogger('Database connected.');
-
         startExpressServer(); // Non-blocking, starts listening for health checks
         bootstrapLogger('Express server startup initiated.');
 
-        bootstrapLogger('Checking initial general internet connectivity...');
-        let generalInternetOk = false;
-        while (!generalInternetOk) {
+        // 1. Database Connection Check
+        let dbConnected = false;
+        let dbAttempt = 0;
+        while (!dbConnected) {
+            dbAttempt++;
+            bootstrapLogger(`Attempting to connect to database (attempt ${dbAttempt})...`);
+            try {
+                await connectDB();
+                dbConnected = true;
+                bootstrapLogger('Database connected successfully.');
+            } catch (dbError) {
+                bootstrapLogger(`Database connection attempt ${dbAttempt} failed: ${dbError.message}`);
+                bootstrapLogger(`Retrying database connection in ${config.botLaunchRetryDelay / 1000} seconds...`);
+                await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
+            }
+        }
+
+        // 2. General Internet Connectivity Check
+        let internetConnected = false;
+        let internetAttempt = 0;
+        while (!internetConnected) {
+            internetAttempt++;
+            bootstrapLogger(`Checking general internet connectivity (attempt ${internetAttempt})...`);
             bootstrapLogger(`Attempting primary connectivity check: ${config.pingTargetGeneral}`);
             if (await checkConnectivity(config.pingTargetGeneral)) {
-                generalInternetOk = true; // Set flag before logging and breaking
+                internetConnected = true;
                 bootstrapLogger(`General internet connectivity established via primary target: ${config.pingTargetGeneral}`);
-                break; // Connectivity established
-            }
-
-            bootstrapLogger(`Primary connectivity check failed: ${config.pingTargetGeneral}. Attempting alternative: ${config.pingTargetAlternative}`);
-            if (await checkConnectivity(config.pingTargetAlternative)) {
-                generalInternetOk = true; // Set flag before logging and breaking
-                bootstrapLogger(`General internet connectivity established via alternative target: ${config.pingTargetAlternative}`);
-                break; // Connectivity established
-            }
-
-            // If both checks failed
-            bootstrapLogger(`Both primary and alternative connectivity checks failed. Retrying in ${config.botLaunchRetryDelay / 1000} seconds...`);
-            await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
-        }
-
-        // Construct Telegram API URL carefully to avoid logging the token if the URL itself is logged by checkConnectivity
-        const telegramApiUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken.substring(0,10)}.../getMe`; // Log-safe version for display
-        const actualTelegramApiCheckUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken}/getMe`;
-
-        bootstrapLogger(`Checking Telegram API reachability at: ${config.pingTargetTelegramApiBase}/bot[TOKEN_HIDDEN]/getMe`);
-        const telegramApiOk = await checkConnectivity(actualTelegramApiCheckUrl);
-
-        if (telegramApiOk) {
-            bootstrapLogger('Telegram API reachable. Proceeding with normal bot launch.');
-            await launchBot(); // This now ensures username is set and dev chat message is attempted
-            bootstrapLogger('Bot launched successfully on first attempt (polling started, dev chat msg sent).');
-
-            // Call initial timer run and schedule recurring timer AFTER successful launch
-            if (getDB()) {
-                bootstrapLogger('Calling initial runTimerSend() after successful bot launch.');
-                runTimerSend().catch(e => {
-                    logger('Error during post-launch initial runTimerSend():', e);
-                });
             } else {
-                bootstrapLogger('DB not available after launchBot(), cannot run initial timer send.');
+                bootstrapLogger(`Primary connectivity check failed: ${config.pingTargetGeneral}. Attempting alternative: ${config.pingTargetAlternative}`);
+                if (await checkConnectivity(config.pingTargetAlternative)) {
+                    internetConnected = true;
+                    bootstrapLogger(`General internet connectivity established via alternative target: ${config.pingTargetAlternative}`);
+                } else {
+                    bootstrapLogger(`Both primary and alternative general connectivity checks failed (attempt ${internetAttempt}).`);
+                    bootstrapLogger(`Retrying internet connectivity check in ${config.botLaunchRetryDelay / 1000} seconds...`);
+                    await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
+                }
             }
-            initializeTimer();
-        } else {
-            bootstrapLogger('Telegram API not reachable, but general internet is OK. Starting bot launch retry loop...');
-            attemptBotLaunchWithRetriesAndInitializeTimer(); // Runs in background, logs its own progress/failures
         }
 
-        // If we reach here, Express is running, DB is connected.
-        // Bot might be running directly or retrying in the background.
-        // Timer will only start if/when bot launch is successful.
-        bootstrapLogger('Main startup sequence complete. Express server is running.');
-        // Note: The application will not exit here if the bot is in a retry loop.
-        // It relies on process signals or unhandled exceptions for termination if retries ultimately fail
-        // and no other mechanism (like a supervisor) restarts it.
+        // 3. Telegram API Reachability Check
+        let telegramApiReachable = false;
+        let telegramApiAttempt = 0;
+        const actualTelegramApiCheckUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken}/getMe`;
+        // For logging, avoid exposing the full token
+        const logSafeTelegramApiUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken ? config.telegramToken.substring(0, 10) + '...' : '[TOKEN_NOT_SET]'}/getMe`;
+
+        while (!telegramApiReachable) {
+            telegramApiAttempt++;
+            bootstrapLogger(`Checking Telegram API reachability (attempt ${telegramApiAttempt}) at: ${logSafeTelegramApiUrl}`);
+            if (await checkConnectivity(actualTelegramApiCheckUrl)) {
+                telegramApiReachable = true;
+                bootstrapLogger('Telegram API reachable.');
+            } else {
+                bootstrapLogger(`Telegram API reachability check failed (attempt ${telegramApiAttempt}).`);
+                bootstrapLogger(`Retrying Telegram API reachability check in ${config.botLaunchRetryDelay / 1000} seconds...`);
+                await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
+            }
+        }
+
+        // All critical prerequisites are met. Now, attempt to launch the bot.
+        // launchBot() itself will throw an error if username retrieval fails,
+        // which will be caught by attemptBotLaunchWithRetriesAndInitializeTimer.
+        bootstrapLogger('All critical prerequisites met. Proceeding to bot launch sequence...');
+        attemptBotLaunchWithRetriesAndInitializeTimer(); // This function contains its own retry logic for launchBot and initializes the timer.
+
+        bootstrapLogger('Main startup sequence complete. Express server is running. Bot launch process initiated.');
 
     } catch (error) {
-        // This catch handles errors from connectDB, startExpressServer (if it were to throw synchronously),
-        // initial connectivity checks, or if launchBot() is directly awaited and fails.
-        bootstrapLogger('CRITICAL: Application startup failed in main sequence:', error);
-        await sigHandler('startupError');
+        // This catch handles unexpected errors during the setup loops or if startExpressServer itself throws.
+        bootstrapLogger('CRITICAL: Application startup failed in main sequence due to an unexpected error:', error);
+        await sigHandler('startupError'); // Gracefully shut down
     }
 }
 

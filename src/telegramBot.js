@@ -1182,7 +1182,8 @@ export async function launchBot() {
         const username = await botUsernameReady;
 
         if (!username) {
-            bootstrapLogger('launchBot: Bot username could not be determined. Dev chat message might be affected.');
+            bootstrapLogger('launchBot: Bot username could not be retrieved. Launch aborted.');
+            throw new Error('Bot username could not be retrieved. Launch aborted.');
         }
         // bootstrapLogger for username set is already in getMe().then()
 
