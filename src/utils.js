@@ -8,7 +8,7 @@ import axios from 'axios';
 import dns from 'dns';
 import net from 'net';
 import { URL } from 'url';
-import config from '../config.js';
+import config from './config.js';
 
 /**
  * Converts a value to its boolean representation with extended string handling.
