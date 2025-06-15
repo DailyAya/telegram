@@ -1,4 +1,5 @@
 import config from './config.js';
+import { sendEmergencyNotification } from './utils.js';
 
 /**
  * @module logger
@@ -94,5 +95,25 @@ export function bootstrapLogger(message, error) {
             errorString = String(error);
         }
         console.error(`[${timestamp}] ${message}`, errorString); // Prefix removed
+
+        if (config.devChatId && config.telegramToken) {
+            // Sanitize and shorten the message for Telegram to avoid hitting limits easily
+            let emergencyMessage = `[BOOTSTRAP ERROR] ${message}
+`;
+            if (error instanceof Error) {
+                emergencyMessage += `${error.name}: ${error.message}`;
+            } else if (typeof error === 'object' && error !== null) {
+                emergencyMessage += JSON.stringify(error);
+            } else {
+                emergencyMessage += String(error);
+            }
+            if (emergencyMessage.length > 1000) { // Keep it reasonably short
+                emergencyMessage = emergencyMessage.substring(0, 1000) + '...';
+            }
+            sendEmergencyNotification(emergencyMessage).catch(e => {
+                // Log if the emergency send itself fails, but don't do more.
+                console.error('Emergency notification dispatch itself failed:', e.message);
+            });
+        }
     }
 }

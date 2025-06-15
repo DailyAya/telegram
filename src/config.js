@@ -54,7 +54,7 @@ const config = {
     pingTargetAlternative: process.env.PING_TARGET_ALTERNATIVE ?? 'https://1.1.1.1',
     pingTargetTelegramApiBase: process.env.PING_TARGET_TELEGRAM_API_BASE ?? 'https://api.telegram.org',
     botLaunchRetryDelay: parseInt(process.env.BOT_LAUNCH_RETRY_DELAY_MS ?? '30000', 10), // 30 seconds
-    maxBotLaunchRetries: parseInt(process.env.MAX_BOT_LAUNCH_RETRIES ?? '5', 10), // 5 retries, 0 for indefinite
+    maxBotLaunchRetries: parseInt(process.env.MAX_BOT_LAUNCH_RETRIES ?? '0', 10), // 0 for indefinite retries by default
 };
 
 // Construct mongoURI using the fetched credentials and subdomain

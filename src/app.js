@@ -267,6 +267,7 @@ async function startApp() {
         bootstrapLogger('Express server startup initiated.');
 
         // 1. Database Connection Check
+        // This loop retries indefinitely until successful.
         let dbConnected = false;
         let dbAttempt = 0;
         while (!dbConnected) {
@@ -284,6 +285,7 @@ async function startApp() {
         }
 
         // 2. General Internet Connectivity Check
+        // This loop retries indefinitely until successful.
         let internetConnected = false;
         let internetAttempt = 0;
         while (!internetConnected) {
@@ -307,6 +309,7 @@ async function startApp() {
         }
 
         // 3. Telegram API Reachability Check
+        // This loop retries indefinitely until successful.
         let telegramApiReachable = false;
         let telegramApiAttempt = 0;
         const actualTelegramApiCheckUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken}/getMe`;

@@ -99,7 +99,7 @@ Ensure the bot **only launches after all critical prerequisites are met**. These
 2.  Successful connection to the MongoDB database.
 3.  Telegram API reachability (valid bot token and responsive API).
 4.  Successful retrieval and confirmation of the bot's username via `getMe()`.
-Implement robust retries for these checks before aborting launch if they persistently fail. The application should not proceed to full operation if these cannot be confirmed.
+Implement robust retries for these checks before aborting launch if they persistently fail. The application should not proceed to full operation if these cannot be confirmed. These critical prerequisite checks, as well as the bot launch sequence (including username retrieval), now retry indefinitely by default. Monitor logs for any persistent failure loops which might indicate deeper issues.
 
 ### Timer Precision and Logic:
 
@@ -110,6 +110,7 @@ Implement robust retries for these checks before aborting launch if they persist
 
 *   Timer logs (`runTimerSend` in `src/app.js`) **must include the number of chats processed (found eligible) in each cycle**. This log should use the standard `logger` for potential forwarding.
 *   All significant operations, errors, and state changes (especially related to bot launch, DB connection, API interactions, and timer cycles) should be logged appropriately using `logger` or `bootstrapLogger` based on severity and context.
+*   An emergency notification system (`sendEmergencyNotification` in `utils.js`) using `axios` attempts to send critical `bootstrapLogger` errors to `devChatId` directly. This acts as a fallback for early startup errors when the main Telegraf instance might be unavailable, providing an additional layer of error reporting.
 
 ### General Instruction:
 

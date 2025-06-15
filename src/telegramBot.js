@@ -1,3 +1,4 @@
+import https from 'https';
 import { Telegraf, Markup } from 'telegraf';
 import config from './config.js';
 import { logger, setBotInstance, bootstrapLogger } from './logger.js';
@@ -45,7 +46,12 @@ export const NON_ADMINS_ALERT = `عذرا، هذه الخاصية في المج�
  * The main Telegraf bot instance.
  * @type {import('telegraf').Telegraf}
  */
-const bot = new Telegraf(config.telegramToken);
+const agent = new https.Agent({ timeout: 30000 }); // 30 seconds timeout
+bootstrapLogger('Telegraf HTTPS agent configured with 30-second timeout.');
+
+const bot = new Telegraf(config.telegramToken, {
+    telegram: { agent },
+});
 setBotInstance(bot); // Enable Telegram logging via logger.js
 
 // Promise for ensuring bot username is available

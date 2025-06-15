@@ -4,9 +4,11 @@
  * random number generation, text manipulation, and network checks.
  */
 
+import axios from 'axios';
 import dns from 'dns';
 import net from 'net';
 import { URL } from 'url';
+import config from '../config.js';
 
 /**
  * Converts a value to its boolean representation with extended string handling.
@@ -169,4 +171,35 @@ export async function checkConnectivity(url) {
     // If loop finishes, all attempts failed for different reasons or last one failed.
     // logger.error(`Connectivity Check: All ${maxAttempts} attempts to connect to "${url}" failed. Last error: ${lastError || 'Unknown error after loop completion.'}`);
     return false;
+}
+
+/**
+ * Sends an emergency notification message via Telegram API directly using axios.
+ * This is intended for use by bootstrapLogger when the main Telegraf instance might not be available.
+ * @async
+ * @function sendEmergencyNotification
+ * @param {string} messageText - The text of the message to send.
+ */
+export async function sendEmergencyNotification(messageText) {
+    if (!config.telegramToken || !config.devChatId) {
+        console.error(
+            'Emergency Notifier: telegramToken or devChatId is missing in config. Cannot send notification.'
+        );
+        return;
+    }
+
+    const url = `https://api.telegram.org/bot${config.telegramToken}/sendMessage`;
+    const payload = {
+        chat_id: config.devChatId,
+        text: messageText,
+        parse_mode: 'Markdown', // Using Markdown for potential simple formatting
+    };
+
+    try {
+        await axios.post(url, payload, { timeout: 10000 }); // 10-second timeout
+        // console.log('Emergency notification sent successfully.'); // Optional: Can be noisy
+    } catch (error) {
+        console.error('Failed to send emergency notification:', error.message);
+        // Do not re-throw, as this is a last-effort notification
+    }
 }
