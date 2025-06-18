@@ -38,7 +38,8 @@ let timerIntervalId = null;
 async function runTimerSend() {
     let numberOfChatsProcessed = 0;
     bootstrapLogger('runTimerSend: Cycle started.');
-    const sendMillisThreshold = config.timerSendHours * 60 * 60 * 1000;
+    // Eligibility: older than (timerSendHours - 1) hours ago (e.g., 23 hours for a 24h cycle) to align with hourly batching.
+    const sendMillisThreshold = (config.timerSendHours - 1) * 60 * 60 * 1000;
     const comparisonTimestamp = Date.now() - sendMillisThreshold;
 
     logger(`runTimerSend: timerSendHours: ${config.timerSendHours}, timerCheckMinutes: ${config.timerCheckMinutes}`);

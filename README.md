@@ -6,7 +6,7 @@ The DailyAyaBot sends you a random verse (Aya) from the Holy Quran every day. Yo
 
 ### Key Features:
 
-*   **Daily Random Aya:** Receive an Aya automatically at a set time.
+*   **Daily Random Aya:** Receive an Aya automatically. After your first interaction or if you request an Aya, subsequent timed Ayas are typically sent around the same hour each day, aligning to the start of the hour (e.g., if your last Aya was at 10:20 AM, your next timed one will likely be at 10:00 AM or 11:00 AM the following day, depending on when the hourly check runs relative to your 24-hour cycle).
 *   **Request Specific Aya:** Ask for a particular Sura and Aya number (e.g., "2 255" or "Al-Baqarah 255").
 *   **Set Favorite Reciter:** Choose your preferred reciter for audio recitations.
 *   **Surprise Me:** Get a random Aya with recitation on demand.
@@ -103,8 +103,8 @@ Implement robust retries for these checks before aborting launch if they persist
 
 ### Timer Precision and Logic:
 
-*   The daily Aya timer (`runTimerSend` and `initializeTimer` in `src/app.js`) **must trigger its checks precisely on quarter clock hours** (e.g., 00, 15, 30, 45 minutes past the hour), synchronized with Cairo time if possible, or server time consistently.
-*   A user's daily Aya should arrive at approximately the same quarter clock hour slot each day, based on their `lastAyaTime` in the database. The eligibility check in `runTimerSend` should use `config.timerSendHours` (e.g., 23 hours) to determine if a chat is due for a new Aya. For example, if `timerSendHours` is 23, a chat that last received an Aya more than 23 hours ago is eligible.
+*   The daily Aya timer (`runTimerSend` and `initializeTimer` in `src/app.js`) is now configured for hourly checks by default (`config.timerCheckMinutes` defaults to 60). The `initializeTimer` function aligns these checks to the start of the hour.
+*   A user's daily Aya should arrive at approximately the same hour each day. The eligibility logic in `runTimerSend` is set so users become eligible if their `lastAyaTime` is older than `(config.timerSendHours - 1)` hours (e.g., 23 hours for a 24-hour cycle). This is designed to ensure users are picked up in the correct hourly slot for their daily Aya.
 
 ### Logging Requirements:
 

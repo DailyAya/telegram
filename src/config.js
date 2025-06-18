@@ -24,7 +24,7 @@ import { toBoolean } from './utils.js';
  * @property {string|null} mongoDbCredentials - MongoDB connection credentials (username:password part). CRITICAL if mongoSubdomain is set.
  * @property {string|null} mongoSubdomain - MongoDB cluster subdomain (e.g., 'abcde.mongodb.net'). CRITICAL if mongoDbCredentials are set.
  * @property {string} mongoURI - Fully constructed MongoDB connection URI.
- * @property {number} timerCheckMinutes - Interval in minutes for checking if timed Ayas need to be sent.
+ * @property {number} timerCheckMinutes - Interval in minutes for checking if timed Ayas need to be sent. Default is 60 for hourly checks.
  * @property {number} timerSendHours - Interval in hours for sending a timed Aya to a chat.
  * @property {string} pingTargetGeneral - Primary URL for general internet connectivity checks.
  * @property {string} pingTargetAlternative - Alternative URL for general internet connectivity checks.
@@ -48,7 +48,7 @@ const config = {
     port: process.env.PORT ?? 3000,
     mongoDbCredentials: process.env.mongoDbCredentials ?? null,
     mongoSubdomain: process.env.mongoSubdomain ?? null,
-    timerCheckMinutes: parseInt(process.env.TimerCheckMinutes ?? '15', 10),
+    timerCheckMinutes: parseInt(process.env.TimerCheckMinutes ?? '60', 10),
     timerSendHours: parseInt(process.env.TimerSendHours ?? '24', 10),
     pingTargetGeneral: process.env.PING_TARGET_GENERAL ?? 'https://www.google.com',
     pingTargetAlternative: process.env.PING_TARGET_ALTERNATIVE ?? 'https://1.1.1.1',
