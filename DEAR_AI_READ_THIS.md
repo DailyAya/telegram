@@ -12,6 +12,8 @@ These directives are crucial for maintaining and developing the DailyAyaBot:
 
 **No Simulation of Instructions:** You must not simulate any instructions or data. For example, timestamps for versioning must be obtained using actual system commands (e.g., `TZ='Africa/Cairo' date +'%Y.%m.%d-%H%M'`) and not be hardcoded or based on assumptions. Always seek to retrieve real data as required by the task.
 
+**Consult Documentation:** Always strive to consult relevant, specific documentation (e.g., for external APIs, platforms like Northflank, or libraries used) *before* proposing detailed solutions or configurations. Prioritize official documentation to ensure advice is accurate and up-to-date.
+
 ### Versioning:
 
 With each commit, set the new version in `package.json`. The format is `yyyy.mm.dd-hhmm`, obtained directly from the output of `TZ='Africa/Cairo' date +'%Y.%m.%d-%H%M'`. This version **must** also be included in the commit message.
@@ -58,4 +60,5 @@ This bot is undergoing refactoring to improve robustness, fix bugs, and enhance 
     *   Implemented a global Axios instance (`apiClient`) in `src/quranService.js` with a default 15-second timeout and a User-Agent header to improve robustness of interactions with `api.alquran.cloud`.
     *   Confirmed that emergency notifications in `src/utils.js` use Axios with a timeout.
 *   Standardizing development and deployment procedures (including versioning and README updates).
+    *   Updated AI agent directives (`DEAR_AI_READ_THIS.md`) to include the principle of consulting specific documentation before proposing solutions.
 Refer to the specific GitHub issue for detailed tasks and objectives for the current development cycle.
