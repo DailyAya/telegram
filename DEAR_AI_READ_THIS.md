@@ -51,6 +51,7 @@ Always ask for clarification instead of making assumptions. Refer to previous in
 
 This bot is undergoing refactoring to improve robustness, fix bugs, and enhance maintainability. Key areas of focus include:
 *   Ensuring reliable startup and prerequisite checks.
+    *   Added a `/health` endpoint to `src/expressApp.js` to provide a dedicated health check for deployment platforms like Northflank.
 *   Correcting timer logic for accurate and consistent daily Aya delivery.
 *   Improving error handling and logging across the application.
     *   Enhanced logging for non-critical Telegram API errors like "message not modified" and "MESSAGE_ID_INVALID" in `src/telegramBot.js`.

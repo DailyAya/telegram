@@ -10,6 +10,11 @@ import { logger, bootstrapLogger } from './logger.js';
 
 const app = express();
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
 /**
  * Generates a string message detailing the current state of the application instance.
  * This includes version, branch, host, memory usage, and uptime.
@@ -31,8 +36,10 @@ function getInstStateMsg() {
 
     return `DailyAyaTelegram ${branch} instance ${inst}@${host} (of total ${totalInst}) is active in ${
         debugging ? 'debugging' : 'normal'
-    } mode of version ${codeVer} until ${instActiveUntil}.\n
-Memory Used: ${memoryUsage} MB\n
+    } mode of version ${codeVer} until ${instActiveUntil}.
+
+Memory Used: ${memoryUsage} MB
+
 Uptime: ${uptimeHours} hours`;
 }
 

@@ -35,7 +35,7 @@ This project is a Node.js application using the Telegraf.js library for Telegram
 *   **`src/database.js`**: Manages interactions with the MongoDB database (storing chat information, user preferences, etc.).
 *   **`src/config.js`**: Handles application configuration, primarily by loading environment variables.
 *   **`src/logger.js`**: Implements the logging mechanism, including sending important logs to a designated Telegram chat.
-*   **`src/expressApp.js`**: A simple Express server primarily for health checks.
+*   **`src/expressApp.js`**: A simple Express server. It provides a `/` route for instance status and a `/health` route (returns 200 OK) for platform health checks.
 
 ### Setup and Installation:
 
