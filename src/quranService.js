@@ -3,6 +3,14 @@ import rasmifize from 'rasmify.js';
 import { logger } from './logger.js';
 import config from './config.js';
 import fs from 'fs';
+
+// Create a global Axios instance with default timeout and User-Agent
+const apiClient = axios.create({
+    timeout: 15000, // 15-second default timeout
+    headers: {
+        'User-Agent': `DailyAyaBot/${config.codeVer || 'unknown_version'}`, // Construct a User-Agent
+    },
+});
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -218,7 +226,7 @@ export function nextAya(ayaId) {
  */
 export async function audioUrlCheck(url) {
     try {
-        const response = await axios.head(url, { timeout: 5000 });
+        const response = await apiClient.head(url, { timeout: 5000 }); // Use specific timeout for HEAD
         logger(`audioUrlCheck: HEAD request to ${url} status: ${response.status}`);
         return response.status >= 200 && response.status < 300;
     } catch (error) {
@@ -301,7 +309,7 @@ export async function getRecitation(ayaId, reciterIdentifier) {
     logger(`getRecitation: Attempt ${recitationTries[tryKey]} for ${tryKey}`);
 
     try {
-        const response = await axios.get(`http://api.alquran.cloud/v1/ayah/${ayaId}/${chosenReciter}`);
+        const response = await apiClient.get(`http://api.alquran.cloud/v1/ayah/${ayaId}/${chosenReciter}`);
         delete recitationTries[tryKey]; // Reset tries on successful API call
 
         const allAudio = [response.data.data.audio].concat(response.data.data.audioSecondary || []);
@@ -367,7 +375,7 @@ export async function checkSource(botTelegramSendMsgFunc) {
     for (const source of sources) {
         const downloadStart = Date.now();
         try {
-            const response = await axios.get(source.url);
+            const response = await apiClient.get(source.url);
             const remoteData = source.transformResponse
                 ? source.transformResponse(response)
                 : response.data.data.surahs;

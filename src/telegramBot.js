@@ -338,15 +338,15 @@ async function sendAyaRecitation(ctx, ayaId, reciterIdentifier) {
                 // Audio sent immediately after text
                 await bot.telegram
                     .editMessageReplyMarkup(chatId, originalMessageId, undefined, undefined)
-                    .catch((e) => logger('Error removing markup from text msg (recitation):', e));
+                    .catch((e) => logger('Warning: Message not modified or ID invalid when removing markup from text msg (recitation) (non-critical):', e));
                 await bot.telegram
                     .editMessageReplyMarkup(chatId, sentAudioCtx.message_id, undefined, buttons)
-                    .catch((e) => logger('Error adding markup to audio msg (recitation):', e));
+                    .catch((e) => logger('Warning: Message not modified or ID invalid when adding markup to audio msg (recitation) (non-critical):', e));
             } else {
                 // Audio sent later or as a result of callback; reply to original text
                 await bot.telegram
                     .deleteMessage(chatId, sentAudioCtx.message_id)
-                    .catch((e) => logger('Error deleting initial audio msg (recitation reply):', e));
+                    .catch((e) => logger('Warning: Message ID invalid when deleting initial audio msg (recitation reply) (non-critical):', e));
                 /*const repliedAudioCtx =*/ await bot.telegram.sendAudio(chatId, recitationUrl, {
                     // We don't use repliedAudioCtx currently
                     reply_to_message_id: originalMessageId,
@@ -357,13 +357,13 @@ async function sendAyaRecitation(ctx, ayaId, reciterIdentifier) {
                 });
                 await bot.telegram
                     .editMessageReplyMarkup(chatId, originalMessageId, undefined, undefined)
-                    .catch((e) => logger('Error removing markup from text msg (recitation reply):', e));
+                    .catch((e) => logger('Warning: Message not modified or ID invalid when removing markup from text msg (recitation reply) (non-critical):', e));
             }
         } else {
             // No original message context (e.g., direct /recite command - though not implemented)
             await bot.telegram
                 .editMessageReplyMarkup(chatId, sentAudioCtx.message_id, undefined, buttons)
-                .catch((e) => logger('Error adding markup to direct audio msg (recitation):', e));
+                .catch((e) => logger('Warning: Message not modified or ID invalid when adding markup to direct audio msg (recitation) (non-critical):', e));
         }
     } catch (error) {
         logger(`Error in sendAyaRecitation for aya ${ayaId} by ${finalReciter} to chat ${chatId}:`, error);
@@ -1117,7 +1117,7 @@ bot.action(/^{"aMenu":"[^"]+","a":\d+,"r":"[^"]+"}$/, async (ctx) => {
             await adminCtx.editMessageReplyMarkup(buttons);
         } catch (e) {
             // Can fail if message is too old, etc.
-            logger(`Error toggling aMenu: `, e);
+            logger(`Warning: Error toggling aMenu (MESSAGE_ID_INVALID or other non-critical): `, e);
         }
     });
 });

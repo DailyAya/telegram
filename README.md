@@ -31,7 +31,7 @@ This project is a Node.js application using the Telegraf.js library for Telegram
 
 *   **`src/app.js`**: The main entry point of the application. Handles initialization, timer scheduling, and overall application lifecycle.
 *   **`src/telegramBot.js`**: Contains all the Telegram bot logic, including command handlers, action handlers (callback queries), and message processing.
-*   **`src/quranService.js`**: Responsible for fetching and processing Quran text, translations, and reciter information.
+*   **`src/quranService.js`**: Responsible for fetching and processing Quran text, translations, and reciter information. Interacts with `api.alquran.cloud` using a dedicated Axios instance (`apiClient`) with default timeouts.
 *   **`src/database.js`**: Manages interactions with the MongoDB database (storing chat information, user preferences, etc.).
 *   **`src/config.js`**: Handles application configuration, primarily by loading environment variables.
 *   **`src/logger.js`**: Implements the logging mechanism, including sending important logs to a designated Telegram chat.
@@ -122,5 +122,8 @@ This bot is undergoing refactoring to improve robustness, fix bugs, and enhance 
 *   Ensuring reliable startup and prerequisite checks.
 *   Correcting timer logic for accurate and consistent daily Aya delivery.
 *   Improving error handling and logging across the application.
+    *   Enhanced logging for non-critical Telegram API errors like "message not modified" and "MESSAGE_ID_INVALID" in `src/telegramBot.js`.
+    *   Implemented a global Axios instance (`apiClient`) in `src/quranService.js` with a default 15-second timeout and a User-Agent header to improve robustness of interactions with `api.alquran.cloud`.
+    *   Confirmed that emergency notifications in `src/utils.js` use Axios with a timeout.
 *   Standardizing development and deployment procedures (including versioning and README updates).
 Refer to the specific GitHub issue for detailed tasks and objectives for the current development cycle.
