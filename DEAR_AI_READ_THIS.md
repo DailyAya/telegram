@@ -16,11 +16,11 @@ These directives are crucial for maintaining and developing the DailyAyaBot:
 
 ### Versioning Principle:
 
-Each set of submitted changes (commit) **must be associated with a new version** recorded in `package.json`. The version format is `yyyy.mm.dd-hhmm` (Timezone: Africa/Cairo). This version string **must** also be included in the commit message. For the specific steps and timing of version updates, refer to the "Pre-commit Routine" section.
+Each set of submitted changes (commit) **must be associated with a new version** recorded in `package.json`. The version format is `yyyy.mm.dd-hhmm` (Timezone: Africa/Cairo). This version string **must** also be included in the commit message. For the specific steps and timing of version updates, refer to the "Pre-commit Routine" section below.
 
 ### `package-lock.json` Importance and Synchronization Principle:
 
-The `package-lock.json` file is critical for ensuring reproducible builds by locking down the exact versions of all dependencies. It **must be kept synchronized** with `package.json`. Whenever `package.json` is modified (either dependency list or project version), `package-lock.json` must be updated accordingly. For the specific steps, refer to the "Pre-commit Routine" section.
+The `package-lock.json` file is critical for ensuring reproducible builds by locking down the exact versions of all dependencies. It **must be kept synchronized** with `package.json`. Whenever `package.json` is modified (either dependency list or project version), `package-lock.json` must be updated accordingly by running `npm install`. For the specific steps, refer to the "Pre-commit Routine" section below.
 
 ### Pre-commit Routine:
 
@@ -28,12 +28,12 @@ Before submitting any changes, the following steps **must be performed in order*
 
 1.  **Finalize Code Implementation:** Ensure all planned code modifications for the current task are complete, tested (conceptually or actually, if possible), and meet requirements.
 2.  **Update `README.md` (if applicable):** If changes impact user-facing features, general developer information, or setup instructions, update `README.md` accordingly.
-3.  **Update `DEAR_AI_READ_THIS.md` (if applicable):** If AI operational guidelines, refactoring goals, or key development procedures documented herein have changed or been completed, update this file.
+3.  **Update `DEAR_AI_READ_THIS.md` (if applicable):** If AI operational guidelines, refactoring goals, or key development procedures documented herein have changed or been completed, update this file. This includes adding a summary of the current changes to the "Current Issue Context / Refactoring Goals" section.
 4.  **Dependency Update (if applicable):** If `package.json` dependencies were added, removed, or changed:
     *   Run `npm install`. This will update `package-lock.json` to reflect these dependency changes.
 5.  **Generate Version Timestamp:** Obtain the current timestamp using `TZ='Africa/Cairo' date +'%Y.%m.%d-%H%M'`.
 6.  **Update `package.json` Version:** Modify the `version` field in `package.json` with the newly generated timestamp.
-7.  **Synchronize `package-lock.json`:** Run `npm install` again. This step is crucial even if run in step 4 (or for the first time if only the version in `package.json` changed). It ensures that `package-lock.json` is fully synchronized, particularly its internal `name` and `version` fields which should mirror `package.json`.
+7.  **Synchronize `package-lock.json`:** Run `npm install` again. This step is crucial even if step 4 was performed (or if only the version in `package.json` changed). It ensures that `package-lock.json` is fully synchronized with `package.json`, particularly its internal `name` and `version` fields.
 8.  **Prepare Commit Message:** Draft a descriptive commit message that includes the new version string (e.g., "Version: yyyy.mm.dd-hhmm").
 9.  **Submit Changes:** Commit all modified files, which typically include any changed source code files, `README.md` (if updated), `DEAR_AI_READ_THIS.md` (if updated), `package.json`, and `package-lock.json`.
 
@@ -75,6 +75,7 @@ This bot is undergoing refactoring to improve robustness, fix bugs, and enhance 
     *   Enhanced logging for non-critical Telegram API errors like "message not modified" and "MESSAGE_ID_INVALID" in `src/telegramBot.js`.
     *   Implemented a global Axios instance (`apiClient`) in `src/quranService.js` with a default 15-second timeout and a User-Agent header to improve robustness of interactions with `api.alquran.cloud`.
     *   Confirmed that emergency notifications in `src/utils.js` use Axios with a timeout.
+    *   Added detailed error object logging to `console.error` for `bot.telegram.getMe()` failures in `src/telegramBot.js` to improve diagnostics for startup issues.
 *   Standardizing development and deployment procedures (including versioning and README updates).
     *   Updated AI agent directives (`DEAR_AI_READ_THIS.md`) to include the principle of consulting specific documentation before proposing solutions.
     *   Added `.env` to `.gitignore` to prevent accidental commitment of secrets.

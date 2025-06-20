@@ -71,7 +71,8 @@ bot.telegram
         }
     })
     .catch((err) => {
-        bootstrapLogger('Failed to get bot info:', err);
+        console.error('CRITICAL: bot.telegram.getMe() failed. Raw error object:', JSON.stringify(err, Object.getOwnPropertyNames(Object.getPrototypeOf(err) ? Object.getOwnPropertyNames(Object.getPrototypeOf(err)) : Object.keys(err)), 2));
+        bootstrapLogger('Failed to get bot info (processed by bootstrapLogger):', err); // Message updated for clarity
         if (botUsernamePromiseResolve) {
             botUsernamePromiseResolve(null); // Resolve with null if getMe() failed
         }
