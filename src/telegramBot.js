@@ -875,7 +875,6 @@ bot.telegram
         { command: 'support', description: '🤗 Support دعم' },
         { command: 'reciters', description: '🗣️ Set Reciter اختيار القارئ' },
         { command: 'channel', description: '📢 Daily Aya Channel قناة دايلي آية' },
-        { command: 'commands', description: '🔎 Show all commands أوامري' },
     ])
     .catch((e) => logger('Error setting bot commands:', e));
 

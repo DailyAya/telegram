@@ -76,7 +76,7 @@ async function runTimerSend() {
 
         for (let i = 0; i < chats.length; i++) {
             const chat = chats[i];
-            const delay = i * (config.debugging ? 1000 : 5000);
+            const delay = i * (config.debugging ? 1000 : 50); // 50ms, up to 20 msg/sec
 
             setTimeout(async () => {
                 try {
