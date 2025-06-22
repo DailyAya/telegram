@@ -1,37 +1,48 @@
 {
-  "name": "dailyaya-telegram-chatbot",
-  "version": "2023.04.12-610",
-  "description": "t.me/DailyAyaBot sends one random Aya from Quran everyday and when requested.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"No tests to run\" && exit 0",
-    "start": "node index.js"
-  },
-  "keywords": [
-    "telegram",
-    "bot",
-    "chatbot",
-    "Quran",
-    "Aya",
-    "Daily",
-    "recite"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/DailyAya/telegram.git"
-  },
-  "author": "m.Sherbeeny.com",
-  "license": "ISC",
-  "dependencies": {
-    "express": "^4.17.1",
-    "axios": "^0.21.3",
-    "telegraf": "^4.8.1",
-    "mongodb": "^4.1.1",
-    "rasmify.js": "^1.0.1"
-  },
-  "bugs": {
-    "url": "https://github.com/DailyAya/telegram/issues"
-  },
-  "homepage": "https://github.com/DailyAya/telegram#readme",
-  "devDependencies": {}
+    "name": "dailyaya-telegram-chatbot",
+    "version": "2025.06.20-1554",
+    "description": "t.me/DailyAyaBot sends one random Aya from Quran everyday and when requested.",
+    "type": "module",
+    "main": "src/app.js",
+    "scripts": {
+        "test": "jest",
+        "start": "node src/app.js",
+        "lint": "npx eslint .",
+        "format": "npx prettier --write ."
+    },
+    "keywords": [
+        "telegram",
+        "bot",
+        "chatbot",
+        "Quran",
+        "Aya",
+        "Daily",
+        "recite"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DailyAya/telegram.git"
+    },
+    "author": "m.Sherbeeny.com",
+    "license": "ISC",
+    "dependencies": {
+        "express": "^5.0.0",
+        "axios": "^0.21.3",
+        "telegraf": "^4.8.1",
+        "mongodb": "^6.0.0",
+        "rasmify.js": "^1.0.1"
+    },
+    "devDependencies": {
+        "prettier": "^3.0.0",
+        "jest": "^29.0.0",
+        "supertest": "^6.0.0",
+        "babel-jest": "^29.0.0",
+        "@babel/core": "^7.0.0",
+        "@babel/preset-env": "^7.0.0"
+    },
+    "bugs": {
+        "url": "https://github.com/DailyAya/telegram/issues"
+    },
+    "homepage": "https://github.com/DailyAya/telegram#readme",
+    "version_timezone": "Africa/Cairo"
 }

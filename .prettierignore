@@ -1,0 +1,60 @@
+# Ignore patterns are based on .gitignore syntax
+
+# Dependencies
+node_modules/
+
+# Coverage directory
+coverage/
+
+# Distribution directory
+dist/
+
+# Build output
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test snapshots
+*.snap
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Config files that are typically not auto-formatted
+# Or if they are formatted by other means or manually maintained.
+# jest.config.mjs # Already formatted by Prettier in previous run, so keep it if that's okay
+# babel.config.json # Formatted by Prettier
+# eslint.config.js # Formatted by Prettier
+
+# If you want to explicitly ignore JSON or MD files from Prettier (though Prettier can format them)
+# uncomment below:
+# *.json
+# *.md
+
+# Original index.js, if it's not part of the refactored source
+index.js
