@@ -45,13 +45,17 @@ async function runTimerSend() {
     logger(`runTimerSend: timerSendHours: ${config.timerSendHours}, timerCheckMinutes: ${config.timerCheckMinutes}`);
     logger(`runTimerSend: Calculated sendMillisThreshold: ${sendMillisThreshold}`);
     logger(`runTimerSend: Current Date.now(): ${Date.now()}`);
-    logger(`runTimerSend: Querying for chats with lastAyaTime <= ${comparisonTimestamp} (i.e., older than ${new Date(comparisonTimestamp).toISOString()})`);
+    logger(
+        `runTimerSend: Querying for chats with lastAyaTime <= ${comparisonTimestamp} (i.e., older than ${new Date(comparisonTimestamp).toISOString()})`
+    );
 
     try {
         const db = getDB();
         if (!db) {
             logger('runTimerSend: Database not available, skipping cycle.');
-            bootstrapLogger(`runTimerSend: Cycle finished (DB not available). Processed ${numberOfChatsProcessed} chats.`);
+            bootstrapLogger(
+                `runTimerSend: Cycle finished (DB not available). Processed ${numberOfChatsProcessed} chats.`
+            );
             return;
         }
 
@@ -68,9 +72,12 @@ async function runTimerSend() {
 
         if (chats.length > 0) {
             // Log details for a few chats
-            for (let i = 0; i < Math.min(chats.length, 5); i++) { // Log up to 5 chats
+            for (let i = 0; i < Math.min(chats.length, 5); i++) {
+                // Log up to 5 chats
                 const chat = chats[i];
-                logger(`runTimerSend: Eligible chat[${i}]: chatId: ${chat.chatId}, lastAyaTime: ${chat.lastAyaTime} (${new Date(chat.lastAyaTime).toISOString()}), favReciter: ${chat.favReciter}`);
+                logger(
+                    `runTimerSend: Eligible chat[${i}]: chatId: ${chat.chatId}, lastAyaTime: ${chat.lastAyaTime} (${new Date(chat.lastAyaTime).toISOString()}), favReciter: ${chat.favReciter}`
+                );
             }
         }
 
@@ -103,7 +110,8 @@ async function runTimerSend() {
  */
 function initializeTimer() {
     bootstrapLogger('Timer: initializeTimer() called.'); // Log invocation
-    if (timerIntervalId) { // Clear any existing timer before starting a new one
+    if (timerIntervalId) {
+        // Clear any existing timer before starting a new one
         clearInterval(timerIntervalId);
         timerIntervalId = null;
         bootstrapLogger('Timer: Cleared existing timer interval.');
@@ -134,7 +142,6 @@ function initializeTimer() {
     }, timerFirstDelay);
 }
 
-
 /**
  * Attempts to launch the Telegram bot with retries if initial attempts fail.
  * If successful, it initializes the timer for sending daily Ayas.
@@ -155,7 +162,7 @@ async function attemptBotLaunchWithRetriesAndInitializeTimer() {
             const isTelegramReachable = await checkConnectivity(telegramApiUrl); // Shorter timeout for retry check
 
             if (!isTelegramReachable) {
-                 throw new Error('Telegram API not reachable before launch attempt.');
+                throw new Error('Telegram API not reachable before launch attempt.');
             }
 
             await launchBot(); // This now ensures username is set and dev chat message is attempted
@@ -164,7 +171,7 @@ async function attemptBotLaunchWithRetriesAndInitializeTimer() {
             // Call initial timer run and schedule recurring timer AFTER successful launch from retries
             if (getDB()) {
                 bootstrapLogger('Calling initial runTimerSend() after successful bot launch (retries).');
-                runTimerSend().catch(e => {
+                runTimerSend().catch((e) => {
                     logger('Error during post-retry initial runTimerSend():', e);
                 });
             } else {
@@ -185,16 +192,17 @@ async function attemptBotLaunchWithRetriesAndInitializeTimer() {
             // Before retrying, check general internet again.
             const generalInternetStillOk = await checkConnectivity(config.pingTargetGeneral);
             if (!generalInternetStillOk) {
-                bootstrapLogger('CRITICAL: General internet connectivity lost during bot launch retries. Stopping retries.');
+                bootstrapLogger(
+                    'CRITICAL: General internet connectivity lost during bot launch retries. Stopping retries.'
+                );
                 // Similar to above, bot won't be operational.
                 return;
             }
             bootstrapLogger(`Will retry bot launch in ${config.botLaunchRetryDelay / 1000} seconds.`);
-            await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
+            await new Promise((resolve) => setTimeout(resolve, config.botLaunchRetryDelay));
         }
     }
 }
-
 
 // --- Graceful Shutdown ---
 /**
@@ -281,7 +289,7 @@ async function startApp() {
             } catch (dbError) {
                 bootstrapLogger(`Database connection attempt ${dbAttempt} failed: ${dbError.message}`);
                 bootstrapLogger(`Retrying database connection in ${config.botLaunchRetryDelay / 1000} seconds...`);
-                await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
+                await new Promise((resolve) => setTimeout(resolve, config.botLaunchRetryDelay));
             }
         }
 
@@ -295,16 +303,26 @@ async function startApp() {
             bootstrapLogger(`Attempting primary connectivity check: ${config.pingTargetGeneral}`);
             if (await checkConnectivity(config.pingTargetGeneral)) {
                 internetConnected = true;
-                bootstrapLogger(`General internet connectivity established via primary target: ${config.pingTargetGeneral}`);
+                bootstrapLogger(
+                    `General internet connectivity established via primary target: ${config.pingTargetGeneral}`
+                );
             } else {
-                bootstrapLogger(`Primary connectivity check failed: ${config.pingTargetGeneral}. Attempting alternative: ${config.pingTargetAlternative}`);
+                bootstrapLogger(
+                    `Primary connectivity check failed: ${config.pingTargetGeneral}. Attempting alternative: ${config.pingTargetAlternative}`
+                );
                 if (await checkConnectivity(config.pingTargetAlternative)) {
                     internetConnected = true;
-                    bootstrapLogger(`General internet connectivity established via alternative target: ${config.pingTargetAlternative}`);
+                    bootstrapLogger(
+                        `General internet connectivity established via alternative target: ${config.pingTargetAlternative}`
+                    );
                 } else {
-                    bootstrapLogger(`Both primary and alternative general connectivity checks failed (attempt ${internetAttempt}).`);
-                    bootstrapLogger(`Retrying internet connectivity check in ${config.botLaunchRetryDelay / 1000} seconds...`);
-                    await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
+                    bootstrapLogger(
+                        `Both primary and alternative general connectivity checks failed (attempt ${internetAttempt}).`
+                    );
+                    bootstrapLogger(
+                        `Retrying internet connectivity check in ${config.botLaunchRetryDelay / 1000} seconds...`
+                    );
+                    await new Promise((resolve) => setTimeout(resolve, config.botLaunchRetryDelay));
                 }
             }
         }
@@ -319,14 +337,18 @@ async function startApp() {
 
         while (!telegramApiReachable) {
             telegramApiAttempt++;
-            bootstrapLogger(`Checking Telegram API reachability (attempt ${telegramApiAttempt}) at: ${logSafeTelegramApiUrl}`);
+            bootstrapLogger(
+                `Checking Telegram API reachability (attempt ${telegramApiAttempt}) at: ${logSafeTelegramApiUrl}`
+            );
             if (await checkConnectivity(actualTelegramApiCheckUrl)) {
                 telegramApiReachable = true;
                 bootstrapLogger('Telegram API reachable.');
             } else {
                 bootstrapLogger(`Telegram API reachability check failed (attempt ${telegramApiAttempt}).`);
-                bootstrapLogger(`Retrying Telegram API reachability check in ${config.botLaunchRetryDelay / 1000} seconds...`);
-                await new Promise(resolve => setTimeout(resolve, config.botLaunchRetryDelay));
+                bootstrapLogger(
+                    `Retrying Telegram API reachability check in ${config.botLaunchRetryDelay / 1000} seconds...`
+                );
+                await new Promise((resolve) => setTimeout(resolve, config.botLaunchRetryDelay));
             }
         }
 
@@ -337,7 +359,6 @@ async function startApp() {
         attemptBotLaunchWithRetriesAndInitializeTimer(); // This function contains its own retry logic for launchBot and initializes the timer.
 
         bootstrapLogger('Main startup sequence complete. Express server is running. Bot launch process initiated.');
-
     } catch (error) {
         // This catch handles unexpected errors during the setup loops or if startExpressServer itself throws.
         bootstrapLogger('CRITICAL: Application startup failed in main sequence due to an unexpected error:', error);
