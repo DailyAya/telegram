@@ -101,14 +101,15 @@ export async function checkConnectivity(url) {
             hostname = parsedUrl.hostname;
             // Ensure port is an integer; default to 443 for https, 80 for http
             port = parseInt(parsedUrl.port || (parsedUrl.protocol === 'https:' ? '443' : '80'), 10);
-            if (!hostname) { // Basic validation for hostname
+            if (!hostname) {
+                // Basic validation for hostname
                 throw new Error('Hostname could not be derived from URL.');
             }
         } catch (parseError) {
             lastError = `URL parsing error: ${parseError.message}`;
             // In a real scenario, log this: logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Invalid URL "${url}". Error: ${lastError}`);
             if (attempt < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
+                await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
                 continue; // Move to the next attempt
             }
             return false; // All attempts failed due to URL parse error
@@ -129,7 +130,7 @@ export async function checkConnectivity(url) {
             lastError = `DNS lookup for ${hostname} failed: ${dnsError.message}`;
             // logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: ${lastError}`);
             if (attempt < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
+                await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
                 continue; // Move to the next attempt
             }
             return false; // All attempts failed due to DNS error
@@ -142,15 +143,17 @@ export async function checkConnectivity(url) {
                 socket.setTimeout(tcpConnectionTimeout);
                 socket.connect(port, ipAddress, () => {
                     socket.destroy(); // Clean up the socket
-                    resolve(true);  // TCP connection successful
+                    resolve(true); // TCP connection successful
                 });
                 socket.on('timeout', () => {
                     socket.destroy(); // Clean up the socket
-                    reject(new Error(`TCP connection to ${ipAddress}:${port} timed out after ${tcpConnectionTimeout}ms`));
+                    reject(
+                        new Error(`TCP connection to ${ipAddress}:${port} timed out after ${tcpConnectionTimeout}ms`)
+                    );
                 });
                 socket.on('error', (err) => {
                     socket.destroy(); // Clean up the socket
-                    reject(err);     // TCP connection error
+                    reject(err); // TCP connection error
                 });
             });
             // logger.info(`Connectivity Check Attempt ${attempt}/${maxAttempts}: TCP connection to ${ipAddress}:${port} for URL "${url}" successful.`);
@@ -159,7 +162,7 @@ export async function checkConnectivity(url) {
             lastError = `TCP connection to ${ipAddress}:${port} (for ${hostname}) failed: ${tcpError.message}`;
             // logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: ${lastError}`);
             if (attempt < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
+                await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
                 // Continue to the next attempt (handled by the loop)
             } else {
                 // All TCP attempts failed for this DNS resolution
@@ -182,9 +185,7 @@ export async function checkConnectivity(url) {
  */
 export async function sendEmergencyNotification(messageText) {
     if (!config.telegramToken || !config.devChatId) {
-        console.error(
-            'Emergency Notifier: telegramToken or devChatId is missing in config. Cannot send notification.'
-        );
+        console.error('Emergency Notifier: telegramToken or devChatId is missing in config. Cannot send notification.');
         return;
     }
 
