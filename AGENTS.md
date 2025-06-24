@@ -114,5 +114,7 @@ This bot is undergoing refactoring to improve robustness, fix bugs, and enhance 
     *   Modified `package.json` to include `NODE_OPTIONS=--experimental-vm-modules` for Jest to improve ES Module support.
     *   Removed `src/__mocks__/config.js` and explicit `jest.mock('./config.js')` calls in test files. The strategy now relies on environment variables being set by the setup script to ensure `src/config.js` initializes correctly for tests.
     *   Re-added `import config from './config.js'` to `src/quranService.test.js` as it's directly used.
-    *   Converted `require()` calls to `import` statements in `src/telegramBot.test.js` to resolve `ReferenceError: require is not defined` in ESM context.
+    *   Converted `require()` calls to `import` statements in `src/telegramBot.test.js`.
+    *   Fixed `SyntaxError: Unexpected reserved word 'await'` in `src/telegramBot.test.js` by refactoring `await import()` usage within `beforeEach`.
+    *   Addressed ESLint `no-undef` errors for `pending` (changed to `it.skip`) and `rasmifize` (used correct imported mock) in `src/telegramBot.test.js`.
 Refer to the specific GitHub issue for detailed tasks and objectives for the current development cycle.
