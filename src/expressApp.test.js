@@ -1,8 +1,7 @@
 import request from 'supertest';
 import app from './expressApp.js'; // app is the default export
 
-// Use global mock for config.js - this will apply src/__mocks__/config.js
-jest.mock('./config.js');
+// Removed jest.mock('./config.js'); - will rely on env variables set by setup script
 
 // Mock logger to prevent actual logging during tests and allow assertions on logs if needed
 jest.mock('./logger.js', () => ({

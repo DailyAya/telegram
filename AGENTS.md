@@ -112,5 +112,6 @@ This bot is undergoing refactoring to improve robustness, fix bugs, and enhance 
     *   Restructured AI guidelines within `DEAR_AI_READ_THIS.md` (now `AGENTS.md`) to introduce a dedicated "Pre-commit Routine" section with logically ordered steps, and clarified related principles.
     *   Initiated fixes for ESLint flat config compatibility by updating `eslint.config.js` for Prettier integration.
     *   Modified `package.json` to include `NODE_OPTIONS=--experimental-vm-modules` for Jest to improve ES Module support.
-    *   Implemented global Jest mock for `src/config.js` by creating `src/__mocks__/config.js` and adding `jest.mock('./config.js')` to all test suites to prevent startup errors due to missing environment variables.
+    *   Removed `src/__mocks__/config.js` and explicit `jest.mock('./config.js')` calls in test files. The strategy will now rely on environment variables being set by the setup script to ensure `src/config.js` initializes correctly for tests.
+    *   Re-added `import config from './config.js'` to `src/quranService.test.js` as it's directly used.
 Refer to the specific GitHub issue for detailed tasks and objectives for the current development cycle.
