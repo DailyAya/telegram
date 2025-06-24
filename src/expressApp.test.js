@@ -1,21 +1,8 @@
 import request from 'supertest';
 import app from './expressApp.js'; // app is the default export
 
-// Mock config.js for consistent test results
-// This mock will be used by expressApp.js when it imports config
-jest.mock('./config.js', () => ({
-    __esModule: true, // This is important for ES modules
-    default: {
-        branch: 'test-branch',
-        inst: 'test-inst-01',
-        host: 'test-host-server',
-        totalInst: '2',
-        debugging: false, // Test with debugging false
-        codeVer: 'v1.2.3-test',
-        instActiveUntil: '2099-12-31',
-        port: 3002, // A port for testing; expressApp.js will use this if config is read during its setup
-    },
-}));
+// Use global mock for config.js - this will apply src/__mocks__/config.js
+jest.mock('./config.js');
 
 // Mock logger to prevent actual logging during tests and allow assertions on logs if needed
 jest.mock('./logger.js', () => ({
@@ -44,30 +31,37 @@ describe('Express App Tests', () => {
 
         it('should return status 200 and debugging mode message when config.debugging is true', async () => {
             // Temporarily override the mock for this specific test
-            jest.isolateModules(() => {
-                jest.mock('./config.js', () => ({
-                    __esModule: true,
-                    default: {
-                        branch: 'debug-branch',
-                        inst: 'debug-inst',
-                        host: 'debug-host',
-                        totalInst: '1',
-                        debugging: true, // Test with debugging true
-                        codeVer: 'v-debug',
-                        instActiveUntil: 'debug-active',
-                        port: 3003,
-                    },
-                }));
-                // Need to re-import app for the new mock to take effect within its scope
-                const appWithDebugConfig = require('./expressApp.js').default;
+            // Note: jest.isolateModules will isolate the default mock from src/__mocks__/config.js as well.
+            // This inline mock inside isolateModules will take precedence for this isolated scope.
+            jest.isolateModules(async () => {
+                const mockDebugConfig = {
+                    branch: 'debug-branch',
+                    inst: 'debug-inst',
+                    host: 'debug-host',
+                    totalInst: '1',
+                    debugging: true, // Test with debugging true
+                    codeVer: 'v-debug',
+                    instActiveUntil: 'debug-active',
+                    port: 3003,
+                    // Ensure all critical fields from the global mock are present if expressApp needs them
+                    telegramToken: 'MOCK_TELEGRAM_TOKEN_VALID',
+                    devChatId: 'MOCK_DEV_CHAT_ID_VALID',
+                    mongoDbCredentials: 'mockuser:mockpassword',
+                    mongoSubdomain: 'mockcluster.mongodb.net',
+                    mongoURI: 'mongodb+srv://mockuser:mockpassword@mockcluster.mongodb.net/?retryWrites=true&w=majority',
+                };
 
-                return request(appWithDebugConfig)
-                    .get('/')
-                    .then((response) => {
-                        expect(response.status).toBe(200);
-                        expect(response.text).toContain('DailyAyaTelegram debug-branch instance debug-inst@debug-host');
-                        expect(response.text).toContain('debugging mode of version v-debug until debug-active');
-                    });
+                jest.doMock('./config.js', () => ({
+                    __esModule: true,
+                    default: mockDebugConfig,
+                }));
+
+                const appWithDebugConfig = (await import('./expressApp.js')).default;
+
+                const response = await request(appWithDebugConfig).get('/');
+                expect(response.status).toBe(200);
+                expect(response.text).toContain('DailyAyaTelegram debug-branch instance debug-inst@debug-host');
+                expect(response.text).toContain('debugging mode of version v-debug until debug-active');
             });
         });
     });

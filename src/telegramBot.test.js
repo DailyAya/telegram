@@ -51,21 +51,8 @@ jest.mock('telegraf', () => ({
 }));
 
 // Mock other local dependencies
-jest.mock('./config.js', () => ({
-    __esModule: true,
-    default: {
-        telegramToken: 'test-token-mock',
-        devChatId: 'mock-dev-chat-id',
-        branch: 'test-branch',
-        inst: 'test-inst',
-        host: 'test-host',
-        totalInst: '1',
-        debugging: false,
-        codeVer: 'test-v1.0',
-        instActiveUntil: 'forever',
-        // ... other necessary config values ...
-    },
-}));
+// Use global mock for config.js - this will apply src/__mocks__/config.js
+jest.mock('./config.js');
 
 jest.mock('./logger.js', () => ({
     __esModule: true,

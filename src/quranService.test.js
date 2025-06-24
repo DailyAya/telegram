@@ -14,19 +14,13 @@ import {
     audioPicker,
     checkSource,
 } from './quranService.js';
-import config from './config.js'; // Needed for checkSource tests (devChatId)
+// import config from './config.js'; // No longer needed directly due to global mock
 
 // Mock axios at the top level
 jest.mock('axios');
 
-// Mock config to control devChatId for checkSource tests
-jest.mock('./config.js', () => ({
-    __esModule: true, // this property makes it work as an ES module
-    default: {
-        devChatId: 'mockDevChatId123', // Provide a mock devChatId
-        // Add other config properties quranService might directly or indirectly use, if any
-    },
-}));
+// Use global mock for config.js - this will apply src/__mocks__/config.js
+jest.mock('./config.js');
 
 describe('Quran Service Tests', () => {
     // Removed describe block for 'normalizeArabicText'

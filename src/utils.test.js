@@ -1,5 +1,8 @@
 import { toBoolean, randomAyaNumber, numArabicToEnglish } from './utils.js';
 
+// Use global mock for config.js - this will apply src/__mocks__/config.js
+jest.mock('./config.js');
+
 describe('Utils Tests', () => {
     describe('toBoolean', () => {
         it('should convert truthy strings to true', () => {

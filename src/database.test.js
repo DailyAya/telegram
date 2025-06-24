@@ -26,13 +26,8 @@ jest.mock('mongodb', () => ({
     ServerApiVersion: { v1: '1' },
 }));
 
-jest.mock('./config.js', () => ({
-    __esModule: true,
-    default: {
-        mongoURI: 'mongodb://mock-uri-from-jest-mock',
-        // other config if needed by database.js
-    },
-}));
+// Use global mock for config.js - this will apply src/__mocks__/config.js
+jest.mock('./config.js');
 
 jest.mock('./logger.js', () => ({
     __esModule: true,
