@@ -494,7 +494,7 @@ describe('Telegram Bot: handleText Function', () => {
         expect(TelegramBotModule.sendAya).toHaveBeenCalledWith(mockCtx.chat.id, 262, null, 'en', 'request', false);
     });
 
-    it('should call unrecognized for invalid Sura number (e.g., "999 1")', async () => {
+    it('should call unrecognized for invalid Sura number (e.g., "999 1")', async () => { // Ensure async
         const mockCtx = { ...mockCtxBase, message: { text: '999 1' } };
         actualSuraAya2AyaId.mockReturnValueOnce(-1); // -1 indicates invalid Sura
 
@@ -509,7 +509,7 @@ describe('Telegram Bot: handleText Function', () => {
         expect(TelegramBotModule.sendAya).not.toHaveBeenCalled();
     });
 
-    it('should call unrecognized for valid Sura but invalid Aya (e.g., "1 99")', async () => {
+    it('should call unrecognized for valid Sura but invalid Aya (e.g., "1 99")', async () => { // Ensure async
         const mockCtx = { ...mockCtxBase, message: { text: '1 99' } };
         actualSuraAya2AyaId.mockReturnValueOnce(0); // 0 indicates valid Sura, invalid Aya
 
@@ -523,7 +523,7 @@ describe('Telegram Bot: handleText Function', () => {
         expect(TelegramBotModule.sendAya).not.toHaveBeenCalled();
     });
 
-    it('should call unrecognized for purely textual message not matching any pattern', async () => {
+    it('should call unrecognized for purely textual message not matching any pattern', async () => { // Ensure async
         const mockCtx = { ...mockCtxBase, message: { text: 'Hello world' } };
         // This will result in ayaId = -2 (initial value) as no patterns match.
         // The code path for ayaId < 0 (and not -1 specifically) leads to unrecognized(ctx, 1)

@@ -1,56 +1,58 @@
-// Import actuals for type hinting or if some parts are not fully mocked (though here, they are)
-import { MongoClient as ActualMongoClient, ServerApiVersion as ActualServerApiVersion } from 'mongodb';
-import actualConfig from './config.js';
-import { logger as actualLogger, bootstrapLogger as actualBootstrapLogger } from './logger.js';
+import actualConfig from './config.js'; // Actual config is fine, used for mongoURI
 
 // --- Mocks ---
+// Define mock implementations first
 const mockCollection = {
     updateOne: jest.fn(),
     findOne: jest.fn(),
-    // Add other collection methods if used by database.js, e.g., countDocuments
     countDocuments: jest.fn(),
 };
 const mockDbInstance = {
     collection: jest.fn(() => mockCollection),
 };
 const mockMongoClientInstance = {
-    // Renamed to avoid confusion with MongoClient constructor
     connect: jest.fn(),
     db: jest.fn(() => mockDbInstance),
-    close: jest.fn(), // Added for potential disconnectDB tests later
+    close: jest.fn(),
 };
 
-jest.mock('mongodb', () => ({
+// Use jest.unstable_mockModule for ESM compliance
+jest.unstable_mockModule('mongodb', () => ({
     __esModule: true,
-    MongoClient: jest.fn(() => mockMongoClientInstance), // Mock constructor to return our instance
-    ServerApiVersion: { v1: '1' },
+    MongoClient: jest.fn(() => mockMongoClientInstance),
+    ServerApiVersion: { v1: '1' }, // This remains the same, affects how ServerApiVersion.v1 is resolved
 }));
 
-// Removed jest.mock('./config.js'); - will rely on env variables set by setup script
-
-jest.mock('./logger.js', () => ({
+jest.unstable_mockModule('./logger.js', () => ({
     __esModule: true,
     logger: jest.fn(),
     bootstrapLogger: jest.fn(),
 }));
 
-// Import the module to be tested *after* mocks are set up
-import { connectDB, getDB, lastAyaTime, setFavReciter, getFavReciter } from './database.js';
+// Dynamically import after mocks are set up
+let connectDB, getDB, lastAyaTime, setFavReciter, getFavReciter;
+let ActualMongoClient; // Will hold the mocked MongoClient constructor
+let actualLogger, actualBootstrapLogger; // Will hold mocked logger functions
+
+beforeAll(async () => {
+    const dbModule = await import('./database.js');
+    connectDB = dbModule.connectDB;
+    getDB = dbModule.getDB;
+    lastAyaTime = dbModule.lastAyaTime;
+    setFavReciter = dbModule.setFavReciter;
+    getFavReciter = dbModule.getFavReciter;
+
+    const mongodbMock = await import('mongodb');
+    ActualMongoClient = mongodbMock.MongoClient; // This is the mocked constructor
+
+    const loggerMock = await import('./logger.js');
+    actualLogger = loggerMock.logger;
+    actualBootstrapLogger = loggerMock.bootstrapLogger;
+});
 
 // --- Test Suite ---
 describe('Database Service Tests', () => {
-    // Helper to reset dbInstance internal to database.js if needed.
-    // This is a bit of a hack; ideally, database.js would export a disconnect/reset function.
-    async function resetInternalDbInstance() {
-        // This relies on connectDB re-assigning dbInstance.
-        // If connectDB fails or if there's no way to nullify dbInstance from outside,
-        // tests for getDB before connect might be tricky or need jest.resetModules().
-        // For now, we'll assume tests run in an order or connectDB is called first.
-        // If jest.resetModules is needed:
-        // jest.resetModules();
-        // mockMongoClientInstance.connect.mockClear(); // etc. for all mocks
-        // return require('./database.js'); // Re-require to get fresh state
-    }
+    // Removed unused helper function resetInternalDbInstance
 
     beforeEach(() => {
         // Reset mocks before each test
@@ -62,22 +64,20 @@ describe('Database Service Tests', () => {
         mockCollection.findOne.mockClear();
         mockCollection.countDocuments.mockClear();
 
-        // Clear logger mocks
-        actualLogger.mockClear(); // Assuming logger is the default export from './logger.js'
-        actualBootstrapLogger.mockClear(); // Assuming bootstrapLogger is a named export
-
-        // Reset the MongoClient constructor mock calls too
-        ActualMongoClient.mockClear(); // Using the imported ActualMongoClient name for the mock constructor
+        if (actualLogger) actualLogger.mockClear();
+        if (actualBootstrapLogger) actualBootstrapLogger.mockClear();
+        if (ActualMongoClient) ActualMongoClient.mockClear();
     });
 
     describe('connectDB and getDB', () => {
         it('should connect to MongoDB successfully and allow getting DB instance', async () => {
-            mockMongoClientInstance.connect.mockResolvedValueOnce(mockMongoClientInstance); // connect resolves with the client instance
+            mockMongoClientInstance.connect.mockResolvedValueOnce(mockMongoClientInstance);
 
             const db = await connectDB();
 
             expect(ActualMongoClient).toHaveBeenCalledTimes(1);
-            expect(ActualMongoClient).toHaveBeenCalledWith(actualConfig.mongoURI, { serverApi: { v1: '1' } });
+            // The actual call includes maxPoolSize and serverApi resolves to '1' due to the mock of ServerApiVersion
+            expect(ActualMongoClient).toHaveBeenCalledWith(actualConfig.mongoURI, { serverApi: '1', maxPoolSize: 50 });
             expect(mockMongoClientInstance.connect).toHaveBeenCalledTimes(1);
             expect(mockMongoClientInstance.db).toHaveBeenCalledTimes(1);
             expect(mockMongoClientInstance.db).toHaveBeenCalledWith('dailyAyaTelegram'); // Assuming DB_NAME is 'dailyAyaTelegram'
