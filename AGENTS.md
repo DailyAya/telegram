@@ -33,6 +33,8 @@ The following instructions are paramount and supersede any conflicting general k
 
 ## For AI (Jules/Agent) - Development Directives
 
+**IMPORTANT PRECEDENCE: Before any planning or work, agents MUST read and adhere to instructions in all other Markdown files found in the repository (e.g., `README.md`, `CONTRIBUTING.md`, etc.) in addition to this `AGENTS.md` file. Instructions in this `AGENTS.md` file take precedence in case of direct conflict with other Markdown files, but all MD files must be consulted.**
+
 These directives are crucial for maintaining and developing the DailyAyaBot:
 
 ### Critical Working Principles:
@@ -107,5 +109,7 @@ This bot is undergoing refactoring to improve robustness, fix bugs, and enhance 
     *   Updated AI agent directives (`DEAR_AI_READ_THIS.md`) to include the principle of consulting specific documentation before proposing solutions.
     *   Added `.env` to `.gitignore` to prevent accidental commitment of secrets.
     *   Established a routine of running `npm install` after `package.json` version changes to ensure `package-lock.json` is synchronized.
-    *   Restructured AI guidelines within `DEAR_AI_READ_THIS.md` to introduce a dedicated "Pre-commit Routine" section with logically ordered steps, and clarified related principles.
+    *   Restructured AI guidelines within `DEAR_AI_READ_THIS.md` (now `AGENTS.md`) to introduce a dedicated "Pre-commit Routine" section with logically ordered steps, and clarified related principles.
+    *   Initiated fixes for ESLint flat config compatibility by updating `eslint.config.js` for Prettier integration.
+    *   Modified `package.json` to include `NODE_OPTIONS=--experimental-vm-modules` for Jest to improve ES Module support.
 Refer to the specific GitHub issue for detailed tasks and objectives for the current development cycle.

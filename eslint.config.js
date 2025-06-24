@@ -29,15 +29,17 @@ export default [
       // Add any other project-specific rules here
     }
   },
-  // Configuration from eslint-plugin-prettier (runs Prettier as an ESLint rule)
-  prettierPlugin.configs.recommended,
-  // THIS MUST BE THE LAST CONFIGURATION IN THE ARRAY
-  // Configuration from eslint-config-prettier (disables ESLint rules that conflict with Prettier)
-  eslintConfigPrettier,
-  // Re-apply prettier/prettier: "warn" if desired, after eslintConfigPrettier might have set it to error via plugin's recommended
+  // Configuration for Prettier
+  // 1. Add eslint-plugin-prettier
+  // 2. Set the prettier/prettier rule
+  // 3. Add eslint-config-prettier to disable conflicting ESLint rules (MUST BE LAST)
   {
+    plugins: {
+      prettier: prettierPlugin
+    },
     rules: {
-      "prettier/prettier": "warn"
+      "prettier/prettier": "warn" // or "error" if you want ESLint to fail on Prettier issues
     }
-  }
+  },
+  eslintConfigPrettier // Disables ESLint rules that conflict with Prettier. Must be last.
 ];

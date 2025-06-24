@@ -1,11 +1,11 @@
 {
     "name": "dailyaya-telegram-chatbot",
-    "version": "2025.06.24-0259",
+    "version": "2025.06.24-0353",
     "description": "t.me/DailyAyaBot sends one random Aya from Quran everyday and when requested.",
     "type": "module",
     "main": "src/app.js",
     "scripts": {
-        "test": "jest",
+        "test": "NODE_OPTIONS=--experimental-vm-modules jest",
         "start": "node src/app.js",
         "lint": "npx eslint .",
         "format": "npx prettier --write ."
