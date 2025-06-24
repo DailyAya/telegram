@@ -1,54 +1,43 @@
 import globals from "globals";
 import js from "@eslint/js";
-import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
+import prettierPlugin from "eslint-plugin-prettier";
+import eslintConfigPrettier from "eslint-config-prettier";
 
 export default [
   {
+    ignores: [
+      "node_modules/",
+      "coverage/",
+      "dist/",
+      "build/"
+    ]
+  },
+  js.configs.recommended,
+  {
+    // Global settings for all JS files (excluding Prettier-specific rules for now)
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
       globals: {
         ...globals.node,
-        ...globals.jest,
-        // Add browser or other specific globals if needed, e.g. ...globals.browser
-      },
-    },
-    linterOptions: {
-      reportUnusedDisableDirectives: "warn",
-    },
-  },
-  js.configs.recommended,
-  eslintPluginPrettierRecommended,
-  {
-    // Custom rules or overrides can go here
-    // For example, to apply to all JS/MJS files:
-    files: ["**/*.js", "**/*.mjs"],
-    rules: {
-      // "no-unused-vars": "warn", // Example: if you want to override prettier/recommended
-    },
-  },
-  {
-    // If you have specific test file patterns, you can configure them separately
-    files: ["**/*.test.js", "**/*.spec.js"],
-    languageOptions: {
-      globals: {
-        ...globals.jest,
-      },
+        ...globals.jest
+      }
     },
     rules: {
-      // Test-specific rules
-    },
+      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+      "no-console": "off"
+      // Add any other project-specific rules here
+    }
   },
+  // Configuration from eslint-plugin-prettier (runs Prettier as an ESLint rule)
+  prettierPlugin.configs.recommended,
+  // THIS MUST BE THE LAST CONFIGURATION IN THE ARRAY
+  // Configuration from eslint-config-prettier (disables ESLint rules that conflict with Prettier)
+  eslintConfigPrettier,
+  // Re-apply prettier/prettier: "warn" if desired, after eslintConfigPrettier might have set it to error via plugin's recommended
   {
-    // Ignores configuration
-    // Ensure this is the last object if it's a global ignore,
-    // or place it appropriately if it's part of a more specific config block.
-    ignores: [
-      "node_modules/",
-      "dist/",
-      "build/",
-      // Add other directories or files to ignore
-      // e.g., "coverage/", "*.log"
-    ],
-  },
+    rules: {
+      "prettier/prettier": "warn"
+    }
+  }
 ];

@@ -1,15 +1,14 @@
 {
     "name": "dailyaya-telegram-chatbot",
-    "version": "2025.06.23-0647",
+    "version": "2025.06.24-0259",
     "description": "t.me/DailyAyaBot sends one random Aya from Quran everyday and when requested.",
     "type": "module",
     "main": "src/app.js",
     "scripts": {
         "test": "jest",
         "start": "node src/app.js",
-        "lint": "eslint .",
-        "lint:fix": "eslint . --fix",
-        "format": "prettier --write ."
+        "lint": "npx eslint .",
+        "format": "npx prettier --write ."
     },
     "keywords": [
         "telegram",

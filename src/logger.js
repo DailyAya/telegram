@@ -107,11 +107,10 @@ export function bootstrapLogger(message, error) {
             } else {
                 emergencyMessage += String(error);
             }
-            if (emergencyMessage.length > 1000) {
-                // Keep it reasonably short
+            if (emergencyMessage.length > 1000) { // Keep it reasonably short
                 emergencyMessage = emergencyMessage.substring(0, 1000) + '...';
             }
-            sendEmergencyNotification(emergencyMessage).catch((e) => {
+            sendEmergencyNotification(emergencyMessage).catch(e => {
                 // Log if the emergency send itself fails, but don't do more.
                 console.error('Emergency notification dispatch itself failed:', e.message);
             });

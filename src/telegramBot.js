@@ -56,7 +56,7 @@ setBotInstance(bot); // Enable Telegram logging via logger.js
 
 // Promise for ensuring bot username is available
 let botUsernamePromiseResolve;
-export const botUsernameReady = new Promise((resolve) => {
+export const botUsernameReady = new Promise(resolve => {
     botUsernamePromiseResolve = resolve;
 });
 
@@ -71,18 +71,7 @@ bot.telegram
         }
     })
     .catch((err) => {
-        console.error(
-            'CRITICAL: bot.telegram.getMe() failed. Raw error object:',
-            JSON.stringify(
-                err,
-                Object.getOwnPropertyNames(
-                    Object.getPrototypeOf(err)
-                        ? Object.getOwnPropertyNames(Object.getPrototypeOf(err))
-                        : Object.keys(err)
-                ),
-                2
-            )
-        );
+        console.error('CRITICAL: bot.telegram.getMe() failed. Raw error object:', JSON.stringify(err, Object.getOwnPropertyNames(Object.getPrototypeOf(err) ? Object.getOwnPropertyNames(Object.getPrototypeOf(err)) : Object.keys(err)), 2));
         bootstrapLogger('Failed to get bot info (processed by bootstrapLogger):', err); // Message updated for clarity
         if (botUsernamePromiseResolve) {
             botUsernamePromiseResolve(null); // Resolve with null if getMe() failed
@@ -350,30 +339,15 @@ async function sendAyaRecitation(ctx, ayaId, reciterIdentifier) {
                 // Audio sent immediately after text
                 await bot.telegram
                     .editMessageReplyMarkup(chatId, originalMessageId, undefined, undefined)
-                    .catch((e) =>
-                        logger(
-                            'Warning: Message not modified or ID invalid when removing markup from text msg (recitation) (non-critical):',
-                            e
-                        )
-                    );
+                    .catch((e) => logger('Warning: Message not modified or ID invalid when removing markup from text msg (recitation) (non-critical):', e));
                 await bot.telegram
                     .editMessageReplyMarkup(chatId, sentAudioCtx.message_id, undefined, buttons)
-                    .catch((e) =>
-                        logger(
-                            'Warning: Message not modified or ID invalid when adding markup to audio msg (recitation) (non-critical):',
-                            e
-                        )
-                    );
+                    .catch((e) => logger('Warning: Message not modified or ID invalid when adding markup to audio msg (recitation) (non-critical):', e));
             } else {
                 // Audio sent later or as a result of callback; reply to original text
                 await bot.telegram
                     .deleteMessage(chatId, sentAudioCtx.message_id)
-                    .catch((e) =>
-                        logger(
-                            'Warning: Message ID invalid when deleting initial audio msg (recitation reply) (non-critical):',
-                            e
-                        )
-                    );
+                    .catch((e) => logger('Warning: Message ID invalid when deleting initial audio msg (recitation reply) (non-critical):', e));
                 /*const repliedAudioCtx =*/ await bot.telegram.sendAudio(chatId, recitationUrl, {
                     // We don't use repliedAudioCtx currently
                     reply_to_message_id: originalMessageId,
@@ -384,23 +358,13 @@ async function sendAyaRecitation(ctx, ayaId, reciterIdentifier) {
                 });
                 await bot.telegram
                     .editMessageReplyMarkup(chatId, originalMessageId, undefined, undefined)
-                    .catch((e) =>
-                        logger(
-                            'Warning: Message not modified or ID invalid when removing markup from text msg (recitation reply) (non-critical):',
-                            e
-                        )
-                    );
+                    .catch((e) => logger('Warning: Message not modified or ID invalid when removing markup from text msg (recitation reply) (non-critical):', e));
             }
         } else {
             // No original message context (e.g., direct /recite command - though not implemented)
             await bot.telegram
                 .editMessageReplyMarkup(chatId, sentAudioCtx.message_id, undefined, buttons)
-                .catch((e) =>
-                    logger(
-                        'Warning: Message not modified or ID invalid when adding markup to direct audio msg (recitation) (non-critical):',
-                        e
-                    )
-                );
+                .catch((e) => logger('Warning: Message not modified or ID invalid when adding markup to direct audio msg (recitation) (non-critical):', e));
         }
     } catch (error) {
         logger(`Error in sendAyaRecitation for aya ${ayaId} by ${finalReciter} to chat ${chatId}:`, error);
@@ -700,32 +664,24 @@ function populateRecitersButtons() {
 populateRecitersButtons(); // Call at setup
 
 // (Place this function where recitersNavPageMarkup was, or in a suitable location)
-function recitersNavPage(page) {
-    // Adapted from original index.js
+function recitersNavPage(page) { // Adapted from original index.js
     const recitersPerPage = 5;
     if (!recitersInlineButtonsCache || recitersInlineButtonsCache.length === 0) {
         logger('recitersNavPage: recitersInlineButtonsCache is empty or not initialized.');
         // Return a minimal navigation row even if there are no reciters
-        return [
-            [
-                {
-                    text: `🎲`,
-                    callback_data: JSON.stringify({ setReciter: 'surprise' }),
-                },
-                {
-                    text: `＜`,
-                    callback_data: JSON.stringify({ recitersNavPage: 1 }),
-                },
-                {
-                    text: `1/1`, // Show 1/1 if no reciters
-                    callback_data: JSON.stringify({ inactive: true }),
-                },
-                {
-                    text: `＞`,
-                    callback_data: JSON.stringify({ recitersNavPage: 1 }),
-                },
-            ],
-        ];
+        return [[{
+            text: `🎲`,
+            callback_data: JSON.stringify({ setReciter: 'surprise' })
+        },{
+            text: `＜`,
+            callback_data:  JSON.stringify({ recitersNavPage: 1 })
+        },{
+            text: `1/1`, // Show 1/1 if no reciters
+            callback_data:  JSON.stringify({ inactive: true })
+        },{
+            text: `＞`,
+            callback_data:  JSON.stringify({ recitersNavPage: 1 })
+        }]];
     }
 
     const totalPages = Math.max(1, Math.ceil(recitersInlineButtonsCache.length / recitersPerPage)); // Ensure totalPages is at least 1
@@ -737,24 +693,19 @@ function recitersNavPage(page) {
         currentPage * recitersPerPage
     );
 
-    const navRow = [
-        {
-            text: `🎲`,
-            callback_data: JSON.stringify({ setReciter: 'surprise' }),
-        },
-        {
-            text: `＜`,
-            callback_data: JSON.stringify({ recitersNavPage: currentPage > 1 ? currentPage - 1 : totalPages }),
-        },
-        {
-            text: `${currentPage}/${totalPages}`,
-            callback_data: JSON.stringify({ inactive: true }),
-        },
-        {
-            text: `＞`,
-            callback_data: JSON.stringify({ recitersNavPage: currentPage < totalPages ? currentPage + 1 : 1 }),
-        },
-    ];
+    const navRow = [{
+        text: `🎲`,
+        callback_data: JSON.stringify({ setReciter: 'surprise' })
+    },{
+        text: `＜`,
+        callback_data:  JSON.stringify({ recitersNavPage: currentPage > 1 ? currentPage - 1 : totalPages })
+    },{
+        text: `${currentPage}/${totalPages}`,
+        callback_data:  JSON.stringify({ inactive: true })
+    },{
+        text: `＞`,
+        callback_data:  JSON.stringify({ recitersNavPage: currentPage < totalPages ? currentPage + 1 : 1 })
+    }];
 
     // buttonsSlice is an array of rows. Add navRow as the last row.
     return [...buttonsSlice, navRow];
@@ -840,9 +791,7 @@ bot.help(async (ctx) => {
 
 bot.command('surpriseme', async (ctx) => {
     if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
-        logger(
-            `Ignored /surpriseme command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
-        );
+        logger(`Ignored /surpriseme command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return;
     }
     await surpriseAya(ctx);
@@ -850,9 +799,7 @@ bot.command('surpriseme', async (ctx) => {
 
 bot.command('support', async (ctx) => {
     if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
-        logger(
-            `Ignored /support command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
-        );
+        logger(`Ignored /support command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return;
     }
     const msg = `👨‍💻`;
@@ -869,22 +816,16 @@ bot.command('support', async (ctx) => {
 
 bot.command('reciters', async (ctx) => {
     if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
-        logger(
-            `Ignored /reciters command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
-        );
+        logger(`Ignored /reciters command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return;
     }
     const msg = `من هو قارئك المفضل؟\n\nWho is your favorite Reciter?`;
-    await ctx
-        .reply(msg, { reply_markup: { inline_keyboard: recitersNavPage(1) } })
-        .catch((e) => logger('Error sending /reciters message:', e));
+    await ctx.reply(msg, { reply_markup: { inline_keyboard: recitersNavPage(1) } }).catch((e) => logger('Error sending /reciters message:', e));
 });
 
 bot.command('channel', async (ctx) => {
     if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
-        logger(
-            `Ignored /channel command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
-        );
+        logger(`Ignored /channel command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return;
     }
     await ctx.reply('https://t.me/DailyAyaGlobal').catch((e) => logger('Error sending /channel message:', e));
@@ -892,9 +833,7 @@ bot.command('channel', async (ctx) => {
 
 bot.command('khatma', async (ctx) => {
     if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
-        logger(
-            `Ignored /khatma command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
-        );
+        logger(`Ignored /khatma command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return;
     }
     const msg = `كم جزء قرأت؟ \nHow many ajzaa did you read?`;
@@ -911,9 +850,7 @@ bot.command('khatma', async (ctx) => {
 
 bot.command('commands', async (ctx) => {
     if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
-        logger(
-            `Ignored /commands command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
-        );
+        logger(`Ignored /commands command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return;
     }
     try {
@@ -1020,22 +957,15 @@ bot.action(/^{"groupkhatma":\d+}$/, async (ctx) => {
         callbackData = JSON.parse(ctx.update.callback_query.data);
     } catch (parseError) {
         logger('groupkhatma action: Failed to parse callback_data', parseError);
-        ctx.answerCbQuery('Error processing your request.').catch((e) =>
-            logger('groupkhatma action: CbQ error on parse fail', e)
-        );
+        ctx.answerCbQuery('Error processing your request.').catch(e => logger('groupkhatma action: CbQ error on parse fail', e));
         return;
     }
 
     const juz = callbackData.groupkhatma;
     if (typeof juz !== 'number' || juz < 1 || juz > 30) {
-        logger(
-            'groupkhatma action: Invalid Juz number in callback.',
-            new Error(`Data: ${JSON.stringify(callbackData)}`)
-        );
-        ctx.answerCbQuery('Error: Invalid Juz number.').catch((e) =>
-            logger('groupkhatma action: CbQ error on invalid Juz', e)
-        );
-        return;
+         logger('groupkhatma action: Invalid Juz number in callback.', new Error(`Data: ${JSON.stringify(callbackData)}`));
+         ctx.answerCbQuery('Error: Invalid Juz number.').catch(e => logger('groupkhatma action: CbQ error on invalid Juz', e));
+         return;
     }
 
     const updatedText = khatmaUpdate({
@@ -1046,8 +976,7 @@ bot.action(/^{"groupkhatma":\d+}$/, async (ctx) => {
         juz: juz,
     });
 
-    if (updatedText === false) {
-        // No change, user selected same Juz
+    if (updatedText === false) { // No change, user selected same Juz
         return ctx
             .answerCbQuery(`هذا الجزء هو اختيارك الحالي بالفعل ⚠️\n\n⚠️ This Juz is already your current selection.`, {
                 show_alert: true,
@@ -1081,29 +1010,21 @@ bot.action(/^{"groupkhatma":\d+}$/, async (ctx) => {
     }
 });
 
-bot.action(/^{"recitersNavPage":\s*\d+\s*}$/, async (ctx) => {
-    // Regex adapted slightly for potential spaces
+bot.action(/^{"recitersNavPage":\s*\d+\s*}$/, async (ctx) => { // Regex adapted slightly for potential spaces
     await adminProtectedAction(ctx, async (adminCtx) => {
         let callbackData;
         try {
             callbackData = JSON.parse(adminCtx.update.callback_query.data);
         } catch (e) {
             logger('recitersNavPage (action): Failed to parse callback_data', e);
-            adminCtx
-                .answerCbQuery('Error processing request.')
-                .catch((eAns) => logger('recitersNavPage (action): Error answering CBQ on parse fail', eAns));
+            adminCtx.answerCbQuery('Error processing request.').catch(eAns => logger('recitersNavPage (action): Error answering CBQ on parse fail', eAns));
             return;
         }
 
         const requestedRecitersNavPage = callbackData.recitersNavPage;
         if (typeof requestedRecitersNavPage !== 'number') {
-            logger(
-                'recitersNavPage (action): requestedRecitersNavPage is not a number.',
-                new Error(`Callback data: ${JSON.stringify(callbackData)}`)
-            );
-            adminCtx
-                .answerCbQuery('Error: Invalid page number.')
-                .catch((eAns) => logger('recitersNavPage (action): Error answering CBQ on invalid page type', eAns));
+            logger('recitersNavPage (action): requestedRecitersNavPage is not a number.', new Error(`Callback data: ${JSON.stringify(callbackData)}`));
+            adminCtx.answerCbQuery('Error: Invalid page number.').catch(eAns => logger('recitersNavPage (action): Error answering CBQ on invalid page type', eAns));
             return;
         }
 
@@ -1117,16 +1038,11 @@ bot.action(/^{"recitersNavPage":\s*\d+\s*}$/, async (ctx) => {
             // No need to explicitly answerCbQuery if editMessageReplyMarkup succeeds,
             // unless there's specific feedback to give. Telegraf often handles this.
             // However, the original code had ctx.answerCbQuery(), so keeping it for consistency if it doesn't cause issues.
-            adminCtx
-                .answerCbQuery()
-                .catch((eAns) =>
-                    logger('recitersNavPage (action): Error answering CBQ post-edit (non-critical)', eAns)
-                );
+            adminCtx.answerCbQuery().catch(eAns => logger('recitersNavPage (action): Error answering CBQ post-edit (non-critical)', eAns));
+
         } catch (e) {
             logger('recitersNavPage (action): Error editing message reply markup', e);
-            adminCtx
-                .answerCbQuery('Error updating list.')
-                .catch((eAns) => logger('recitersNavPage (action): Error answering CBQ on edit error', eAns));
+            adminCtx.answerCbQuery('Error updating list.').catch(eAns => logger('recitersNavPage (action): Error answering CBQ on edit error', eAns));
         }
     });
 });
@@ -1290,9 +1206,7 @@ export async function launchBot() {
                 bootstrapLogger('Error sending startup state message to dev group (proceeding):', e);
             }
         } else if (config.devChatId && !bot.options.username) {
-            bootstrapLogger(
-                'launchBot: Cannot send startup state message to dev group - bot username not available or devChatId not set.'
-            );
+            bootstrapLogger('launchBot: Cannot send startup state message to dev group - bot username not available or devChatId not set.');
         }
 
         if (!config.debugging) {
@@ -1302,6 +1216,7 @@ export async function launchBot() {
         }
 
         bootstrapLogger('launchBot: Core setup complete, polling initiated.');
+
     } catch (e) {
         bootstrapLogger('Failed to complete critical launchBot setup steps. Error:', e);
         throw e;
