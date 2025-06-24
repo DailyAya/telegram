@@ -105,6 +105,9 @@ jest.mock('./utils.js', () => ({
 
 // Import the entire module to trigger its setup with mocks
 import * as TelegramBotModule from './telegramBot.js';
+import { logger as actualLoggerForAdminCheckerTests, setBotInstance as actualSetBotInstance } from './logger.js'; // For specific tests
+import { numArabicToEnglish as actualNumArabicToEnglish } from './utils.js'; // For handleText tests
+import { getQuranData as actualGetQuranData, rasmifize as actualRasmifize, suraAya2ayaId as actualSuraAya2AyaId, normalizedSurasArNames as actualNormalizedSurasArNames } from './quranService.js'; // For handleText tests & general mock access
 
 // If adminChecker and other functions are not exported, we can't access them directly.
 // The alternative is to test command handlers.
@@ -118,8 +121,8 @@ describe('Telegram Bot Tests - Initial Setup', () => {
     });
 
     it('should call setBotInstance from logger', () => {
-        const { setBotInstance } = require('./logger.js'); // Get the mock
-        expect(setBotInstance).toHaveBeenCalledWith(mockBotInstance);
+        // const { setBotInstance } = require('./logger.js'); // Converted to import
+        expect(actualSetBotInstance).toHaveBeenCalledWith(mockBotInstance);
     });
 
     it('should attempt to fetch bot username on init', () => {
@@ -182,21 +185,21 @@ describe('Telegram Bot Helpers', () => {
             expect(mockGetChatMember).toHaveBeenCalledWith('g789', 202);
             expect(isAdmin).toBe(false);
             // Check if logger was called (assuming logger is imported and used in adminChecker)
-            const { logger } = require('./logger.js');
-            expect(logger).toHaveBeenCalledWith(
+            // const { logger } = require('./logger.js'); // Converted to import
+            expect(actualLoggerForAdminCheckerTests).toHaveBeenCalledWith(
                 'Error in adminChecker while calling getChatMember: ',
                 expect.any(Error)
             );
         });
 
         it('should return false if ctx.chat or ctx.from is missing', async () => {
-            const { logger } = require('./logger.js');
+            // const { logger } = require('./logger.js'); // Converted to import
             expect(await adminChecker({ from: { id: 123 } })).toBe(false);
-            expect(logger).toHaveBeenCalledWith('adminChecker: Invalid context received.', { from: { id: 123 } });
+            expect(actualLoggerForAdminCheckerTests).toHaveBeenCalledWith('adminChecker: Invalid context received.', { from: { id: 123 } });
 
-            logger.mockClear(); // Clear previous call
+            actualLoggerForAdminCheckerTests.mockClear(); // Clear previous call
             expect(await adminChecker({ chat: { type: 'private' } })).toBe(false);
-            expect(logger).toHaveBeenCalledWith('adminChecker: Invalid context received.', {
+            expect(actualLoggerForAdminCheckerTests).toHaveBeenCalledWith('adminChecker: Invalid context received.', {
                 chat: { type: 'private' },
             });
         });
@@ -204,10 +207,29 @@ describe('Telegram Bot Helpers', () => {
 });
 
 // --- Mocked Functions from Imports (for easier access in tests) ---
-const { sendAya: mockSendAyaFromTelegramBotInternal, bot: mockedBotObject } = TelegramBotModule; // sendAya is exported from telegramBot
-const { randomAyaNumber: mockRandomAyaNumber } = require('./utils.js');
-const { rasmifize: mockRasmifize, suraAya2ayaId: mockSuraAya2AyaId } = require('./quranService.js');
-const { logger: mockLogger } = require('./logger.js');
+// These were previously require() calls. Now they should refer to the top-level imports
+// or be accessed via the already imported mocked modules if needed.
+// For example, `mockRandomAyaNumber` would be `actualNumArabicToEnglish` if it's from utils.js
+// and if it's the actual function. If it's a mock, it's already mocked via jest.mock.
+// The test was likely trying to get a direct handle on the mock function.
+// Let's assume these were attempts to get the mocked functions.
+// `jest.mock` replaces the module's exports with mocks. So, direct imports will get the mocks.
+// const { sendAya: mockSendAyaFromTelegramBotInternal, bot: mockedBotObject } = TelegramBotModule; // This is fine
+// const { randomAyaNumber: mockRandomAyaNumber } = actualNumArabicToEnglish; // This is wrong, randomAyaNumber is separate
+// const { rasmifize: mockRasmifize, suraAya2ayaId: mockSuraAya2AyaId } = actualRasmifize; // This is also wrong
+// const { logger: mockLogger } = actualLoggerForAdminCheckerTests; // This is also wrong if mockLogger is different
+
+// Re-evaluating these:
+// The original require calls were likely to get the auto-mocked jest.fn() instances.
+// When using `import`, these are the same functions.
+// So, `mockRandomAyaNumber` would be `actualRandomAyaNumber` (from utils, which is mocked).
+// `mockRasmifize` would be `actualRasmifize` (from quranService, which is mocked).
+// `mockLogger` would be `actualLoggerForAdminCheckerTests` (from logger, which is mocked).
+
+// These constants are for convenience in tests.
+const { sendAya: importedSendAyaFromTelegramBot, bot: importedBotObject } = TelegramBotModule;
+// For mocked functions from other modules, we can directly use the imported names as they are already mocks.
+// Example: `actualRandomAyaNumber` is already `jest.fn()` due to `jest.mock('./utils.js')`
 
 describe('Telegram Command Handler: /surpriseme', () => {
     let surprisemeHandler;
@@ -387,8 +409,8 @@ describe('Telegram Bot: handleText Function', () => {
         // This part of the mock needs to be consistent with how handleText uses it.
         // Let's assume enQuran[1] is Al-Baqarah.
         // And normalizedSurasArNames[1] (index for sura 2) would be rasmifize("البقرة")
-        const { getQuranData } = require('./quranService.js');
-        getQuranData.mockReturnValue({
+        // const { getQuranData } = require('./quranService.js'); // Converted to import: actualGetQuranData
+        actualGetQuranData.mockReturnValue({
             enQuran: [
                 { name: 'Surat Al-Fatiha', englishName: 'Al-Fatiha' }, // Sura 1
                 { name: 'Surat Al-Baqarah', englishName: 'Al-Baqarah' }, // Sura 2
@@ -399,9 +421,10 @@ describe('Telegram Bot: handleText Function', () => {
         // In telegramBot.js, it uses the imported normalizedSurasArNames from quranService.
         // So the mock of quranService.normalizedSurasArNames is what matters.
         // We set it to ['mock-sura-name'] earlier. Let's make it more realistic for this test.
-        jest.spyOn(require('./quranService.js'), 'normalizedSurasArNames', 'get').mockReturnValue([
-            rasmifize('الفاتحة'), // For Sura 1
-            rasmifize('البقرة'), // For Sura 2
+        // jest.spyOn(require('./quranService.js'), 'normalizedSurasArNames', 'get').mockReturnValue([ // require converted
+        jest.spyOn(await import('./quranService.js'), 'normalizedSurasArNames', 'get').mockReturnValue([
+            actualRasmifize('الفاتحة'), // For Sura 1 (use the imported mock)
+            actualRasmifize('البقرة'), // For Sura 2
         ]);
 
         mockSendMessage.mockClear(); // Used by 'unrecognized'
@@ -410,7 +433,7 @@ describe('Telegram Bot: handleText Function', () => {
     it('should call sendAya for "آية الكرسي" (Ayat al-Kursi)', async () => {
         const mockCtx = { ...mockCtxBase, message: { text: 'آية الكرسي' } };
         // rasmifize("الكرسي") is used internally by handleText
-        mockRasmifize.mockImplementationOnce((text) => (text === 'الكرسي' ? 'الكرسي' : text));
+        actualRasmifize.mockImplementationOnce((text) => (text === 'الكرسي' ? 'الكرسي' : text));
 
         await TelegramBotModule.handleText(mockCtx);
 
@@ -438,34 +461,34 @@ describe('Telegram Bot: handleText Function', () => {
         const mockCtx = { ...mockCtxBase, message: { text: 'البقرة ٢٥٥' } };
 
         // Ensure numArabicToEnglish converts ٢٥٥ to 255
-        const { numArabicToEnglish } = require('./utils.js'); // Get the mock
-        numArabicToEnglish.mockImplementationOnce((str) => str.replace('٢٥٥', '255'));
+        // const { numArabicToEnglish } = require('./utils.js'); // Converted to import: actualNumArabicToEnglish
+        actualNumArabicToEnglish.mockImplementationOnce((str) => str.replace('٢٥٥', '255'));
 
         // Ensure rasmifize handles "البقرة" as expected by normalizedSurasArNames
         // This is tricky because normalizedSurasArNames is built using rasmifize.
         // Let's assume normalizedSurasArNames[1] (for Sura Al-Baqarah) is "البقره" (after rasmifize)
         // And the input "البقرة" also becomes "البقره" after rasmifize.
-        mockRasmifize.mockImplementation((text) => {
+        actualRasmifize.mockImplementation((text) => {
             if (text === 'البقرة') return 'البقره';
             if (text === '255') return '255';
             if (text === 'المهوسصق') return 'المهوسصق';
             return text;
         });
 
-        mockSuraAya2AyaId.mockReturnValueOnce(262); // Sura 2 (Al-Baqarah), Aya 255 -> ID 262
+        actualSuraAya2AyaId.mockReturnValueOnce(262); // Sura 2 (Al-Baqarah), Aya 255 -> ID 262
 
         await TelegramBotModule.handleText(mockCtx);
 
-        expect(numArabicToEnglish).toHaveBeenCalledWith('البقرة ٢٥٥');
-        expect(mockRasmifize).toHaveBeenCalledWith('البقرة 255'); // After numArabicToEnglish
+        expect(actualNumArabicToEnglish).toHaveBeenCalledWith('البقرة ٢٥٥');
+        expect(actualRasmifize).toHaveBeenCalledWith('البقرة 255'); // After numArabicToEnglish
         // Further rasmifize calls happen inside the loop for sura names
-        expect(mockSuraAya2AyaId).toHaveBeenCalledWith({ sura: 2, aya: 255 }); // Assuming Al-Baqarah is Sura 2
+        expect(actualSuraAya2AyaId).toHaveBeenCalledWith({ sura: 2, aya: 255 }); // Assuming Al-Baqarah is Sura 2
         expect(TelegramBotModule.sendAya).toHaveBeenCalledWith(mockCtx.chat.id, 262, null, 'en', 'request', false);
     });
 
     it('should call unrecognized for invalid Sura number (e.g., "999 1")', async () => {
         const mockCtx = { ...mockCtxBase, message: { text: '999 1' } };
-        mockSuraAya2AyaId.mockReturnValueOnce(-1); // -1 indicates invalid Sura
+        actualSuraAya2AyaId.mockReturnValueOnce(-1); // -1 indicates invalid Sura
 
         await TelegramBotModule.handleText(mockCtx);
 
@@ -480,7 +503,7 @@ describe('Telegram Bot: handleText Function', () => {
 
     it('should call unrecognized for valid Sura but invalid Aya (e.g., "1 99")', async () => {
         const mockCtx = { ...mockCtxBase, message: { text: '1 99' } };
-        mockSuraAya2AyaId.mockReturnValueOnce(0); // 0 indicates valid Sura, invalid Aya
+        actualSuraAya2AyaId.mockReturnValueOnce(0); // 0 indicates valid Sura, invalid Aya
 
         await TelegramBotModule.handleText(mockCtx);
 
