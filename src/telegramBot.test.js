@@ -124,8 +124,7 @@ import { getQuranData as actualGetQuranData, rasmifize as actualRasmifize, suraA
 // For example, to test the '/help' command, we'd need to get the handler function
 // that telegramBot.js registers with bot.command('help', handler).
 
-// TODO: Temporarily skipping entire file due to persistent Babel/Jest parsing error for 'await'.
-describe.skip('Telegram Bot Tests - Initial Setup', () => {
+describe('Telegram Bot Tests - Initial Setup', () => { // Un-skipping main describe
     it('should initialize the bot with the mocked Telegraf instance', () => {
         expect(Telegraf).toHaveBeenCalledWith('test-token-mock');
         expect(TelegramBotModule.bot).toBe(mockBotInstance); // Check if the exported bot is our mock
@@ -382,8 +381,7 @@ describe('Telegram Action Handler: surpriseAyaAction', () => {
     });
 });
 
-// TODO: Temporarily skipping this describe block due to persistent ESLint/Babel parsing errors with await.
-describe.skip('Telegram Bot: handleText Function', () => {
+describe('Telegram Bot: handleText Function', () => { // Un-skipping this describe block
     // handleText is exported, so we can call it directly.
     // const { handleText } = TelegramBotModule; // Already done via import * as TelegramBotModule
 
