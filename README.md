@@ -6,22 +6,22 @@ The DailyAyaBot sends you a random verse (Aya) from the Holy Quran every day. Yo
 
 ### Key Features:
 
-*   **Daily Random Aya:** Receive an Aya automatically. After your first interaction or if you request an Aya, subsequent timed Ayas are typically sent around the same hour each day, aligning to the start of the hour (e.g., if your last Aya was at 10:20 AM, your next timed one will likely be at 10:00 AM or 11:00 AM the following day, depending on when the hourly check runs relative to your 24-hour cycle).
-*   **Request Specific Aya:** Ask for a particular Sura and Aya number (e.g., "2 255" or "Al-Baqarah 255").
-*   **Set Favorite Reciter:** Choose your preferred reciter for audio recitations.
-*   **Surprise Me:** Get a random Aya with recitation on demand.
-*   **Group Khatma:** Participate in collaborative Quran readings by selecting Juz' to read.
+- **Daily Random Aya:** Receive an Aya automatically. After your first interaction or if you request an Aya, subsequent timed Ayas are typically sent around the same hour each day, aligning to the start of the hour (e.g., if your last Aya was at 10:20 AM, your next timed one will likely be at 10:00 AM or 11:00 AM the following day, depending on when the hourly check runs relative to your 24-hour cycle).
+- **Request Specific Aya:** Ask for a particular Sura and Aya number (e.g., "2 255" or "Al-Baqarah 255").
+- **Set Favorite Reciter:** Choose your preferred reciter for audio recitations.
+- **Surprise Me:** Get a random Aya with recitation on demand.
+- **Group Khatma:** Participate in collaborative Quran readings by selecting Juz' to read.
 
 ### Available Commands:
 
-*   `/start`: Start interacting with the bot and see the welcome message.
-*   `/help`: Get instructions on how to use the bot and request Ayas.
-*   `/surpriseme`: Receive a random Aya with recitation.
-*   `/reciters`: Choose and set your favorite reciter.
-*   `/khatma`: Participate in a group Khatma by selecting a Juz'.
-*   `/commands`: Show all available commands.
-*   `/support`: Find ways to support the bot.
-*   `/channel`: Get a link to the DailyAya channel.
+- `/start`: Start interacting with the bot and see the welcome message.
+- `/help`: Get instructions on how to use the bot and request Ayas.
+- `/surpriseme`: Receive a random Aya with recitation.
+- `/reciters`: Choose and set your favorite reciter.
+- `/khatma`: Participate in a group Khatma by selecting a Juz'.
+- `/commands`: Show all available commands.
+- `/support`: Find ways to support the bot.
+- `/channel`: Get a link to the DailyAya channel.
 
 ## For Developers
 
@@ -29,13 +29,13 @@ This project is a Node.js application using the Telegraf.js library for Telegram
 
 ### Project Structure Overview:
 
-*   **`src/app.js`**: The main entry point of the application. Handles initialization, timer scheduling, and overall application lifecycle.
-*   **`src/telegramBot.js`**: Contains all the Telegram bot logic, including command handlers, action handlers (callback queries), and message processing.
-*   **`src/quranService.js`**: Responsible for fetching and processing Quran text, translations, and reciter information. Interacts with `api.alquran.cloud` using a dedicated Axios instance (`apiClient`) with default timeouts.
-*   **`src/database.js`**: Manages interactions with the MongoDB database (storing chat information, user preferences, etc.).
-*   **`src/config.js`**: Handles application configuration, primarily by loading environment variables.
-*   **`src/logger.js`**: Implements the logging mechanism, including sending important logs to a designated Telegram chat.
-*   **`src/expressApp.js`**: A simple Express server. It provides a `/` route for instance status and a `/health` route (returns 200 OK) for platform health checks.
+- **`src/app.js`**: The main entry point of the application. Handles initialization, timer scheduling, and overall application lifecycle.
+- **`src/telegramBot.js`**: Contains all the Telegram bot logic, including command handlers, action handlers (callback queries), and message processing.
+- **`src/quranService.js`**: Responsible for fetching and processing Quran text, translations, and reciter information. Interacts with `api.alquran.cloud` using a dedicated Axios instance (`apiClient`) with default timeouts.
+- **`src/database.js`**: Manages interactions with the MongoDB database (storing chat information, user preferences, etc.).
+- **`src/config.js`**: Handles application configuration, primarily by loading environment variables.
+- **`src/logger.js`**: Implements the logging mechanism, including sending important logs to a designated Telegram chat.
+- **`src/expressApp.js`**: A simple Express server. It provides a `/` route for instance status and a `/health` route (returns 200 OK) for platform health checks.
 
 ### Setup and Installation:
 
@@ -46,24 +46,24 @@ This project is a Node.js application using the Telegraf.js library for Telegram
     ```
 3.  **Set up Environment Variables:**
     Create a `.env` file in the root directory or set the following environment variables:
-    *   `telegramToken`: Your Telegram Bot token.
-    *   `devChatId`: Telegram Chat ID for receiving important logs and notifications.
-    *   `mongoDbCredentials`: MongoDB connection string credentials (e.g., `username:password`).
-    *   `mongoSubdomain`: MongoDB subdomain/cluster address (e.g., `yourcluster.mongodb.net`).
-    *   `NODE_ENV`: Set to `development` or `production`.
-    *   Other optional variables as defined in `src/config.js` (e.g., `TIMER_SEND_HOURS`, `TIMER_CHECK_MINUTES`).
+    - `telegramToken`: Your Telegram Bot token.
+    - `devChatId`: Telegram Chat ID for receiving important logs and notifications.
+    - `mongoDbCredentials`: MongoDB connection string credentials (e.g., `username:password`).
+    - `mongoSubdomain`: MongoDB subdomain/cluster address (e.g., `yourcluster.mongodb.net`).
+    - `NODE_ENV`: Set to `development` or `production`.
+    - Other optional variables as defined in `src/config.js` (e.g., `TIMER_SEND_HOURS`, `TIMER_CHECK_MINUTES`).
 
 ### Running the Bot:
 
-*   **Start the bot:**
+- **Start the bot:**
     ```bash
     npm start
     ```
-*   The `start` script typically uses `node --env-file=.env src/app.js` if an `.env` file is present.
+- The `start` script typically uses `node --env-file=.env src/app.js` if an `.env` file is present.
 
 ### Testing:
 
-*   **Run tests:**
+- **Run tests:**
     ```bash
     npm test
     ```

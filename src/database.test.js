@@ -1,7 +1,8 @@
-import actualConfig from './config.js'; // Actual config is fine, used for mongoURI
 import { jest } from '@jest/globals'; // Explicitly import jest
 
-// --- Mocks ---
+// Config mock removed - will be handled by moduleNameMapper in jest.config.mjs
+
+// --- Other Mocks ---
 // Define mock implementations first
 const mockCollection = {
     updateOne: jest.fn(),
@@ -36,6 +37,8 @@ let ActualMongoClient; // Will hold the mocked MongoClient constructor
 let actualLogger, actualBootstrapLogger; // Will hold mocked logger functions
 
 beforeAll(async () => {
+    // const { default: mockedConfig } = await import('./config.js'); // This instance is not used.
+
     const dbModule = await import('./database.js');
     connectDB = dbModule.connectDB;
     getDB = dbModule.getDB;
@@ -76,9 +79,14 @@ describe('Database Service Tests', () => {
 
             const db = await connectDB();
 
+            const { default: resolvedMockedConfig } = await import('./config.js'); // get it again here for the assertion value
+
             expect(ActualMongoClient).toHaveBeenCalledTimes(1);
             // The actual call includes maxPoolSize and serverApi resolves to '1' due to the mock of ServerApiVersion
-            expect(ActualMongoClient).toHaveBeenCalledWith(actualConfig.mongoURI, { serverApi: '1', maxPoolSize: 50 });
+            expect(ActualMongoClient).toHaveBeenCalledWith(resolvedMockedConfig.mongoURI, {
+                serverApi: '1',
+                maxPoolSize: 50,
+            });
             expect(mockMongoClientInstance.connect).toHaveBeenCalledTimes(1);
             expect(mockMongoClientInstance.db).toHaveBeenCalledTimes(1);
             expect(mockMongoClientInstance.db).toHaveBeenCalledWith('dailyAyaTelegram'); // Assuming DB_NAME is 'dailyAyaTelegram'

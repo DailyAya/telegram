@@ -1,6 +1,17 @@
-import { toBoolean, randomAyaNumber, numArabicToEnglish } from './utils.js';
+// import { jest } from '@jest/globals'; // jest global is available
 
-// Removed jest.mock('./config.js'); - will rely on env variables set by setup script
+// Config mock removed - will be handled by moduleNameMapper in jest.config.mjs
+
+// Declare variables for the functions to be tested
+let toBoolean, randomAyaNumber, numArabicToEnglish;
+
+beforeAll(async () => {
+    // Dynamically import the module under test AFTER mocks are set up
+    const utilsModule = await import('./utils.js');
+    toBoolean = utilsModule.toBoolean;
+    randomAyaNumber = utilsModule.randomAyaNumber;
+    numArabicToEnglish = utilsModule.numArabicToEnglish;
+});
 
 describe('Utils Tests', () => {
     describe('toBoolean', () => {

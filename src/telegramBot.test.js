@@ -1,30 +1,111 @@
-import { Telegraf } from 'telegraf'; // Original Telegraf for type reference if needed
+import { jest } from '@jest/globals';
+// import { Telegraf } from 'telegraf'; // Original Telegraf for type reference if needed - REMOVED
+
+// Config mock is handled globally by moduleNameMapper - no local mock needed here.
+
+// --- Top-level mocks for dependencies ---
+
+// Mock logger.js
+const mockLoggerGlobal = jest.fn();
+const mockSetBotInstanceGlobal = jest.fn();
+const mockBootstrapLoggerGlobal = jest.fn();
+jest.unstable_mockModule('./logger.js', () => ({
+    __esModule: true,
+    logger: mockLoggerGlobal,
+    setBotInstance: mockSetBotInstanceGlobal,
+    bootstrapLogger: mockBootstrapLoggerGlobal,
+}));
+
+// Mock database.js
+const mockLastAyaTime = jest.fn().mockResolvedValue({ success: true });
+const mockSetFavReciter = jest.fn().mockResolvedValue({ success: true, reciter: 'mockReciter' });
+const mockGetFavReciter = jest.fn().mockResolvedValue({ success: true, data: 'surprise' });
+const mockGetDB = jest.fn().mockReturnValue({
+    collection: jest.fn().mockReturnThis(),
+    countDocuments: jest.fn().mockResolvedValue(0),
+});
+const mockConnectDB = jest.fn().mockResolvedValue(true);
+jest.unstable_mockModule('./database.js', () => ({
+    __esModule: true,
+    lastAyaTime: mockLastAyaTime,
+    setFavReciter: mockSetFavReciter,
+    getFavReciter: mockGetFavReciter,
+    getDB: mockGetDB,
+    connectDB: mockConnectDB,
+}));
+
+// Mock quranService.js
+const mockPrepareAya = jest.fn().mockReturnValue({ arText: 'Mock Arabic Aya', enText: 'Mock English Aya' });
+const mockGetRecitation = jest.fn().mockResolvedValue('mock-audio-url.mp3');
+const mockIsValidReciter = jest.fn().mockReturnValue(true);
+const mockGetRandomReciterIdentifier = jest.fn().mockReturnValue('ar.mockrandom');
+const mockNextAya = jest.fn((id) => id + 1);
+const mockAyaId2SuraAya = jest.fn().mockReturnValue({ sura: 1, aya: 1 });
+const mockSuraAya2AyaId = jest.fn().mockReturnValue(1);
+const mockRasmifize = jest.fn((text) => text);
+let __mockableNormalizedSurasArNamesForBotTest = ['initial-mock-sura-name-for-bot-test']; // Renamed from __mockableNormalizedSurasArNames
+const mockGetQuranData = jest.fn().mockReturnValue({
+    arReciters: [{ identifier: 'ar.alafasy', name: 'Alafasy', language: 'ar', englishName: 'Alafasy' }],
+    enQuran: [{ name: 'Surat Al-Fatiha', englishName: 'Al-Fatiha', ayahs: [{ number: 1, numberInSurah: 1 }] }],
+});
+const mockCheckSource = jest.fn().mockResolvedValue(undefined);
+jest.unstable_mockModule('./quranService.js', () => ({
+    __esModule: true,
+    prepareAya: mockPrepareAya,
+    getRecitation: mockGetRecitation,
+    isValidReciter: mockIsValidReciter,
+    getRandomReciterIdentifier: mockGetRandomReciterIdentifier,
+    nextAya: mockNextAya,
+    ayaId2suraAya: mockAyaId2SuraAya,
+    suraAya2ayaId: mockSuraAya2AyaId,
+    rasmifize: mockRasmifize,
+    get normalizedSurasArNames() {
+        return __mockableNormalizedSurasArNamesForBotTest;
+    },
+    __setMockNormalizedSurasArNames: (newArray) => {
+        __mockableNormalizedSurasArNamesForBotTest = newArray;
+    },
+    getQuranData: mockGetQuranData,
+    checkSource: mockCheckSource,
+}));
+
+// Mock utils.js
+const mockRandomAyaNumber = jest.fn().mockReturnValue(123);
+const mockNumArabicToEnglish = jest.fn((text) => text);
+jest.unstable_mockModule('./utils.js', () => ({
+    __esModule: true,
+    randomAyaNumber: mockRandomAyaNumber,
+    numArabicToEnglish: mockNumArabicToEnglish,
+}));
 
 // Mock Telegraf
-const mockSendMessage = jest.fn().mockResolvedValue({});
-const mockEditMessageReplyMarkup = jest.fn().mockResolvedValue({});
-const mockAnswerCbQuery = jest.fn().mockResolvedValue(true);
-const mockGetChatMember = jest.fn().mockResolvedValue({ status: 'member' }); // Default to member
-const mockReply = jest.fn().mockResolvedValue({}); // For ctx.reply
-const mockReplyWithHTML = jest.fn().mockResolvedValue({});
-const mockEditMessageText = jest.fn().mockResolvedValue({});
-const mockDeleteMessage = jest.fn().mockResolvedValue(true);
-const mockSetMyCommands = jest.fn().mockResolvedValue(true);
-const mockGetMyCommands = jest.fn().mockResolvedValue([]);
+const mockTelegrafSendMessage = jest.fn().mockResolvedValue({});
+const mockTelegrafEditMessageReplyMarkup = jest.fn().mockResolvedValue({});
+const mockTelegrafAnswerCbQuery = jest.fn().mockResolvedValue(true);
+const mockTelegrafGetChatMember = jest.fn().mockResolvedValue({ status: 'member' });
+const mockTelegrafReply = jest.fn().mockResolvedValue({});
+const _mockTelegrafReplyWithHTML = jest.fn().mockResolvedValue({}); // Prefixed
+const _mockTelegrafEditMessageText = jest.fn().mockResolvedValue({}); // Prefixed
+const mockTelegrafDeleteMessage = jest.fn().mockResolvedValue(true);
+const mockTelegrafSetMyCommands = jest.fn().mockResolvedValue(true);
+const mockTelegrafGetMyCommands = jest.fn().mockResolvedValue([]);
+const mockTelegrafGetMe = jest
+    .fn()
+    .mockResolvedValue({ id: 42, is_bot: true, username: 'TestBot', first_name: 'Test Bot' });
 
-const mockBotInstance = {
+const mockBotInstanceForTelegraf = {
+    // Renamed from mockBotInstance
     telegram: {
-        sendMessage: mockSendMessage,
-        getChatMember: mockGetChatMember,
-        setMyCommands: mockSetMyCommands,
-        getMyCommands: mockGetMyCommands,
-        getMe: jest.fn().mockResolvedValue({ id: 42, is_bot: true, username: 'TestBot', first_name: 'Test Bot' }),
-        editMessageReplyMarkup: mockEditMessageReplyMarkup,
-        deleteMessage: mockDeleteMessage,
-        // Add other bot.telegram methods used by the module
+        sendMessage: mockTelegrafSendMessage,
+        getChatMember: mockTelegrafGetChatMember,
+        setMyCommands: mockTelegrafSetMyCommands,
+        getMyCommands: mockTelegrafGetMyCommands,
+        getMe: mockTelegrafGetMe,
+        editMessageReplyMarkup: mockTelegrafEditMessageReplyMarkup,
+        deleteMessage: mockTelegrafDeleteMessage,
     },
-    options: { username: 'TestBot' }, // Initial username, might be overwritten by getMe mock
-    context: {}, // To store mock context properties if needed by handlers directly
+    options: { username: 'TestBot' },
+    context: {},
     start: jest.fn(),
     help: jest.fn(),
     command: jest.fn(),
@@ -33,15 +114,12 @@ const mockBotInstance = {
     launch: jest.fn().mockResolvedValue(true),
     catch: jest.fn(),
     stop: jest.fn(),
-    // Add other bot methods used by the module
 };
 
-// This will make `new Telegraf()` return our mockBotInstance
 jest.mock('telegraf', () => ({
     __esModule: true,
-    Telegraf: jest.fn(() => mockBotInstance),
+    Telegraf: jest.fn(() => mockBotInstanceForTelegraf), // Use the renamed instance
     Markup: {
-        // Mock Markup if it's used for creating inline keyboards directly in telegramBot.js
         inlineKeyboard: jest.fn((buttons) => ({ inline_keyboard: buttons })),
         button: {
             url: jest.fn((text, url) => ({ text, url })),
@@ -50,168 +128,131 @@ jest.mock('telegraf', () => ({
     },
 }));
 
-// Mock other local dependencies
-// Removed jest.mock('./config.js'); - will rely on env variables set by setup script
+// Now, attempt to import parts of telegramBot.js - This will be done dynamically.
+// Static imports of TelegramBotModule and helpers from other local files are removed.
 
-let __mockableNormalizedSurasArNames = ['initial-mock-sura-name']; // For quranService mock
+// --- Declare module-scoped variables for telegramBot.js exports ---
+let bot, sendAya, adminChecker, NON_ADMINS_ALERT, _surpriseAya, handleText, _launchBot, botUsernameReady; // Prefixed unused
 
-jest.mock('./logger.js', () => ({
-    __esModule: true,
-    logger: jest.fn(),
-    setBotInstance: jest.fn(), // Called in telegramBot.js
-    bootstrapLogger: jest.fn(),
-}));
+// --- Variable for specific logger mock access if needed by tests ---
+let actualLoggerFromLoggerModule;
 
-jest.mock('./database.js', () => ({
-    __esModule: true,
-    lastAyaTime: jest.fn().mockResolvedValue({ success: true }),
-    setFavReciter: jest.fn().mockResolvedValue({ success: true, reciter: 'mockReciter' }),
-    getFavReciter: jest.fn().mockResolvedValue({ success: true, data: 'surprise' }),
-    getDB: jest.fn().mockReturnValue({
-        // Mock getDB to return a mock DB object
-        collection: jest.fn().mockReturnThis(), // Return `this` to chain calls
-        countDocuments: jest.fn().mockResolvedValue(0), // Mock specific collection methods
-    }),
-    connectDB: jest.fn().mockResolvedValue(true), // Mock connectDB
-}));
+beforeAll(async () => {
+    const importedModule = await import('./telegramBot.js');
+    bot = importedModule.bot;
+    sendAya = importedModule.sendAya;
+    adminChecker = importedModule.adminChecker;
+    NON_ADMINS_ALERT = importedModule.NON_ADMINS_ALERT;
+    surpriseAya = importedModule.surpriseAya;
+    handleText = importedModule.handleText;
+    launchBot = importedModule.launchBot;
+    botUsernameReady = importedModule.botUsernameReady;
 
-jest.mock('./quranService.js', () => ({
-    __esModule: true,
-    prepareAya: jest.fn().mockReturnValue({ arText: 'Mock Arabic Aya', enText: 'Mock English Aya' }),
-    getRecitation: jest.fn().mockResolvedValue('mock-audio-url.mp3'),
-    isValidReciter: jest.fn().mockReturnValue(true),
-    getRandomReciterIdentifier: jest.fn().mockReturnValue('ar.mockrandom'),
-    nextAya: jest.fn((id) => id + 1),
-    ayaId2suraAya: jest.fn().mockReturnValue({ sura: 1, aya: 1 }),
-    suraAya2ayaId: jest.fn().mockReturnValue(1),
-    // normalizedSurasArNames: ['mock-sura-name'], // Replaced by getter/setter
-    rasmifize: jest.fn((text) => text), // Simple pass-through mock for rasmifize
+    const loggerModule = await import('./logger.js'); // Gets the mocked logger module
+    actualLoggerFromLoggerModule = loggerModule.logger; // This will be mockLoggerGlobal
 
-    // --- For normalizedSurasArNames ---
-    get normalizedSurasArNames() { return __mockableNormalizedSurasArNames; },
-    __setMockNormalizedSurasArNames: (newArray) => {
-        __mockableNormalizedSurasArNames = newArray;
-    },
-    // --- End for normalizedSurasArNames ---
-
-    getQuranData: jest.fn().mockReturnValue({
-        arReciters: [{ identifier: 'ar.alafasy', name: 'Alafasy', language: 'ar', englishName: 'Alafasy' }],
-        enQuran: [{ name: 'Surat Al-Fatiha', ayahs: [{ number: 1, numberInSurah: 1 }] }], // Basic mock
-    }),
-    checkSource: jest.fn().mockResolvedValue(undefined),
-}));
-
-jest.mock('./utils.js', () => ({
-    __esModule: true,
-    randomAyaNumber: jest.fn().mockReturnValue(123), // Mock specific random Aya number
-    numArabicToEnglish: jest.fn((text) => text), // Simple pass-through
-}));
-
-// Now, attempt to import parts of telegramBot.js
-// This is tricky because telegramBot.js runs code on import (sets up bot, etc.)
-// We need to ensure that the mocks are in place *before* telegramBot.js is imported.
-// The functions to be tested (like adminChecker) need to be exported from telegramBot.js.
-// Let's assume for now they will be exported.
-
-// Import the entire module to trigger its setup with mocks
-import * as TelegramBotModule from './telegramBot.js';
-import { logger as actualLoggerForAdminCheckerTests, setBotInstance as actualSetBotInstance } from './logger.js'; // For specific tests
-import { numArabicToEnglish as actualNumArabicToEnglish } from './utils.js'; // For handleText tests
-import { getQuranData as actualGetQuranData, rasmifize as actualRasmifize, suraAya2ayaId as actualSuraAya2AyaId, __setMockNormalizedSurasArNames as setQuranServiceMockNormalizedSuras } from './quranService.js'; // For handleText tests & general mock access
+    await botUsernameReady; // Ensure bot initialization (like getMe) is complete
+});
 
 // If adminChecker and other functions are not exported, we can't access them directly.
 // The alternative is to test command handlers.
 // For example, to test the '/help' command, we'd need to get the handler function
 // that telegramBot.js registers with bot.command('help', handler).
 
-describe.skip('Telegram Bot Tests - Initial Setup', () => { // Re-skip main describe for now
-    it('should initialize the bot with the mocked Telegraf instance', () => {
-        expect(Telegraf).toHaveBeenCalledWith('test-token-mock');
-        expect(TelegramBotModule.bot).toBe(mockBotInstance); // Check if the exported bot is our mock
+describe.skip('Telegram Bot Tests - Initial Setup', () => {
+    it('should initialize the bot with the mocked Telegraf instance', async () => {
+        const { Telegraf: MockedTelegrafConstructor } = await import('telegraf');
+        const { default: mockedConfig } = await import('./config.js'); // Get global mock
+        expect(MockedTelegrafConstructor).toHaveBeenCalledWith(mockedConfig.telegramToken, {
+            agent: expect.any(Object),
+        });
+        expect(bot).toBe(mockBotInstanceForTelegraf);
     });
 
     it('should call setBotInstance from logger', () => {
-        // const { setBotInstance } = require('./logger.js'); // Converted to import
-        expect(actualSetBotInstance).toHaveBeenCalledWith(mockBotInstance);
+        expect(mockSetBotInstanceGlobal).toHaveBeenCalledWith(mockBotInstanceForTelegraf);
     });
 
     it('should attempt to fetch bot username on init', () => {
-        expect(mockBotInstance.telegram.getMe).toHaveBeenCalled();
+        expect(mockTelegrafGetMe).toHaveBeenCalled();
     });
 
     it('should set bot commands on init', () => {
-        expect(mockBotInstance.telegram.setMyCommands).toHaveBeenCalled();
+        expect(mockTelegrafSetMyCommands).toHaveBeenCalled();
     });
 });
 
-// Import the functions and constants to be tested
-// Note: TelegramBotModule.bot is the mocked bot instance
-const { adminChecker, NON_ADMINS_ALERT } = TelegramBotModule;
+// Destructuring from TelegramBotModule is no longer needed as variables are globally scoped
+// const { adminChecker, NON_ADMINS_ALERT } = TelegramBotModule; // REMOVE
 
 describe('Telegram Bot Helpers', () => {
     describe('adminChecker', () => {
         beforeEach(() => {
-            // Reset mock call counts and resolved values for each test
-            mockGetChatMember.mockClear();
-            // Default mock for getChatMember, can be overridden in specific tests
-            mockGetChatMember.mockResolvedValue({ status: 'member' });
+            mockTelegrafGetChatMember.mockClear();
+            mockTelegrafGetChatMember.mockResolvedValue({ status: 'member' });
+            if (actualLoggerFromLoggerModule) actualLoggerFromLoggerModule.mockClear();
+            else mockLoggerGlobal.mockClear();
         });
 
         it('should return true if chat type is private', async () => {
             const mockCtx = { chat: { type: 'private' }, from: { id: 123 } };
+            if (!adminChecker) throw new Error('adminChecker is not defined after dynamic import');
             const isAdmin = await adminChecker(mockCtx);
             expect(isAdmin).toBe(true);
-            expect(mockGetChatMember).not.toHaveBeenCalled(); // Should not call getChatMember for private chats
+            expect(mockTelegrafGetChatMember).not.toHaveBeenCalled();
         });
 
         it('should return true if user is creator in a group', async () => {
-            mockGetChatMember.mockResolvedValue({ status: 'creator' });
+            mockTelegrafGetChatMember.mockResolvedValue({ status: 'creator' });
             const mockCtx = { chat: { type: 'group', id: 'g123' }, from: { id: 456 } };
             const isAdmin = await adminChecker(mockCtx);
-            expect(mockGetChatMember).toHaveBeenCalledWith('g123', 456);
+            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith('g123', 456);
             expect(isAdmin).toBe(true);
         });
 
         it('should return true if user is administrator in a group', async () => {
-            mockGetChatMember.mockResolvedValue({ status: 'administrator' });
+            mockTelegrafGetChatMember.mockResolvedValue({ status: 'administrator' });
             const mockCtx = { chat: { type: 'supergroup', id: 'sg123' }, from: { id: 789 } };
             const isAdmin = await adminChecker(mockCtx);
-            expect(mockGetChatMember).toHaveBeenCalledWith('sg123', 789);
+            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith('sg123', 789);
             expect(isAdmin).toBe(true);
         });
 
         it('should return false if user is just a member in a group', async () => {
-            // Default mock is { status: 'member' }
             const mockCtx = { chat: { type: 'group', id: 'g456' }, from: { id: 101 } };
             const isAdmin = await adminChecker(mockCtx);
-            expect(mockGetChatMember).toHaveBeenCalledWith('g456', 101);
+            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith('g456', 101);
             expect(isAdmin).toBe(false);
         });
 
         it('should return false if getChatMember fails or throws an error', async () => {
-            mockGetChatMember.mockRejectedValue(new Error('Telegram API error'));
+            mockTelegrafGetChatMember.mockRejectedValue(new Error('Telegram API error'));
             const mockCtx = { chat: { type: 'group', id: 'g789' }, from: { id: 202 } };
             const isAdmin = await adminChecker(mockCtx);
-            expect(mockGetChatMember).toHaveBeenCalledWith('g789', 202);
+            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith('g789', 202);
             expect(isAdmin).toBe(false);
-            // Check if logger was called (assuming logger is imported and used in adminChecker)
-            // const { logger } = require('./logger.js'); // Converted to import
-            expect(actualLoggerForAdminCheckerTests).toHaveBeenCalledWith(
+            expect(actualLoggerFromLoggerModule || mockLoggerGlobal).toHaveBeenCalledWith(
                 'Error in adminChecker while calling getChatMember: ',
                 expect.any(Error)
             );
         });
 
         it('should return false if ctx.chat or ctx.from is missing', async () => {
-            // const { logger } = require('./logger.js'); // Converted to import
             expect(await adminChecker({ from: { id: 123 } })).toBe(false);
-            expect(actualLoggerForAdminCheckerTests).toHaveBeenCalledWith('adminChecker: Invalid context received.', { from: { id: 123 } });
+            expect(actualLoggerFromLoggerModule || mockLoggerGlobal).toHaveBeenCalledWith(
+                'adminChecker: Invalid context received.',
+                { from: { id: 123 } }
+            );
 
-            actualLoggerForAdminCheckerTests.mockClear(); // Clear previous call
+            if (actualLoggerFromLoggerModule) actualLoggerFromLoggerModule.mockClear();
+            else mockLoggerGlobal.mockClear();
             expect(await adminChecker({ chat: { type: 'private' } })).toBe(false);
-            expect(actualLoggerForAdminCheckerTests).toHaveBeenCalledWith('adminChecker: Invalid context received.', {
-                chat: { type: 'private' },
-            });
+            expect(actualLoggerFromLoggerModule || mockLoggerGlobal).toHaveBeenCalledWith(
+                'adminChecker: Invalid context received.',
+                {
+                    chat: { type: 'private' },
+                }
+            );
         });
     });
 });
@@ -236,79 +277,68 @@ describe('Telegram Bot Helpers', () => {
 // `mockRasmifize` would be `actualRasmifize` (from quranService, which is mocked).
 // `mockLogger` would be `actualLoggerForAdminCheckerTests` (from logger, which is mocked).
 
-// These constants are for convenience in tests.
-const { sendAya: importedSendAyaFromTelegramBot, bot: importedBotObject } = TelegramBotModule;
-// For mocked functions from other modules, we can directly use the imported names as they are already mocks.
-// Example: `actualRandomAyaNumber` is already `jest.fn()` due to `jest.mock('./utils.js')`
+// These constants are for convenience in tests. // REMOVE - No longer using TelegramBotModule statically
+// const { sendAya: importedSendAyaFromTelegramBot, bot: importedBotObject } = TelegramBotModule;
+// For mocked functions from other modules, we can directly use the globally defined mock function constants.
+// e.g. mockRandomAyaNumber, mockRasmifize, mockLoggerGlobal
 
 describe('Telegram Command Handler: /surpriseme', () => {
     let surprisemeHandler;
     const mockUserCtxAdmin = {
-        chat: { id: 123, type: 'private' }, // Private implies admin
+        chat: { id: 123, type: 'private' },
         from: { id: 123, language_code: 'en' },
-        reply: mockReply,
+        reply: mockTelegrafReply,
     };
     const mockUserCtxNonAdmin = {
         chat: { id: 456, type: 'group' },
         from: { id: 456, language_code: 'ar' },
-        reply: mockReply,
+        reply: mockTelegrafReply,
     };
 
-    beforeAll(() => {
-        const commandCall = mockBotInstance.command.mock.calls.find((call) => call[0] === 'surpriseme');
+    beforeAll(async () => {
+        await botUsernameReady;
+        const commandCall = mockBotInstanceForTelegraf.command.mock.calls.find((call) => call[0] === 'surpriseme');
         if (commandCall && typeof commandCall[1] === 'function') {
             surprisemeHandler = commandCall[1];
         } else {
-            console.error('/surpriseme handler not found in mock. Calls:', mockBotInstance.command.mock.calls);
+            console.error(
+                '/surpriseme handler not found. Calls:',
+                mockBotInstanceForTelegraf.command.mock.calls.map((c) => c[0])
+            );
         }
     });
 
     beforeEach(() => {
-        mockReply.mockClear();
-        mockGetChatMember.mockClear();
-        // mockSendAyaFromTelegramBotInternal.mockClear(); // This is the actual sendAya from telegramBot.js
-        // If sendAya is not directly mockable because it's part of the module under test,
-        // we rely on its internal calls to be mocked, e.g., quranService and bot.telegram methods.
-        // For this test, surpriseAya (the helper) calls the exported sendAya.
-        // We need to ensure the *exported* sendAya from telegramBot is the one we are checking,
-        // or check the mocks it calls (like sendAyaText, sendAyaRecitation which call bot.telegram.sendMessage).
-
-        // Reset the mock for the *exported* sendAya from telegramBot.js
-        // This is tricky because it's both the function under test (indirectly) and a mock target if not careful.
-        // The `sendAya` imported at the top of *this file* is from the *actual* module,
-        // but inside `telegramBot.js`, its internal `sendAya` calls other mocked functions.
-        // Let's clear the mocks of functions *called by* `sendAya`.
-        TelegramBotModule.sendAya.mockClear(); // Assuming this is the one exported and used by surpriseAya helper
+        mockTelegrafReply.mockClear();
+        mockTelegrafGetChatMember.mockClear();
+        if (sendAya) sendAya.mockClear();
     });
 
-    it.skip('should call surpriseAya helper if user is admin (private chat)', async () => { // Was: pending
-        if (!surprisemeHandler) return; // No longer pending, just skip if handler not found
-
+    it.skip('should call surpriseAya helper if user is admin (private chat)', async () => {
+        if (!surprisemeHandler) {
+            console.warn('Skipping /surpriseme admin test as handler not found');
+            return;
+        }
         await surprisemeHandler(mockUserCtxAdmin);
-
-        // The surpriseAya helper function (now exported for direct test if needed)
-        // calls the main sendAya function.
-        // We check if the exported sendAya was called by the surpriseAya helper.
-        expect(TelegramBotModule.sendAya).toHaveBeenCalledWith(
-            mockUserCtxAdmin.chat.id,
-            null, // ayaId (random)
-            null, // reciter (random)
-            'en', // lang
-            'surprise', // trigger
-            true // withRecitation
-        );
-        expect(mockReply).not.toHaveBeenCalled();
+        expect(sendAya).toHaveBeenCalledWith(mockUserCtxAdmin.chat.id, null, null, 'en', 'surprise', false);
+        expect(mockTelegrafReply).not.toHaveBeenCalled();
     });
 
-    it.skip('should reply with NON_ADMINS_ALERT if user is not admin in a group', async () => { // Was: pending
-        if (!surprisemeHandler) return; // No longer pending
-        mockGetChatMember.mockResolvedValue({ status: 'member' }); // Ensure user is non-admin
-
+    it.skip('should log and not call sendAya if user is not admin in a group', async () => {
+        if (!surprisemeHandler) {
+            console.warn('Skipping /surpriseme non-admin test as handler not found');
+            return;
+        }
+        mockTelegrafGetChatMember.mockResolvedValue({ status: 'member' });
         await surprisemeHandler(mockUserCtxNonAdmin);
-
-        expect(mockGetChatMember).toHaveBeenCalledWith(mockUserCtxNonAdmin.chat.id, mockUserCtxNonAdmin.from.id);
-        expect(mockReply).toHaveBeenCalledWith(NON_ADMINS_ALERT);
-        expect(TelegramBotModule.sendAya).not.toHaveBeenCalled();
+        expect(mockTelegrafGetChatMember).toHaveBeenCalledWith(
+            mockUserCtxNonAdmin.chat.id,
+            mockUserCtxNonAdmin.from.id
+        );
+        expect(mockLoggerGlobal).toHaveBeenCalledWith(
+            expect.stringContaining('Ignored /surpriseme command from non-admin')
+        );
+        expect(sendAya).not.toHaveBeenCalled();
     });
 });
 
@@ -318,213 +348,167 @@ describe('Telegram Action Handler: surpriseAyaAction', () => {
         chat: { id: 789, type: 'private' },
         from: { id: 789, language_code: 'fr' },
         update: { callback_query: { data: JSON.stringify({ surpriseAyaAction: true }) } },
-        answerCbQuery: mockAnswerCbQuery,
+        answerCbQuery: mockTelegrafAnswerCbQuery,
     };
     const mockCbCtxNonAdmin = {
         chat: { id: 'g789', type: 'group' },
         from: { id: 101, language_code: 'es' },
         update: { callback_query: { data: JSON.stringify({ surpriseAyaAction: true }) } },
-        answerCbQuery: mockAnswerCbQuery,
-        reply: mockReply, // For NON_ADMINS_ALERT if sent via reply
+        answerCbQuery: mockTelegrafAnswerCbQuery,
     };
 
-    beforeAll(() => {
-        // Find the handler registered for the action pattern
-        const actionCall = mockBotInstance.action.mock.calls.find(
-            (call) =>
-                (call[0] instanceof RegExp && call[0].test(JSON.stringify({ surpriseAyaAction: true }))) ||
-                (typeof call[0] === 'string' && call[0] === JSON.stringify({ surpriseAyaAction: true }))
+    beforeAll(async () => {
+        await botUsernameReady;
+        const surpriseAyaRegex = /^{"surpriseAyaAction":true(?:,"a":\d+)?}$/;
+        const foundByRegex = mockBotInstanceForTelegraf.action.mock.calls.find(
+            (call) => call[0] instanceof RegExp && call[0].toString() === surpriseAyaRegex.toString()
         );
-        if (actionCall && typeof actionCall[1] === 'function') {
-            surpriseAyaActionHandler = actionCall[1];
+        if (foundByRegex && typeof foundByRegex[1] === 'function') {
+            surpriseAyaActionHandler = foundByRegex[1];
         } else {
             console.error(
                 'surpriseAyaAction handler not found. Calls:',
-                mockBotInstance.action.mock.calls.map((c) => c[0])
+                mockBotInstanceForTelegraf.action.mock.calls.map((c) => c[0])
             );
         }
     });
 
     beforeEach(() => {
-        mockAnswerCbQuery.mockClear();
-        TelegramBotModule.sendAya.mockClear(); // Clear calls to the main sendAya
-        mockGetChatMember.mockClear();
-        mockReply.mockClear();
+        mockTelegrafAnswerCbQuery.mockClear();
+        if (sendAya) sendAya.mockClear();
+        mockTelegrafGetChatMember.mockClear();
     });
 
-    it.skip('should call surpriseAya helper and answerCbQuery if user is admin', async () => { // Was: pending
-        if (!surpriseAyaActionHandler) return; // No longer pending
-
+    it.skip('should call surpriseAya helper and answerCbQuery if user is admin', async () => {
+        if (!surpriseAyaActionHandler) {
+            console.warn('Skipping surpriseAyaAction admin test: handler not found.');
+            return;
+        }
         await surpriseAyaActionHandler(mockCbCtxAdmin);
-
-        expect(TelegramBotModule.sendAya).toHaveBeenCalledWith(
-            mockCbCtxAdmin.chat.id,
-            null,
-            null,
-            'fr',
-            'surprise',
-            true
-        );
-        expect(mockAnswerCbQuery).toHaveBeenCalled();
+        expect(sendAya).toHaveBeenCalledWith(mockCbCtxAdmin.chat.id, null, null, 'fr', 'surprise', false);
+        expect(mockTelegrafAnswerCbQuery).toHaveBeenCalled();
     });
 
-    it.skip('should send NON_ADMINS_ALERT and answerCbQuery if user is not admin in group', async () => { // Was: pending
-        if (!surpriseAyaActionHandler) return; // No longer pending
-        mockGetChatMember.mockResolvedValue({ status: 'member' });
-
+    it.skip('should use NON_ADMINS_ALERT with answerCbQuery if user is not admin in group', async () => {
+        if (!surpriseAyaActionHandler) {
+            console.warn('Skipping surpriseAyaAction non-admin test: handler not found.');
+            return;
+        }
+        mockTelegrafGetChatMember.mockResolvedValue({ status: 'member' });
         await surpriseAyaActionHandler(mockCbCtxNonAdmin);
-
-        expect(mockGetChatMember).toHaveBeenCalledWith(mockCbCtxNonAdmin.chat.id, mockCbCtxNonAdmin.from.id);
-        // The adminProtectedAction helper calls answerCbQuery with alert
-        expect(mockAnswerCbQuery).toHaveBeenCalledWith(NON_ADMINS_ALERT, { show_alert: true });
-        expect(TelegramBotModule.sendAya).not.toHaveBeenCalled();
+        expect(mockTelegrafGetChatMember).toHaveBeenCalledWith(mockCbCtxNonAdmin.chat.id, mockCbCtxNonAdmin.from.id);
+        expect(mockTelegrafAnswerCbQuery).toHaveBeenCalledWith(NON_ADMINS_ALERT, { show_alert: true });
+        expect(sendAya).not.toHaveBeenCalled();
     });
 });
 
-describe('Telegram Bot: handleText Function', () => { // Un-skipping this describe block
-    // handleText is exported, so we can call it directly.
-    // const { handleText } = TelegramBotModule; // Already done via import * as TelegramBotModule
-
+describe('Telegram Bot: handleText Function', () => {
     const mockCtxBase = {
         from: { id: 123, language_code: 'en', username: 'testuser' },
         chat: { id: 12345, type: 'private' },
-        // bot.telegram.sendMessage is used by 'unrecognized'
     };
 
-    beforeEach(() => { // No longer async
-        TelegramBotModule.sendAya.mockClear();
-        actualSuraAya2AyaId.mockClear();
-        actualRasmifize.mockClear();
-        actualGetQuranData.mockClear();
+    let quranServiceMockForHandleText;
 
-        actualRasmifize.mockImplementation((text) => {
+    beforeAll(async () => {
+        await botUsernameReady;
+        quranServiceMockForHandleText = jest.requireMock('./quranService.js');
+    });
+
+    beforeEach(() => {
+        if (sendAya) sendAya.mockClear();
+
+        mockSuraAya2AyaId.mockClear();
+        mockRasmifize.mockClear();
+        mockGetQuranData.mockClear();
+        mockNumArabicToEnglish.mockClear();
+
+        mockRasmifize.mockImplementation((text) => {
             if (text === 'الكرسي') return 'الكرسي';
             if (text === 'البقرة') return 'البقره';
             if (text === '2') return '2';
             if (text === '255') return '255';
-            if (text === 'المهوسصق') return 'المهوسصق';
             return text;
         });
 
-        actualGetQuranData.mockReturnValue({
+        mockGetQuranData.mockReturnValue({
             enQuran: [
-                { name: 'Surat Al-Fatiha', englishName: 'Al-Fatiha' },
-                { name: 'Surat Al-Baqarah', englishName: 'Al-Baqarah' },
+                { name: 'Surat Al-Fatiha', englishName: 'Al-Fatiha', ayahs: [] },
+                { name: 'Surat Al-Baqarah', englishName: 'Al-Baqarah', ayahs: [] },
             ],
+            arReciters: [{ identifier: 'ar.alafasy', name: 'Alafasy', language: 'ar', englishName: 'Alafasy' }],
         });
 
-        setQuranServiceMockNormalizedSuras([
-            actualRasmifize('الفاتحة'),
-            actualRasmifize('البقرة'),
-        ]);
+        if (quranServiceMockForHandleText && quranServiceMockForHandleText.__setMockNormalizedSurasArNames) {
+            quranServiceMockForHandleText.__setMockNormalizedSurasArNames([
+                mockRasmifize('الفاتحة'),
+                mockRasmifize('البقرة'),
+            ]);
+        } else {
+            __mockableNormalizedSurasArNamesForBotTest = [mockRasmifize('الفاتحة'), mockRasmifize('البقرة')];
+        }
 
-        mockSendMessage.mockClear();
+        mockTelegrafSendMessage.mockClear();
     });
 
     it.skip('should call sendAya for "آية الكرسي" (Ayat al-Kursi)', async () => {
         const mockCtx = { ...mockCtxBase, message: { text: 'آية الكرسي' } };
-        await TelegramBotModule.handleText(mockCtx);
-        expect(TelegramBotModule.sendAya).toHaveBeenCalledWith(
-            mockCtx.chat.id,
-            262, // Expected Aya ID for Ayat al-Kursi
-            null, // reciter
-            'en', // lang
-            'request', // trigger
-            false // withRecitation (default for text request)
-        );
+        await handleText(mockCtx);
+        expect(sendAya).toHaveBeenCalledWith(mockCtx.chat.id, 262, null, 'en', 'request', false);
     });
 
     it('should call sendAya for Sura and Aya numbers (e.g., "2 255")', async () => {
         const mockCtx = { ...mockCtxBase, message: { text: '2 255' } };
-        mockSuraAya2AyaId.mockReturnValueOnce(262); // Mock that "2 255" maps to Aya ID 262
-
-        await TelegramBotModule.handleText(mockCtx);
-
+        mockSuraAya2AyaId.mockReturnValueOnce(262);
+        await handleText(mockCtx);
         expect(mockSuraAya2AyaId).toHaveBeenCalledWith({ sura: 2, aya: 255 });
-        expect(TelegramBotModule.sendAya).toHaveBeenCalledWith(mockCtx.chat.id, 262, null, 'en', 'request', false);
+        expect(sendAya).toHaveBeenCalledWith(mockCtx.chat.id, 262, null, 'en', 'request', false);
     });
 
     it('should call sendAya for Sura name and Aya number (e.g., "البقرة ٢٥٥")', async () => {
         const mockCtx = { ...mockCtxBase, message: { text: 'البقرة ٢٥٥' } };
-
-        // Ensure numArabicToEnglish converts ٢٥٥ to 255
-        // const { numArabicToEnglish } = require('./utils.js'); // Converted to import: actualNumArabicToEnglish
-        actualNumArabicToEnglish.mockImplementationOnce((str) => str.replace('٢٥٥', '255'));
-
-        // Ensure rasmifize handles "البقرة" as expected by normalizedSurasArNames
-        // This is tricky because normalizedSurasArNames is built using rasmifize.
-        // Let's assume normalizedSurasArNames[1] (for Sura Al-Baqarah) is "البقره" (after rasmifize)
-        // And the input "البقرة" also becomes "البقره" after rasmifize.
-        // The general actualRasmifize.mockImplementation in beforeEach should handle this.
-        // actualRasmifize.mockImplementation((text) => {
-        //     if (text === 'البقرة') return 'البقره';
-        //     if (text === '255') return '255';
-        //     if (text === 'المهوسصق') return 'المهوسصق';
-        //     return text;
-        // });
-
-        actualSuraAya2AyaId.mockReturnValueOnce(262); // Sura 2 (Al-Baqarah), Aya 255 -> ID 262
-            if (text === 'المهوسصق') return 'المهوسصق'; // This was duplicated, removing one instance
-            return text;
-        });
-
-        // actualSuraAya2AyaId.mockReturnValueOnce(262); // This was duplicated
-
-        // eslint-disable-next-line
-        await TelegramBotModule.handleText(mockCtx);
-
-        expect(actualNumArabicToEnglish).toHaveBeenCalledWith('البقرة ٢٥٥');
-        expect(actualRasmifize).toHaveBeenCalledWith('البقرة 255'); // After numArabicToEnglish
-        // Further rasmifize calls happen inside the loop for sura names
-        expect(actualSuraAya2AyaId).toHaveBeenCalledWith({ sura: 2, aya: 255 }); // Assuming Al-Baqarah is Sura 2
-        expect(TelegramBotModule.sendAya).toHaveBeenCalledWith(mockCtx.chat.id, 262, null, 'en', 'request', false);
+        mockNumArabicToEnglish.mockImplementationOnce((str) => str.replace('٢٥٥', '255'));
+        mockSuraAya2AyaId.mockReturnValueOnce(262);
+        await handleText(mockCtx);
+        expect(mockNumArabicToEnglish).toHaveBeenCalledWith('البقرة ٢٥٥');
+        expect(mockRasmifize).toHaveBeenCalledWith('البقرة 255');
+        expect(mockSuraAya2AyaId).toHaveBeenCalledWith({ sura: 2, aya: 255 });
+        expect(sendAya).toHaveBeenCalledWith(mockCtx.chat.id, 262, null, 'en', 'request', false);
     });
 
-    it('should call unrecognized for invalid Sura number (e.g., "999 1")', async () => { // Ensure async
+    it('should call unrecognized for invalid Sura number (e.g., "999 1")', async () => {
         const mockCtx = { ...mockCtxBase, message: { text: '999 1' } };
-        actualSuraAya2AyaId.mockReturnValueOnce(-1); // -1 indicates invalid Sura
-
-        await TelegramBotModule.handleText(mockCtx);
-
-        // Expect 'unrecognized' to be called, which then calls bot.telegram.sendMessage
-        expect(mockSendMessage).toHaveBeenCalledWith(
+        mockSuraAya2AyaId.mockReturnValueOnce(-1);
+        await handleText(mockCtx);
+        expect(mockTelegrafSendMessage).toHaveBeenCalledWith(
             mockCtx.chat.id,
-            expect.stringContaining('عذرا، لم نتعرف على اسم سورة'), // Reason 1 for unrecognized
-            expect.any(Object) // Reply markup
+            expect.stringContaining('عذرا، لم نتعرف على اسم سورة'),
+            expect.any(Object)
         );
-        expect(TelegramBotModule.sendAya).not.toHaveBeenCalled();
+        expect(sendAya).not.toHaveBeenCalled();
     });
 
-    it('should call unrecognized for valid Sura but invalid Aya (e.g., "1 99")', async () => { // Ensure async
+    it('should call unrecognized for valid Sura but invalid Aya (e.g., "1 99")', async () => {
         const mockCtx = { ...mockCtxBase, message: { text: '1 99' } };
-        actualSuraAya2AyaId.mockReturnValueOnce(0); // 0 indicates valid Sura, invalid Aya
-
-        await TelegramBotModule.handleText(mockCtx);
-
-        expect(mockSendMessage).toHaveBeenCalledWith(
+        mockSuraAya2AyaId.mockReturnValueOnce(0);
+        await handleText(mockCtx);
+        expect(mockTelegrafSendMessage).toHaveBeenCalledWith(
             mockCtx.chat.id,
-            expect.stringContaining('عذرا، رقم الآية ليس في السورة المطلوبة'), // Reason 2
+            expect.stringContaining('عذرا، رقم الآية ليس في السورة المطلوبة'),
             expect.any(Object)
         );
-        expect(TelegramBotModule.sendAya).not.toHaveBeenCalled();
+        expect(sendAya).not.toHaveBeenCalled();
     });
 
-    it('should call unrecognized for purely textual message not matching any pattern', async () => { // Ensure async
+    it('should call unrecognized for purely textual message not matching any pattern', async () => {
         const mockCtx = { ...mockCtxBase, message: { text: 'Hello world' } };
-        // This will result in ayaId = -2 (initial value) as no patterns match.
-        // The code path for ayaId < 0 (and not -1 specifically) leads to unrecognized(ctx, 1)
-        // However, the logic is: if ayaId > 0 -> sendAya. else if ayaId < 0 -> unrecognized(ctx,1). else if ayaId == 0 -> unrecognized(ctx,2)
-        // If no numbers and no Arabic Sura name match, ayaId remains -2.
-        // This means unrecognized(ctx, 1) will be called.
-
-        await TelegramBotModule.handleText(mockCtx);
-
-        expect(mockSendMessage).toHaveBeenCalledWith(
+        await handleText(mockCtx);
+        expect(mockTelegrafSendMessage).toHaveBeenCalledWith(
             mockCtx.chat.id,
-            expect.stringContaining('عذرا، لم نتعرف على اسم سورة'), // Reason 1
+            expect.stringContaining('عذرا، لم نتعرف على اسم سورة'),
             expect.any(Object)
         );
-        expect(TelegramBotModule.sendAya).not.toHaveBeenCalled();
+        expect(sendAya).not.toHaveBeenCalled();
     });
 });
 
@@ -532,78 +516,80 @@ describe('Telegram Command Handlers', () => {
     describe('/help command', () => {
         let helpHandler;
         const mockUserCtx = {
-            // Mock context for a user interaction
-            chat: { id: 12345, type: 'private' }, // Private chat implies admin for help
+            chat: { id: 12345, type: 'private' },
             from: { id: 123, is_bot: false, first_name: 'TestUser' },
-            reply: mockReply,
+            reply: mockTelegrafReply,
         };
         const mockGroupCtxNonAdmin = {
             chat: { id: 'g123', type: 'group' },
             from: { id: 456, is_bot: false, first_name: 'NonAdminUser' },
-            reply: mockReply,
+            reply: mockTelegrafReply,
         };
 
-        beforeAll(() => {
-            // Find the handler registered for the 'help' command
-            const commandCall = mockBotInstance.command.mock.calls.find((call) => call[0] === 'help');
+        beforeAll(async () => {
+            await botUsernameReady;
+            const commandCall = mockBotInstanceForTelegraf.command.mock.calls.find((call) => call[0] === 'help');
             if (commandCall && typeof commandCall[1] === 'function') {
                 helpHandler = commandCall[1];
             } else {
-                // This can happen if telegramBot.js hasn't been fully imported/run due to test setup,
-                // or if the command registration logic changes.
                 console.error(
-                    'Help command handler not found in mockBotInstance.command calls. Calls:',
-                    mockBotInstance.command.mock.calls
+                    'Help command handler not found. Calls:',
+                    mockBotInstanceForTelegraf.command.mock.calls.map((c) => c[0])
                 );
             }
         });
 
         beforeEach(() => {
-            mockSendMessage.mockClear();
-            mockReply.mockClear();
-            mockGetChatMember.mockClear();
-            // Default to non-admin for group context unless overridden
-            mockGetChatMember.mockResolvedValue({ status: 'member' });
+            mockTelegrafSendMessage.mockClear();
+            mockTelegrafReply.mockClear();
+            mockTelegrafGetChatMember.mockClear();
+            mockTelegrafGetChatMember.mockResolvedValue({ status: 'member' });
         });
 
-        it.skip('should send instructions message if handler is found and user is admin (private chat)', async () => { // Was: pending
+        it.skip('should send instructions message if handler is found and user is admin (private chat)', async () => {
             if (!helpHandler) {
-                return; // No longer pending
+                console.warn('Skipping /help admin private test: handler not found.');
+                return;
             }
-            // For private chat, adminChecker returns true without needing getChatMember mock
             await helpHandler(mockUserCtx);
-            // The instructions function calls bot.telegram.sendMessage
-            expect(mockSendMessage).toHaveBeenCalledWith(
+            expect(mockTelegrafSendMessage).toHaveBeenCalledWith(
                 mockUserCtx.chat.id,
                 expect.stringContaining('يمكنك طلب آية محددة')
             );
-            expect(mockReply).not.toHaveBeenCalled(); // instructions sends its own message
+            expect(mockTelegrafReply).not.toHaveBeenCalled();
         });
 
-        it.skip('should send instructions message if handler is found and user is admin (group chat)', async () => { // Was: pending
+        it.skip('should send instructions message if handler is found and user is admin (group chat)', async () => {
             if (!helpHandler) {
-                return; // No longer pending
+                console.warn('Skipping /help admin group test: handler not found.');
+                return;
             }
-            mockGetChatMember.mockResolvedValue({ status: 'administrator' }); // Make user admin in group
+            mockTelegrafGetChatMember.mockResolvedValue({ status: 'administrator' });
             const groupAdminCtx = { ...mockGroupCtxNonAdmin, from: { ...mockGroupCtxNonAdmin.from, id: 999 } };
             await helpHandler(groupAdminCtx);
-            expect(mockGetChatMember).toHaveBeenCalledWith(groupAdminCtx.chat.id, groupAdminCtx.from.id);
-            expect(mockSendMessage).toHaveBeenCalledWith(
+            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith(groupAdminCtx.chat.id, groupAdminCtx.from.id);
+            expect(mockTelegrafSendMessage).toHaveBeenCalledWith(
                 groupAdminCtx.chat.id,
                 expect.stringContaining('يمكنك طلب آية محددة')
             );
-            expect(mockReply).not.toHaveBeenCalled();
+            expect(mockTelegrafReply).not.toHaveBeenCalled();
         });
 
-        it.skip('should reply with NON_ADMINS_ALERT if user is not admin in a group chat', async () => { // Was: pending
+        it.skip('should log and not send instructions if user is not admin in a group chat', async () => {
             if (!helpHandler) {
-                return; // No longer pending
+                console.warn('Skipping /help non-admin group test: handler not found.');
+                return;
             }
-            // mockGetChatMember already defaults to 'member' status
             await helpHandler(mockGroupCtxNonAdmin);
-            expect(mockGetChatMember).toHaveBeenCalledWith(mockGroupCtxNonAdmin.chat.id, mockGroupCtxNonAdmin.from.id);
-            expect(mockReply).toHaveBeenCalledWith(NON_ADMINS_ALERT);
-            expect(mockSendMessage).not.toHaveBeenCalled(); // Should not send instructions
+            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith(
+                mockGroupCtxNonAdmin.chat.id,
+                mockGroupCtxNonAdmin.from.id
+            );
+            expect(mockLoggerGlobal).toHaveBeenCalledWith(
+                expect.stringContaining('Ignored /help command from non-admin')
+            );
+            expect(mockTelegrafSendMessage).not.toHaveBeenCalled();
+            expect(mockTelegrafReply).not.toHaveBeenCalledWith(NON_ADMINS_ALERT);
         });
     });
 });

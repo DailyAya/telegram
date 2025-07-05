@@ -4,6 +4,13 @@ import config from './config.js';
 import { logger, setBotInstance, bootstrapLogger } from './logger.js';
 import { lastAyaTime, setFavReciter, getFavReciter, getDB } from './database.js';
 import {
+    NON_ADMINS_ALERT as BOT_NON_ADMINS_ALERT, // Alias to avoid conflict if this file also defines it
+    adminChecker as helperAdminChecker,
+    successSend as helperSuccessSend,
+    sendSorry as helperSendSorry,
+    aMenuButtons as helperAMenuButtons,
+} from './botHelpers.js';
+import {
     prepareAya,
     getRecitation,
     isValidReciter,
@@ -29,17 +36,12 @@ import { randomAyaNumber, numArabicToEnglish } from './utils.js';
  * @property {function} launchBot - Function to launch the Telegram bot.
  * @property {function} sendAya - Function to send an Aya (text and optionally recitation).
  * @property {function} adminChecker - Function to check if a user is an admin in a chat.
- * @property {string} NON_ADMINS_ALERT - Standard alert message for non-admin users.
+ * @property {string} NON_ADMINS_ALERT - Standard alert message for non-admin users. // This will be from botHelpers
  * @property {function} surpriseAya - Function to handle the "surprise me" action.
  * @property {function} handleText - Function to handle incoming text messages for Aya requests.
  */
 
-// --- Constants ---
-/**
- * Standard alert message for non-admin users trying to access admin-only features.
- * @type {string}
- */
-export const NON_ADMINS_ALERT = `عذرا، هذه الخاصية في المجموعات والقنوات متاحة للمشرفين فقط.\n\nSorry, this feature in groups and channels is only available for admins.`;
+// NON_ADMINS_ALERT is now imported as BOT_NON_ADMINS_ALERT from botHelpers.js
 
 // --- Bot Initialization ---
 /**
@@ -96,147 +98,12 @@ bot.telegram
  */
 const quranData = getQuranData();
 
-// --- Migrated Helper Functions (Adapted) ---
+// --- Helper Functions are being moved to botHelpers.js ---
 
-/**
- * Checks if the user who sent the context (ctx) is an admin in the chat.
- * For private chats, all users are considered "admins" in this context.
- * For group/supergroup chats, it checks if the user's status is 'creator' or 'administrator'.
- * @async
- * @function adminChecker
- * @param {import('telegraf').Context} ctx - The Telegraf context object.
- * @returns {Promise<boolean>} True if the user is an admin or in a private chat, false otherwise.
- */
-export async function adminChecker(ctx) {
-    if (!ctx || !ctx.chat || !ctx.from) {
-        logger('adminChecker: Invalid context received.', ctx);
-        return false;
-    }
-    if (ctx.chat.type === 'private') {
-        return true;
-    }
-    try {
-        const member = await bot.telegram.getChatMember(ctx.chat.id, ctx.from.id);
-        return ['creator', 'administrator'].includes(member.status);
-    } catch (e) {
-        logger('Error in adminChecker while calling getChatMember: ', e);
-        return false;
-    }
-}
-
-/**
- * Logs a successful Aya send operation and updates the database with the last Aya time.
- * @async
- * @private
- * @function successSend
- * @param {import('telegraf').Context} ctx - The Telegraf context object from the sent message.
- * @param {number} ayaId - The global ID of the Aya that was sent.
- * @param {string|undefined} lang - The language code of the user/chat.
- * @param {string} trigger - The trigger for sending the Aya (e.g., "request", "timer").
- */
-async function successSend(ctx, ayaId, lang, trigger) {
-    try {
-        const chatType = ctx.chat.type;
-        const chatName = chatType === 'private' ? ctx.chat.first_name || ctx.from?.first_name : ctx.chat.title;
-        await lastAyaTime(ctx.chat.id, 'success', chatName, chatType, lang, trigger);
-        logger(`Successfully sent Aya ${ayaId} to chat ${ctx.chat.id} (${chatName}). Trigger: ${trigger}`);
-    } catch (e) {
-        logger(`Error in successSend for chat ${ctx.chat.id}:`, e);
-    }
-}
-
-/**
- * Sends a standardized "sorry" message to a chat when an operation fails.
- * @async
- * @private
- * @function sendSorry
- * @param {number|string} chatId - The ID of the chat to send the message to.
- * @param {'audio'|'text'|'unknown'} reason - The reason for the apology, determines the message content.
- */
-async function sendSorry(chatId, reason) {
-    let msg;
-    switch (reason) {
-        case 'audio':
-            msg = `عذرا.. نواجه مشكلة في الملفات الصوتية ونأمل إصلاحها قريبا.\n\nSorry.. There's an issue in audio files and we hope it gets fixed soon.`;
-            break;
-        case 'text':
-            msg = `عذرا.. نواجه مشكلة في نصوص الآيات ونأمل إصلاحها قريبا.\n\nSorry.. There's an issue in Aya texts and we hope it gets fixed soon.`;
-            break;
-        default: // 'unknown' or any other reason
-            msg = `عذرا.. حدثت مشكلة غير معروفة.\n\nSorry.. An unknown issue happened.`;
-            break;
-    }
-    try {
-        await bot.telegram.sendMessage(chatId, msg, { disable_notification: true });
-        logger(`Sorry message sent to ${chatId} due to ${reason}.`);
-    } catch (e) {
-        logger(`Failed to send sorry message to ${chatId}:`, e);
-    }
-}
-
-/**
- * Generates the inline keyboard markup for the Aya menu.
- * @private
- * @function aMenuButtons
- * @param {string} menuState - The current state of the menu (e.g., "t0", "r1"). "t" for text, "r" for recitation. "0" for compact, "1" for expanded.
- * @param {number} ayaId - The global Aya ID.
- * @param {string} reciter - The identifier of the reciter.
- * @returns {import('telegraf').Markup.Markup<import('telegraf/typings/core/types/typegram').InlineKeyboardMarkup>} The Telegraf inline keyboard markup.
- */
-function aMenuButtons(menuState, ayaId, reciter) {
-    if (!bot.options.username) {
-        logger(
-            'aMenuButtons: bot.options.username is not set. Using default.',
-            new Error('bot.options.username missing')
-        );
-    }
-    // const currentBotUsername = bot.options.username || 'DailyAyaBot'; // Unused
-
-    const buttons = {
-        inline_keyboard: [
-            [
-                {
-                    text: menuState.includes('0') ? '···' : '•••', // Toggle button text
-                    callback_data: JSON.stringify({ aMenu: menuState, a: ayaId, r: reciter }),
-                },
-            ],
-        ],
-    };
-
-    if (menuState.includes('1')) {
-        // Expanded menu
-        const ayaIndex = ayaId2suraAya(ayaId);
-        buttons.inline_keyboard[0].push({
-            text: '⚠️', // Report issue
-            url: `https://sherbeeny.t.me?text=${encodeURIComponent(`السلام عليكم يا مطور دايلي آية\nرجاء مراجعة الآية ${ayaIndex.sura}:${ayaIndex.aya}\n\nPeace upon you, Daily Aya developer\nPlease revise Aya ${ayaIndex.sura}:${ayaIndex.aya}`)}`,
-        });
-        if (menuState === 'r1') {
-            // Only show set reciter for recitation menu
-            buttons.inline_keyboard[0].push({
-                text: '🗣️', // Set reciter
-                callback_data: JSON.stringify({ setReciter: reciter, a: ayaId }),
-            });
-        }
-        buttons.inline_keyboard[0].push({
-            text: '📖', // Read Tafsir
-            url: `https://quran.com/${ayaIndex.sura}:${ayaIndex.aya}/tafsirs/ar-tafsir-muyassar`,
-        });
-    }
-
-    if (menuState.includes('t')) {
-        // Only show recitation button for text menu
-        buttons.inline_keyboard[0].push({
-            text: '🔊', // Request recitation
-            callback_data: JSON.stringify({ recite: ayaId, r: reciter }),
-        });
-    }
-
-    buttons.inline_keyboard[0].push({
-        text: '▼', // Next Aya
-        callback_data: JSON.stringify({ currAya: ayaId, r: reciter }),
-    });
-    return buttons;
-}
+// adminChecker is now imported as helperAdminChecker from botHelpers.js
+// successSend is now imported as helperSuccessSend from botHelpers.js
+// sendSorry is now imported as helperSendSorry from botHelpers.js
+// aMenuButtons is now imported as helperAMenuButtons from botHelpers.js
 
 /**
  * Sends the text part of an Aya (Arabic and English translation) to a chat.
@@ -267,12 +134,12 @@ async function sendAyaText(chatId, ayaId, reciter, lang, trigger) {
 
     if (preparedAya.arText.startsWith('Error:')) {
         logger(`sendAyaText: Error preparing Aya ${ayaId}: ${preparedAya.arText}`);
-        await sendSorry(chatId, 'text');
+        await helperSendSorry(bot.telegram, chatId, 'text');
         return null;
     }
 
     const ayaDualText = `${preparedAya.arText}\n\n${preparedAya.enText}`;
-    const buttons = aMenuButtons('t0', ayaId, currentReciter);
+    const buttons = helperAMenuButtons('t0', ayaId, currentReciter, bot.options.username, ayaId2suraAya);
 
     try {
         const sentMessageCtx = await bot.telegram.sendMessage(chatId, ayaDualText, {
@@ -281,7 +148,7 @@ async function sendAyaText(chatId, ayaId, reciter, lang, trigger) {
             parse_mode: 'HTML',
             reply_markup: buttons,
         });
-        await successSend(sentMessageCtx, ayaId, lang, trigger);
+        await helperSuccessSend(sentMessageCtx, ayaId, lang, trigger, lastAyaTime);
         return sentMessageCtx;
     } catch (e) {
         logger(`Error in sendAyaText sending message to chat ${chatId} for Aya ${ayaId}:`, e);
@@ -324,7 +191,7 @@ async function sendAyaRecitation(ctx, ayaId, reciterIdentifier) {
                     `sendAyaRecitation: Could not determine a valid reciter for chat ${chatId}.`,
                     new Error('No reciter available')
                 );
-                await sendSorry(chatId, 'audio');
+                await helperSendSorry(bot.telegram, chatId, 'audio');
                 return;
             }
         }
@@ -335,7 +202,7 @@ async function sendAyaRecitation(ctx, ayaId, reciterIdentifier) {
         const recitationUrl = await getRecitation(ayaId, finalReciter);
         const suraAyaIndex = ayaId2suraAya(ayaId);
         const recitationCaption = `<a href="t.me/${bot.options.username || 'DailyAyaBot'}?start=${suraAyaIndex.sura}-${suraAyaIndex.aya}">@${bot.options.username || 'DailyAyaBot'} ➔ ${suraAyaIndex.sura}:${suraAyaIndex.aya}</a>`;
-        const buttons = aMenuButtons('r0', ayaId, finalReciter);
+        const buttons = helperAMenuButtons('r0', ayaId, finalReciter, bot.options.username, ayaId2suraAya);
 
         const sentAudioCtx = await bot.telegram.sendAudio(chatId, recitationUrl, {
             caption: recitationCaption,
@@ -413,10 +280,10 @@ async function sendAyaRecitation(ctx, ayaId, reciterIdentifier) {
             ) {
                 await lastAyaTime(chatId, 'blocked');
             } else {
-                await sendSorry(chatId, 'audio');
+                await helperSendSorry(bot.telegram, chatId, 'audio');
             }
         } else {
-            await sendSorry(chatId, 'audio');
+            await helperSendSorry(bot.telegram, chatId, 'audio');
         }
     }
 }
@@ -464,6 +331,7 @@ async function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation = f
  * @function surpriseAya
  * @param {import('telegraf').Context} ctx - The Telegraf context object.
  */
+
 export async function surpriseAya(ctx) {
     const lang = ctx.from?.language_code;
     await sendAya(ctx.chat.id, null, null, lang, 'surprise', false);
@@ -551,7 +419,7 @@ For available commands: /commands`;
                 inline_keyboard: [[{ text: '🎁', callback_data: JSON.stringify({ surpriseAyaAction: true }) }]],
             },
         });
-        await successSend(sentMsgCtx, 0, ctx?.from?.language_code || '', 'request'); // ayaId 0 for start message
+        await helperSuccessSend(sentMsgCtx, 0, ctx?.from?.language_code || '', 'request', lastAyaTime); // ayaId 0 for start message
         if (ctx) await summaryStats(ctx);
     } catch (e) {
         logger(`Error while sending start message to chat ${chatId}:`, e);
@@ -629,7 +497,7 @@ Or Sura number only: 2`;
  */
 async function unrecognized(ctx, reason) {
     const chatId = ctx.chat.id;
-    const isUserAdmin = await adminChecker(ctx);
+    const isUserAdmin = await helperAdminChecker(ctx, bot.telegram);
     if (!isUserAdmin) {
         logger(`Ignored unrecognized message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`);
         return;
@@ -817,7 +685,7 @@ function khatmaUpdate({ userId, firstName, currentText, currentEntities, juz }) 
 
 // --- Command Handlers ---
 bot.start(async (ctx) => {
-    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+    if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, bot.telegram))) {
         logger(`Ignored /start command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return;
     }
@@ -830,7 +698,7 @@ bot.start(async (ctx) => {
 });
 
 bot.help(async (ctx) => {
-    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+    if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, bot.telegram))) {
         logger(`Ignored /help command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return; // Silently ignore in groups if not admin
     }
@@ -839,7 +707,7 @@ bot.help(async (ctx) => {
 });
 
 bot.command('surpriseme', async (ctx) => {
-    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+    if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, bot.telegram))) {
         logger(
             `Ignored /surpriseme command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
         );
@@ -849,7 +717,7 @@ bot.command('surpriseme', async (ctx) => {
 });
 
 bot.command('support', async (ctx) => {
-    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+    if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, bot.telegram))) {
         logger(
             `Ignored /support command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
         );
@@ -868,7 +736,7 @@ bot.command('support', async (ctx) => {
 });
 
 bot.command('reciters', async (ctx) => {
-    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+    if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, bot.telegram))) {
         logger(
             `Ignored /reciters command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
         );
@@ -881,7 +749,7 @@ bot.command('reciters', async (ctx) => {
 });
 
 bot.command('channel', async (ctx) => {
-    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+    if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, bot.telegram))) {
         logger(
             `Ignored /channel command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
         );
@@ -891,7 +759,7 @@ bot.command('channel', async (ctx) => {
 });
 
 bot.command('khatma', async (ctx) => {
-    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+    if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, bot.telegram))) {
         logger(
             `Ignored /khatma command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
         );
@@ -910,7 +778,7 @@ bot.command('khatma', async (ctx) => {
 });
 
 bot.command('commands', async (ctx) => {
-    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+    if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, bot.telegram))) {
         logger(
             `Ignored /commands command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
         );
@@ -953,11 +821,11 @@ bot.telegram
  * @param {boolean} [alertIfNotAdmin=true] - Whether to show an alert to non-admins.
  */
 async function adminProtectedAction(ctx, actionFn, alertIfNotAdmin = true) {
-    const isUserAdmin = await adminChecker(ctx);
+    const isUserAdmin = await helperAdminChecker(ctx, bot.telegram);
     if (!isUserAdmin) {
         if (alertIfNotAdmin)
             await ctx
-                .answerCbQuery(NON_ADMINS_ALERT, { show_alert: true })
+                .answerCbQuery(BOT_NON_ADMINS_ALERT, { show_alert: true })
                 .catch((e) => logger('Error answering CBQ for non-admin:', e));
         else await ctx.answerCbQuery().catch((e) => logger('Error answering CBQ (silent) for non-admin:', e));
         return;
@@ -986,7 +854,7 @@ async function adminProtectedAction(ctx, actionFn, alertIfNotAdmin = true) {
  * @param {string|null} [nonAdminUrl=null] - Pre-calculated URL for non-admins (if `nonAdminCb` is not used).
  */
 async function adminConditionalAction(ctx, adminFn, nonAdminCb, nonAdminAlert = false, nonAdminUrl = null) {
-    const isUserAdmin = await adminChecker(ctx);
+    const isUserAdmin = await helperAdminChecker(ctx, bot.telegram); // Updated call
     if (isUserAdmin) {
         try {
             await adminFn(ctx);
@@ -1001,11 +869,11 @@ async function adminConditionalAction(ctx, adminFn, nonAdminCb, nonAdminAlert = 
         const urlToOpen = nonAdminUrl || (typeof nonAdminCb === 'function' ? await nonAdminCb(ctx) : null);
         if (urlToOpen) {
             await ctx
-                .answerCbQuery(nonAdminAlert ? NON_ADMINS_ALERT : '', { url: urlToOpen })
+                .answerCbQuery(nonAdminAlert ? BOT_NON_ADMINS_ALERT : '', { url: urlToOpen })
                 .catch((e) => logger('Error answering CBQ with URL for non-admin:', e));
         } else {
             await ctx
-                .answerCbQuery(nonAdminAlert ? NON_ADMINS_ALERT : '', { show_alert: nonAdminAlert })
+                .answerCbQuery(nonAdminAlert ? BOT_NON_ADMINS_ALERT : '', { show_alert: nonAdminAlert })
                 .catch((e) => logger('Error answering CBQ for non-admin (no URL):', e));
         }
     }
@@ -1181,7 +1049,8 @@ bot.action(/^{"currAya":\d+,"r":"[^"]+"}$/, async (ctx) => {
                 false // <--- Changed value
             );
         },
-        async (nonAdminCtx) => {
+        async (_nonAdminCtx) => {
+            // Prefixed with underscore
             const ayaIndex = ayaId2suraAya(nextAya(callbackData.currAya));
             return `t.me/${bot.options.username || 'DailyAyaBot'}?start=${ayaIndex.sura}-${ayaIndex.aya}`;
         },
@@ -1196,7 +1065,7 @@ bot.action(/^{"aMenu":"[^"]+","a":\d+,"r":"[^"]+"}$/, async (ctx) => {
         const menu = callbackData.aMenu.includes('1')
             ? callbackData.aMenu.replace('1', '0')
             : callbackData.aMenu.replace('0', '1');
-        const buttons = aMenuButtons(menu, callbackData.a, callbackData.r);
+        const buttons = helperAMenuButtons(menu, callbackData.a, callbackData.r, bot.options.username, ayaId2suraAya);
         try {
             await adminCtx.editMessageReplyMarkup(buttons);
         } catch (e) {
@@ -1214,7 +1083,8 @@ bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
             logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite} in chat ${adminCtx.chat.id}`);
             await sendAyaRecitation(adminCtx, callbackData.recite, callbackData.r);
         },
-        async (nonAdminCtx) => {
+        async (_nonAdminCtx) => {
+            // Prefixed with underscore
             const ayaIndex = ayaId2suraAya(callbackData.recite);
             return `t.me/${bot.options.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
         },
@@ -1225,7 +1095,7 @@ bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
 
 // --- Other Event Handlers ---
 bot.on('text', async (ctx) => {
-    if (ctx.chat.type !== 'private' && !(await adminChecker(ctx))) {
+    if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, bot.telegram))) {
         logger(`Ignored text message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return; // Silently ignore text from non-admins in groups
     }
