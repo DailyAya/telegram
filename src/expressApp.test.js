@@ -1,16 +1,64 @@
 import request from 'supertest';
-import app from './expressApp.js'; // app is the default export
+import { jest } from '@jest/globals'; // Explicitly import jest
+// import app from './expressApp.js'; // Import will be dynamic
 
-// Removed jest.mock('./config.js'); - will rely on env variables set by setup script
+// Default mock config values
+let currentMockConfig = {
+    telegramToken: 'MOCK_TELEGRAM_TOKEN_VALID',
+    devChatId: 'MOCK_DEV_CHAT_ID_VALID',
+    mongoDbCredentials: 'mockuser:mockpassword',
+    mongoSubdomain: 'mockcluster.mongodb.net',
+    mongoURI: 'mongodb+srv://mockuser:mockpassword@mockcluster.mongodb.net/?retryWrites=true&w=majority',
+    branch: 'test-branch',
+    inst: 'test-inst-01',
+    host: 'test-host-server',
+    totalInst: '2',
+    debugging: false,
+    codeVer: 'v1.2.3-test',
+    instActiveUntil: '2099-12-31',
+    port: 3000,
+};
 
-// Mock logger to prevent actual logging during tests and allow assertions on logs if needed
-jest.mock('./logger.js', () => ({
+// Mock config.js using unstable_mockModule
+jest.unstable_mockModule('./config.js', () => ({
     __esModule: true,
-    logger: jest.fn(),
-    bootstrapLogger: jest.fn(),
+    default: currentMockConfig,
+}));
+
+// Mock logger using unstable_mockModule
+const mockLoggerFn = jest.fn();
+const mockBootstrapLoggerFn = jest.fn();
+jest.unstable_mockModule('./logger.js', () => ({
+    __esModule: true,
+    logger: mockLoggerFn,
+    bootstrapLogger: mockBootstrapLoggerFn,
 }));
 
 describe('Express App Tests', () => {
+    let app;
+
+    beforeEach(async () => {
+        // Reset properties of currentMockConfig to default
+        Object.assign(currentMockConfig, {
+            telegramToken: 'MOCK_TELEGRAM_TOKEN_VALID',
+            devChatId: 'MOCK_DEV_CHAT_ID_VALID',
+            mongoDbCredentials: 'mockuser:mockpassword',
+            mongoSubdomain: 'mockcluster.mongodb.net',
+            mongoURI: 'mongodb+srv://mockuser:mockpassword@mockcluster.mongodb.net/?retryWrites=true&w=majority',
+            branch: 'test-branch',
+            inst: 'test-inst-01',
+            host: 'test-host-server',
+            totalInst: '2',
+            debugging: false,
+            codeVer: 'v1.2.3-test',
+            instActiveUntil: '2099-12-31',
+            port: 3000,
+        });
+        // Dynamically import app to get a fresh instance with current mock config
+        // This app instance will be used by tests that don't need to change config mid-test
+        app = (await import('./expressApp.js')).default;
+    });
+
     describe('GET /', () => {
         it('should return the instance state message with status 200 and expected content', async () => {
             const response = await request(app).get('/');
@@ -29,39 +77,56 @@ describe('Express App Tests', () => {
         });
 
         it('should return status 200 and debugging mode message when config.debugging is true', async () => {
-            // Temporarily override the mock for this specific test
-            // Note: jest.isolateModules will isolate the default mock from src/__mocks__/config.js as well.
-            // This inline mock inside isolateModules will take precedence for this isolated scope.
-            jest.isolateModules(async () => {
+            const originalValues = { ...currentMockConfig }; // Deep copy for full restoration
+
+            // Modify properties of the existing currentMockConfig object
+            currentMockConfig.branch = 'debug-branch';
+            currentMockConfig.inst = 'debug-inst';
+            currentMockConfig.host = 'debug-host';
+            currentMockConfig.totalInst = '1';
+            currentMockConfig.debugging = true;
+            currentMockConfig.codeVer = 'v-debug';
+            currentMockConfig.instActiveUntil = 'debug-active';
+            currentMockConfig.port = 3003;
+            // Assuming critical token/chatId are part of currentMockConfig and don't need separate handling if restored fully
+
+            // Use jest.isolateModules to ensure a fresh import of expressApp with the modified currentMockConfig
+            await jest.isolateModules(async () => {
+                // Override the config mock specifically for this isolated scope
                 const mockDebugConfig = {
+                    ...currentMockConfig, // Start with potentially already modified values if needed, or a clean default
                     branch: 'debug-branch',
                     inst: 'debug-inst',
                     host: 'debug-host',
                     totalInst: '1',
-                    debugging: true, // Test with debugging true
+                    debugging: true,
                     codeVer: 'v-debug',
                     instActiveUntil: 'debug-active',
                     port: 3003,
-                    // Ensure all critical fields from the global mock are present if expressApp needs them
-                    telegramToken: 'MOCK_TELEGRAM_TOKEN_VALID',
-                    devChatId: 'MOCK_DEV_CHAT_ID_VALID',
-                    mongoDbCredentials: 'mockuser:mockpassword',
-                    mongoSubdomain: 'mockcluster.mongodb.net',
-                    mongoURI: 'mongodb+srv://mockuser:mockpassword@mockcluster.mongodb.net/?retryWrites=true&w=majority',
+                    // Ensure critical fields are present
+                    telegramToken: currentMockConfig.telegramToken || 'MOCK_TELEGRAM_TOKEN_VALID_DEBUG',
+                    devChatId: currentMockConfig.devChatId || 'MOCK_DEV_CHAT_ID_VALID_DEBUG',
+                    mongoDbCredentials: currentMockConfig.mongoDbCredentials || 'mockuser:mockpassword',
+                    mongoSubdomain: currentMockConfig.mongoSubdomain || 'mockcluster.mongodb.net',
+                    mongoURI:
+                        currentMockConfig.mongoURI ||
+                        'mongodb+srv://mockuser:mockpassword@mockcluster.mongodb.net/?retryWrites=true&w=majority',
                 };
-
                 jest.doMock('./config.js', () => ({
+                    // jest.doMock is hoisted within isolateModules
                     __esModule: true,
                     default: mockDebugConfig,
                 }));
 
                 const appWithDebugConfig = (await import('./expressApp.js')).default;
-
                 const response = await request(appWithDebugConfig).get('/');
                 expect(response.status).toBe(200);
                 expect(response.text).toContain('DailyAyaTelegram debug-branch instance debug-inst@debug-host');
                 expect(response.text).toContain('debugging mode of version v-debug until debug-active');
             });
+
+            // Restore all original values to currentMockConfig
+            Object.assign(currentMockConfig, originalValues);
         });
     });
 

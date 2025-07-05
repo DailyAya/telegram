@@ -92,7 +92,7 @@ export async function checkConnectivity(url) {
     const delayBetweenAttempts = 2000; // 2 seconds
     const tcpConnectionTimeout = 7000; // 7 seconds for each TCP connection attempt (increased from 5s)
 
-    let lastError = null; // To store the last error message for logging, if needed
+    // let lastError = null; // To store the last error message for logging, if needed (removed as unused)
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         let hostname, port;
@@ -101,14 +101,16 @@ export async function checkConnectivity(url) {
             hostname = parsedUrl.hostname;
             // Ensure port is an integer; default to 443 for https, 80 for http
             port = parseInt(parsedUrl.port || (parsedUrl.protocol === 'https:' ? '443' : '80'), 10);
-            if (!hostname) { // Basic validation for hostname
+            if (!hostname) {
+                // Basic validation for hostname
                 throw new Error('Hostname could not be derived from URL.');
             }
-        } catch (parseError) {
-            lastError = `URL parsing error: ${parseError.message}`;
-            // In a real scenario, log this: logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Invalid URL "${url}". Error: ${lastError}`);
+            // eslint-disable-next-line no-unused-vars
+        } catch (_parseError) {
+            // lastError = `URL parsing error: _parseError.message`;
+            // In a real scenario, log this: logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Invalid URL "${url}". Error: ${_parseError.message}`);
             if (attempt < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
+                await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
                 continue; // Move to the next attempt
             }
             return false; // All attempts failed due to URL parse error
@@ -125,11 +127,12 @@ export async function checkConnectivity(url) {
                 });
             });
             // logger.debug(`Connectivity Check Attempt ${attempt}/${maxAttempts}: DNS for ${hostname} resolved to ${ipAddress}`);
-        } catch (dnsError) {
-            lastError = `DNS lookup for ${hostname} failed: ${dnsError.message}`;
-            // logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: ${lastError}`);
+            // eslint-disable-next-line no-unused-vars
+        } catch (_dnsError) {
+            // lastError = `DNS lookup for ${hostname} failed: _dnsError.message`;
+            // logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: DNS lookup for ${hostname} failed: ${_dnsError.message}`);
             if (attempt < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
+                await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
                 continue; // Move to the next attempt
             }
             return false; // All attempts failed due to DNS error
@@ -142,34 +145,37 @@ export async function checkConnectivity(url) {
                 socket.setTimeout(tcpConnectionTimeout);
                 socket.connect(port, ipAddress, () => {
                     socket.destroy(); // Clean up the socket
-                    resolve(true);  // TCP connection successful
+                    resolve(true); // TCP connection successful
                 });
                 socket.on('timeout', () => {
                     socket.destroy(); // Clean up the socket
-                    reject(new Error(`TCP connection to ${ipAddress}:${port} timed out after ${tcpConnectionTimeout}ms`));
+                    reject(
+                        new Error(`TCP connection to ${ipAddress}:${port} timed out after ${tcpConnectionTimeout}ms`)
+                    );
                 });
                 socket.on('error', (err) => {
                     socket.destroy(); // Clean up the socket
-                    reject(err);     // TCP connection error
+                    reject(err); // TCP connection error
                 });
             });
             // logger.info(`Connectivity Check Attempt ${attempt}/${maxAttempts}: TCP connection to ${ipAddress}:${port} for URL "${url}" successful.`);
             return true; // Successfully connected
-        } catch (tcpError) {
-            lastError = `TCP connection to ${ipAddress}:${port} (for ${hostname}) failed: ${tcpError.message}`;
-            // logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: ${lastError}`);
+            // eslint-disable-next-line no-unused-vars
+        } catch (_tcpError) {
+            // lastError = `TCP connection to ${ipAddress}:${port} (for ${hostname}) failed: _tcpError.message`;
+            // logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: TCP connection to ${ipAddress}:${port} (for ${hostname}) failed: ${_tcpError.message}`);
             if (attempt < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, delayBetweenAttempts));
+                await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
                 // Continue to the next attempt (handled by the loop)
             } else {
                 // All TCP attempts failed for this DNS resolution
-                // logger.error(`Connectivity Check: All ${maxAttempts} TCP attempts to connect to "${url}" (IP: ${ipAddress}) failed. Last error: ${lastError}`);
+                // logger.error(`Connectivity Check: All ${maxAttempts} TCP attempts to connect to "${url}" (IP: ${ipAddress}) failed. Last error: ${tcpError.message}`);
                 return false; // All attempts for this cycle failed
             }
         }
     }
     // If loop finishes, all attempts failed for different reasons or last one failed.
-    // logger.error(`Connectivity Check: All ${maxAttempts} attempts to connect to "${url}" failed. Last error: ${lastError || 'Unknown error after loop completion.'}`);
+    // logger.error(`Connectivity Check: All ${maxAttempts} attempts to connect to "${url}" failed. Last error: Unknown error after loop completion or last specific error.`);
     return false;
 }
 
@@ -182,9 +188,7 @@ export async function checkConnectivity(url) {
  */
 export async function sendEmergencyNotification(messageText) {
     if (!config.telegramToken || !config.devChatId) {
-        console.error(
-            'Emergency Notifier: telegramToken or devChatId is missing in config. Cannot send notification.'
-        );
+        console.error('Emergency Notifier: telegramToken or devChatId is missing in config. Cannot send notification.');
         return;
     }
 

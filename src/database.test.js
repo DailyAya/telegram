@@ -1,4 +1,5 @@
 import actualConfig from './config.js'; // Actual config is fine, used for mongoURI
+import { jest } from '@jest/globals'; // Explicitly import jest
 
 // --- Mocks ---
 // Define mock implementations first
@@ -89,33 +90,54 @@ describe('Database Service Tests', () => {
         });
 
         it('should handle MongoDB connection failure', async () => {
+            jest.resetModules(); // Reset modules to get fresh database.js state
+            const dbModuleFresh = await import('./database.js');
+            const freshConnectDB = dbModuleFresh.connectDB;
+            // Mocks for mongodb and logger are top-level and should apply to the fresh import.
+            // We use the globally defined mockMongoClientInstance for setting mock behavior.
+
             const connectionError = new Error('Mock DB connection error');
+            mockMongoClientInstance.connect.mockReset(); // Reset any previous mock settings for connect
             mockMongoClientInstance.connect.mockRejectedValueOnce(connectionError);
 
-            await expect(connectDB()).rejects.toThrow('Mock DB connection error');
+            // We also need to re-import ActualMongoClient and actualBootstrapLogger if they were module-scoped after reset
+            // Re-import (or rather, get handles to) the mocks as they would be seen by freshDbModule
+            const { MongoClient: FreshActualMongoClient } = await import('mongodb');
+            const { bootstrapLogger: freshActualBootstrapLogger } = await import('./logger.js');
 
-            expect(ActualMongoClient).toHaveBeenCalledTimes(1);
+            const connectionErrorInstance = new Error('Mock DB connection error'); // Use a different name
+            mockMongoClientInstance.connect.mockReset();
+            mockMongoClientInstance.connect.mockRejectedValueOnce(connectionErrorInstance);
+
+            await expect(freshConnectDB()).rejects.toThrow('Mock DB connection error');
+
+            expect(FreshActualMongoClient).toHaveBeenCalledTimes(1);
             expect(mockMongoClientInstance.connect).toHaveBeenCalledTimes(1);
-            expect(actualBootstrapLogger).toHaveBeenCalledWith('MongoDB connection ERROR:', connectionError);
+            expect(freshActualBootstrapLogger).toHaveBeenCalledWith('MongoDB connection ERROR:', connectionError);
         });
 
         it('getDB should throw error if called before connectDB (or after connection failed)', async () => {
-            // This test's reliability depends on dbInstance being null initially or after a failed connect.
-            // We can simulate a failed connection's state.
+            jest.resetModules();
+            const freshDbModule = await import('./database.js');
+            const freshConnectDB = freshDbModule.connectDB;
+            const freshGetDB = freshDbModule.getDB;
+            const { logger: freshActualLogger } = await import('./logger.js');
+
+            mockMongoClientInstance.connect.mockReset();
+            freshActualLogger.mockClear();
+
             mockMongoClientInstance.connect.mockRejectedValueOnce(new Error('Simulated fail'));
             try {
-                await connectDB();
-            } catch (e) {
+                await freshConnectDB();
+                // eslint-disable-next-line no-unused-vars
+            } catch (_e) {
                 // Expected failure
             }
-            // Now dbInstance should effectively be null OR connectDB threw before setting it.
-            // To be absolutely sure for this test, we might need jest.resetModules() if dbInstance is not reset.
-            // However, database.js is structured so connectDB throws on error *before* setting dbInstance.
 
-            expect(() => getDB()).toThrow(
+            expect(() => freshGetDB()).toThrow(
                 'Database not connected. Ensure connectDB() is called and awaited on startup.'
             );
-            expect(actualLogger).toHaveBeenCalledWith(
+            expect(freshActualLogger).toHaveBeenCalledWith(
                 'Database not connected yet. Call connectDB first.',
                 expect.any(Error)
             );

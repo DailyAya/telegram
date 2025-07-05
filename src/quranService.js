@@ -11,6 +11,19 @@ const apiClient = axios.create({
         'User-Agent': `DailyAyaBot/${config.codeVer || 'unknown_version'}`, // Construct a User-Agent
     },
 });
+
+// Allow apiClient to be replaced for testing
+let currentApiClient = apiClient;
+
+// Development/Test only export to allow overriding the apiClient
+export function __setApiClientForTest(mockClient) {
+    // Ensure this is only effective in test/dev environments for safety
+    if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+        currentApiClient = mockClient;
+    } else {
+        console.warn('__setApiClientForTest should only be used in test/development environments.');
+    }
+}
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -226,7 +239,7 @@ export function nextAya(ayaId) {
  */
 export async function audioUrlCheck(url) {
     try {
-        const response = await apiClient.head(url, { timeout: 5000 }); // Use specific timeout for HEAD
+        const response = await currentApiClient.head(url, { timeout: 5000 }); // Use specific timeout for HEAD
         logger(`audioUrlCheck: HEAD request to ${url} status: ${response.status}`);
         return response.status >= 200 && response.status < 300;
     } catch (error) {
@@ -309,7 +322,7 @@ export async function getRecitation(ayaId, reciterIdentifier) {
     logger(`getRecitation: Attempt ${recitationTries[tryKey]} for ${tryKey}`);
 
     try {
-        const response = await apiClient.get(`http://api.alquran.cloud/v1/ayah/${ayaId}/${chosenReciter}`);
+        const response = await currentApiClient.get(`http://api.alquran.cloud/v1/ayah/${ayaId}/${chosenReciter}`);
         delete recitationTries[tryKey]; // Reset tries on successful API call
 
         const allAudio = [response.data.data.audio].concat(response.data.data.audioSecondary || []);
@@ -322,10 +335,11 @@ export async function getRecitation(ayaId, reciterIdentifier) {
         }
         return await audioPicker(validAudioUrls);
     } catch (error) {
-        logger(`getRecitation: API error for ${tryKey}`, error.message);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger(`getRecitation: API error for ${tryKey}`, errorMessage);
         // Note: Retry logic is primarily handled by subsequent calls if this attempt fails.
         // The `recitationTries` counter will increment on the next attempt for the same key.
-        return Promise.reject(`API error for ${tryKey}: ${error.message}`);
+        return Promise.reject(`API error for ${tryKey}: ${errorMessage}`);
     }
 }
 
@@ -375,7 +389,7 @@ export async function checkSource(botTelegramSendMsgFunc) {
     for (const source of sources) {
         const downloadStart = Date.now();
         try {
-            const response = await apiClient.get(source.url);
+            const response = await currentApiClient.get(source.url);
             const remoteData = source.transformResponse
                 ? source.transformResponse(response)
                 : response.data.data.surahs;

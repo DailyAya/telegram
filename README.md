@@ -75,4 +75,4 @@ The bot uses a custom logger (`src/logger.js`) that logs to the console. For imp
 
 ## AI Agent Instructions
 
-Specific development directives and guidelines for AI agents contributing to this project are located in the `DEAR_AI_READ_THIS.md` file in the root directory.
+Specific development directives and guidelines for AI agents contributing to this project are located in the `AGENTS.md` file in the root directory. This file, along with `AGENT_PROGRESS.md`, helps ensure consistency and track progress for AI-assisted development.
