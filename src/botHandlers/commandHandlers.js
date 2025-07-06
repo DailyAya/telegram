@@ -1,7 +1,8 @@
 // src/botHandlers/commandHandlers.js
 import { logger } from '../logger.js';
 import { getDB, lastAyaTime as lastAyaTimeDbFn } from '../database.js';
-import { helperSuccessSend, instructions as helperInstructions } from '../botHelpers.js';
+// Correctly import `successSend` and alias it to `helperSuccessSend`
+import { successSend as helperSuccessSend, instructions as helperInstructions } from '../botHelpers.js';
 import config from '../config.js';
 
 /**

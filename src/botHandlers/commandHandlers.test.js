@@ -55,11 +55,11 @@ jest.unstable_mockModule('../database.js', () => ({
 }));
 
 // Mock ../botHelpers.js
-const mockHelperSuccessSend = jest.fn();
+const mockHelperSuccessSend = jest.fn(); // This is the mock function instance
 const mockHelperInstructions = jest.fn();
 jest.unstable_mockModule('../botHelpers.js', () => ({
     __esModule: true,
-    helperSuccessSend: mockHelperSuccessSend,
+    successSend: mockHelperSuccessSend, // Mock exports 'successSend', which SUT aliases to helperSuccessSend
     instructions: mockHelperInstructions,
 }));
 
