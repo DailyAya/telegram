@@ -1,4 +1,4 @@
-## Session Summary: Jules - 2025-07-06 (Finalized @ 2025.07.06-1013 Africa/Cairo)
+## Session Summary: Jules - 2025-07-06 (Finalized @ 2025.07.06-1114 Africa/Cairo)
 
 **Goal:** Refactor `telegramBot.js` for modularity and testability, stabilize Jest ESM testing environment, and address any resulting test failures. Continue work on branch `jules_refactor`.
 
@@ -42,11 +42,11 @@
 3.  **Pre-Commit Routine Adherence (Corrected Workflow):**
     *   After being reminded and clarifying versioning (must be real-time Africa/Cairo timestamp using `TZ='Africa/Cairo' date +%Y.%m.%d-%H%M`), performed pre-commit steps for the latest set of changes:
         *   Updated `AGENTS.md` to clarify versioning timezone (Africa/Cairo) and command, and to forbid simulated data.
-        *   Updated `package.json` version to `2025.07.06-1013` (actual Africa/Cairo timestamp).
+        *   Updated `package.json` version to `2025.07.06-1114` (actual Africa/Cairo timestamp).
         *   Ran `npm install`.
-        *   Ran `npm test` (confirming 5 suites pass, 2 fail with known parsing issues).
-        *   Updated `CHANGELOG.md` with version `2025.07.06-1013` and detailed summary.
-        *   Updated this `AGENT_PROGRESS.md` file with version `2025.07.06-1013`.
+        *   Ran `npm test` (confirming 6 suites pass, 1 fails with known parsing issues).
+        *   Updated `CHANGELOG.md` with version `2025.07.06-1114` and detailed summary.
+        *   Updated this `AGENT_PROGRESS.md` file with version `2025.07.06-1114`.
 
 **Current Status:**
 -   **Passing Test Suites (5):**
@@ -55,14 +55,24 @@
     -   `src/database.test.js`
     -   `src/expressApp.test.js`
     -   `src/botHandlers/commandHandlers.test.js`
--   **Failing Test Suites (2 - known parsing issues):**
+    *   **`actionHandlers.test.js`:** Successfully fixed parsing error by rebuilding the test file with a minimal ESM structure and correct config mocking. Implemented and fixed basic tests for `handleGroupKhatmaAction`.
+
+**Current Status:**
+-   **Passing Test Suites (6):**
+    -   `src/utils.test.js`
+    -   `src/quranService.test.js`
+    -   `src/database.test.js`
+    -   `src/expressApp.test.js`
+    -   `src/botHandlers/commandHandlers.test.js`
+    -   `src/botHandlers/actionHandlers.test.js` (basic tests for one handler)
+-   **Failing Test Suites (1 - known parsing issue):**
     -   `src/telegramBot.test.js` (`ReferenceError: require is not defined`)
-    -   `src/botHandlers/actionHandlers.test.js` (`ReferenceError: require is not defined`)
--   The primary goal of refactoring `telegramBot.js` and stabilizing the test environment for most modules has been substantially achieved.
+-   The primary goal of refactoring `telegramBot.js` and stabilizing the test environment for most modules has been substantially achieved. `actionHandlers.test.js` is now workable.
 
 **Next Steps (Post-Commit / New Session):**
--   Address the parsing issues in `telegramBot.test.js` and `actionHandlers.test.js`. This will likely involve carefully recreating these test files or parts of them in a fresh sandbox environment to avoid any corruption from previous large-scale tool operations.
--   Write comprehensive tests for the newly extracted modules, especially for `actionHandlers.js` and the refactored logic within `telegramBot.js` itself.
+-   Address the parsing issues in `src/telegramBot.test.js`. This will likely involve carefully recreating the test file or parts of it in a fresh sandbox environment.
+-   Write comprehensive tests for the remaining functions in `actionHandlers.js`.
+-   Write/adapt tests for the refactored `telegramBot.js`.
 -   Continue with any further refactoring or feature implementation as per project goals.
 
 **Issues Encountered & Solutions:**
