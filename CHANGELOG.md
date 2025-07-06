@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2025.07.06-1407] - 2025-07-06
+## [2025.07.06-1454] - 2025-07-06
 
 ### Changed
 
@@ -34,17 +34,22 @@ All notable changes to this project will be documented in this file.
     - Implemented and fixed basic unit tests for the `handleGroupKhatmaAction` function, covering success and error paths.
     - Added comprehensive unit tests for `handleRecitersNavPageAction`, including admin/non-admin paths, callback data parsing, and error handling.
     - Added comprehensive unit tests for `handleSetReciterAction`, covering various scenarios like setting specific reciters, "surprise" option, non-admin attempts, database errors, and reply construction.
-- **`telegramBot.test.js` Restoration & Basic Tests:**
-    - Resolved the persistent parsing error (`ReferenceError: require is not defined` and subsequent `SyntaxError`) by completely rebuilding the test file with a clean ESM structure.
-    - Implemented comprehensive top-level mocks for all direct dependencies of `telegramBot.js` using `jest.unstable_mockModule` and the established manual `config.js` mocking pattern.
-    - Added initial tests that verify module parsing, correct Telegraf instantiation, setting of `bot.options.username` via mocked `getMe()`, registration of command/action/event handlers, and basic functionality of the `launchBot` function.
+- **`telegramBot.test.js` Enhancements:**
+    - Resolved the persistent parsing error (`ReferenceError: require is not defined` and subsequent `SyntaxError`) by completely rebuilding the test file with a clean ESM structure. (Covered by previous version, but re-verified).
+    - Implemented comprehensive top-level mocks for all direct dependencies of `telegramBot.js`. (Covered by previous version).
+    - Added initial tests that verify module parsing, Telegraf instantiation, `bot.options.username` setting, handler registrations, and `launchBot` functionality. (Covered by previous version).
+    - **Added unit tests for the exported `sendAya` function**, covering:
+        - Successful text sending with and without recitation.
+        - Random Aya selection if `ayaId` is null.
+        - Correct calls to mocked `ayaSender.js` functions.
+        - Error handling for Telegram block errors (verifying `lastAyaTime` is called).
 
 ### Fixed
 
-- Resolved `config.js` loading errors (typically "CRITICAL: telegramToken is not defined") in `utils.test.js`, `quranService.test.js`, and `database.test.js` by applying the new manual config mocking strategy.
-- The `SyntaxError: The requested module '../botHelpers.js' does not provide an export named 'instructions'` in `commandHandlers.test.js` is resolved.
-- `src/botHandlers/actionHandlers.test.js` is now parsable and has enhanced test coverage for `handleGroupKhatmaAction`, `handleRecitersNavPageAction`, and `handleSetReciterAction`. All its current tests pass.
-- `src/telegramBot.test.js` is now parsable and its initial tests for structure, initialization, and `launchBot` pass.
+- Resolved `config.js` loading errors (typically "CRITICAL: telegramToken is not defined") in `utils.test.js`, `quranService.test.js`, and `database.test.js` by applying the new manual config mocking strategy. (Covered by previous version).
+- The `SyntaxError: The requested module '../botHelpers.js' does not provide an export named 'instructions'` in `commandHandlers.test.js` is resolved. (Covered by previous version).
+- `src/botHandlers/actionHandlers.test.js` is now parsable and has enhanced test coverage for `handleGroupKhatmaAction`, `handleRecitersNavPageAction`, and `handleSetReciterAction`. All its current tests pass. (Covered by previous version).
+- `src/telegramBot.test.js` is now parsable and its tests for initialization, `launchBot`, and initial `sendAya` scenarios pass.
 - All 7 test suites are now passing their respective tests.
 
 ### Known Issues
