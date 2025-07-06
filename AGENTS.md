@@ -84,14 +84,17 @@ This file (`AGENTS.MD`) is the primary source of development directives and guid
 
 ## No Simulation of Data/Behavior:
 
+- **Strictly Prohibited**: Do not simulate, guess, or use placeholder/stale data for any operational values, especially timestamps or external API responses. All actions requiring current data (like timestamps for versioning) **MUST** be performed using real system commands (e.g., `date` command) at the time of action.
 - Do not simulate external API responses (Telegram, Quran API) or database behaviors during the design phase without clearly stating it's a conceptual model. Testing **must** involve robust mocks or controlled test environments.
 
 ## Versioning Principle:
 
-- The project **must** follow **Timestamp Versioning** (`yyyy.mm.dd-HHMM`). The timezone for the timestamp is **Africa/Cairo** (`HHMM` in 24-hour format).
-- **Crucially, a new version number MUST be generated and `package.json` (and subsequently `package-lock.json`) updated BEFORE EVERY COMMIT, regardless of the nature or significance of the changes.** This means even documentation-only changes or minor fixes require a new version.
+- The project **must** follow **Timestamp Versioning** (`yyyy.mm.dd-HHMM`).
+- The timezone for the timestamp is **strictly Africa/Cairo** (`HHMM` in 24-hour format).
+- This timestamp **MUST** be generated using the command `TZ='Africa/Cairo' date +'%Y.%m.%d-%H%M'` immediately before updating the version in `package.json`.
+- **Crucially, a new version number, generated as described, MUST be applied to `package.json` (and subsequently `package-lock.json`) BEFORE EVERY COMMIT, regardless of the nature or significance of the changes.** This means even documentation-only changes or minor fixes require a new version.
 - Each commit, therefore, represents a new, distinct version.
-- The version string **must** also be included in the commit message.
+- The version string **must** also be included in the commit message body.
 
 ## `package-lock.json` Importance and Synchronization Principle:
 
@@ -107,8 +110,8 @@ Before submitting any changes (i.e., making a commit), the following steps **mus
 3.  **Update `AGENT_PROGRESS.md`:** Summarize the work done, decisions made, and current status. Ensure the "Current Project Focus / Features" section is updated if relevant.
 4.  **Dependency Update (if applicable):** If `package.json` dependencies were added, removed, or changed:
     - Run `npm install`. This will update `package-lock.json` to reflect these dependency changes.
-5.  **Generate Version Timestamp:** Obtain the current timestamp using `TZ='Africa/Cairo' date +'%Y.%m.%d-%H%M'`.
-6.  **Update `package.json` Version:** Modify the `version` field in `package.json` with the newly generated timestamp.
+5.  **Generate Real-time Version Timestamp:** Execute the command `TZ='Africa/Cairo' date +'%Y.%m.%d-%H%M'` to obtain the current Africa/Cairo timestamp. This value **MUST** be used for the version. No simulated or pre-calculated timestamps are allowed.
+6.  **Update `package.json` Version:** Modify the `version` field in `package.json` with the newly generated timestamp from step 5.
 7.  **Synchronize `package-lock.json`:** Run `npm install` again. This step is crucial even if step 4 was performed (or if only the version in `package.json` changed). It ensures that `package-lock.json` is fully synchronized with `package.json`, particularly its internal `name` and `version` fields.
 8.  **Run Linters/Tests (if configured):** Execute any project-defined linters (e.g., ESLint) and automated tests (e.g., Jest). Address any issues identified. The DailyAya project currently uses `npm run lint -- --fix` and `npm test`.
 9.  **Prepare Commit Message:** Draft a descriptive commit message. The first line should be a concise summary (max 50 chars). Include the new version string (e.g., "Version: yyyy.mm.dd-HHMM") in the commit message body.
