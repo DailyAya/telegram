@@ -1,604 +1,331 @@
 import { jest } from '@jest/globals';
-// import { Telegraf } from 'telegraf'; // Original Telegraf for type reference if needed - REMOVED
 
-// Config mock is handled globally by moduleNameMapper - no local mock needed here.
-
-// --- Top-level mocks for dependencies ---
-
-// Mock logger.js
-const mockLoggerGlobal = jest.fn();
-const mockSetBotInstanceGlobal = jest.fn();
-const mockBootstrapLoggerGlobal = jest.fn();
-jest.unstable_mockModule('./logger.js', () => ({
+// --- Manage config.js mock manually ---
+let currentConfigMock = {
     __esModule: true,
-    logger: mockLoggerGlobal,
-    setBotInstance: mockSetBotInstanceGlobal,
-    bootstrapLogger: mockBootstrapLoggerGlobal,
-}));
-
-// Mock database.js
-const mockLastAyaTime = jest.fn().mockResolvedValue({ success: true });
-const mockSetFavReciter = jest.fn().mockResolvedValue({ success: true, reciter: 'mockReciter' });
-const mockGetFavReciter = jest.fn().mockResolvedValue({ success: true, data: 'surprise' });
-const mockGetDB = jest.fn().mockReturnValue({
-    collection: jest.fn().mockReturnThis(),
-    countDocuments: jest.fn().mockResolvedValue(0),
+    default: { // Minimal valid config
+        telegramToken: 'TELEGRAMBOT_TEST_INITIAL_TOKEN',
+        devChatId: 'TELEGRAMBOT_TEST_INITIAL_DEV_CHAT_ID',
+        mongoDbCredentials: 'test-user:test-pass',
+        mongoSubdomain: 'test-cluster.mongodb.net',
+        mongoURI: 'mongodb+srv://test-user:test-pass@test-cluster.mongodb.net/?retryWrites=true&w=majority',
+        branch: 'test-branch',
+        inst: 'test-inst',
+        host: 'test-host',
+        totalInst: '1',
+        debugging: false,
+        codeVer: 'test-v0.0.0',
+        instActiveUntil: '2000-01-01',
+        port: 3007,
+        timerCheckMinutes: 60,
+        timerSendHours: 24,
+        pingTargetGeneral: 'http://test.example.com',
+        pingTargetAlternative: 'http://test.example.org',
+        pingTargetTelegramApiBase: 'http://test.api.telegram.org',
+        botLaunchRetryDelay: 1000,
+        maxBotLaunchRetries: 1,
+    },
+};
+jest.unstable_mockModule('./config.js', () => {
+    console.log(`****** TELEGRAMBOT_TEST: unstable_mockModule for ./config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`);
+    return currentConfigMock;
 });
-const mockConnectDB = jest.fn().mockResolvedValue(true);
-jest.unstable_mockModule('./database.js', () => ({
-    __esModule: true,
-    lastAyaTime: mockLastAyaTime,
-    setFavReciter: mockSetFavReciter,
-    getFavReciter: mockGetFavReciter,
-    getDB: mockGetDB,
-    connectDB: mockConnectDB,
-}));
 
-// Mock quranService.js
-const mockPrepareAya = jest.fn().mockReturnValue({ arText: 'Mock Arabic Aya', enText: 'Mock English Aya' });
-const mockGetRecitation = jest.fn().mockResolvedValue('mock-audio-url.mp3');
-const mockIsValidReciter = jest.fn().mockReturnValue(true);
-const mockGetRandomReciterIdentifier = jest.fn().mockReturnValue('ar.mockrandom');
-const mockNextAya = jest.fn((id) => id + 1);
-const mockAyaId2SuraAya = jest.fn().mockReturnValue({ sura: 1, aya: 1 });
-const mockSuraAya2AyaId = jest.fn().mockReturnValue(1);
-const mockRasmifize = jest.fn((text) => text);
-let __mockableNormalizedSurasArNamesForBotTest = ['initial-mock-sura-name-for-bot-test']; // Renamed from __mockableNormalizedSurasArNames
-const mockGetQuranData = jest.fn().mockReturnValue({
-    arReciters: [{ identifier: 'ar.alafasy', name: 'Alafasy', language: 'ar', englishName: 'Alafasy' }],
-    enQuran: [{ name: 'Surat Al-Fatiha', englishName: 'Al-Fatiha', ayahs: [{ number: 1, numberInSurah: 1 }] }],
-});
-const mockCheckSource = jest.fn().mockResolvedValue(undefined);
-jest.unstable_mockModule('./quranService.js', () => ({
-    __esModule: true,
-    prepareAya: mockPrepareAya,
-    getRecitation: mockGetRecitation,
-    isValidReciter: mockIsValidReciter,
-    getRandomReciterIdentifier: mockGetRandomReciterIdentifier,
-    nextAya: mockNextAya,
-    ayaId2suraAya: mockAyaId2SuraAya,
-    suraAya2ayaId: mockSuraAya2AyaId,
-    rasmifize: mockRasmifize,
-    get normalizedSurasArNames() {
-        return __mockableNormalizedSurasArNamesForBotTest;
-    },
-    __setMockNormalizedSurasArNames: (newArray) => {
-        __mockableNormalizedSurasArNamesForBotTest = newArray;
-    },
-    getQuranData: mockGetQuranData,
-    checkSource: mockCheckSource,
-}));
-
-// Mock utils.js
-const mockRandomAyaNumber = jest.fn().mockReturnValue(123);
-const mockNumArabicToEnglish = jest.fn((text) => text);
-jest.unstable_mockModule('./utils.js', () => ({
-    __esModule: true,
-    randomAyaNumber: mockRandomAyaNumber,
-    numArabicToEnglish: mockNumArabicToEnglish,
-}));
-
-// Mock Telegraf
-const mockTelegrafSendMessage = jest.fn().mockResolvedValue({});
-const mockTelegrafEditMessageReplyMarkup = jest.fn().mockResolvedValue({});
-const mockTelegrafAnswerCbQuery = jest.fn().mockResolvedValue(true);
-const mockTelegrafGetChatMember = jest.fn().mockResolvedValue({ status: 'member' });
-const mockTelegrafReply = jest.fn().mockResolvedValue({});
-const _mockTelegrafReplyWithHTML = jest.fn().mockResolvedValue({}); // Prefixed
-const _mockTelegrafEditMessageText = jest.fn().mockResolvedValue({}); // Prefixed
-const mockTelegrafDeleteMessage = jest.fn().mockResolvedValue(true);
-const mockTelegrafSetMyCommands = jest.fn().mockResolvedValue(true);
-const mockTelegrafGetMyCommands = jest.fn().mockResolvedValue([]);
-const mockTelegrafGetMe = jest
-    .fn()
-    .mockResolvedValue({ id: 42, is_bot: true, username: 'TestBot', first_name: 'Test Bot' });
-
-const mockBotInstanceForTelegraf = {
-    // Renamed from mockBotInstance
-    telegram: {
-        sendMessage: mockTelegrafSendMessage,
-        getChatMember: mockTelegrafGetChatMember,
-        setMyCommands: mockTelegrafSetMyCommands,
-        getMyCommands: mockTelegrafGetMyCommands,
-        getMe: mockTelegrafGetMe,
-        editMessageReplyMarkup: mockTelegrafEditMessageReplyMarkup,
-        deleteMessage: mockTelegrafDeleteMessage,
-    },
-    options: { username: 'TestBot' },
-    context: {},
+// --- Mock Telegraf ---
+const mockMinimalTelegrafInstance = {
     start: jest.fn(),
     help: jest.fn(),
     command: jest.fn(),
-    action: jest.fn(),
     on: jest.fn(),
-    launch: jest.fn().mockResolvedValue(true),
+    action: jest.fn(),
+    launch: jest.fn(),
     catch: jest.fn(),
-    stop: jest.fn(),
-};
-
-jest.mock('telegraf', () => ({
-    __esModule: true,
-    Telegraf: jest.fn(() => mockBotInstanceForTelegraf), // Use the renamed instance
-    Markup: {
-        inlineKeyboard: jest.fn((buttons) => ({ inline_keyboard: buttons })),
-        button: {
-            url: jest.fn((text, url) => ({ text, url })),
-            callback: jest.fn((text, data) => ({ text, callback_data: data })),
-        },
+    telegram: {
+        getMe: jest.fn().mockResolvedValue({ id: 98765, is_bot: true, username: 'MinimalTestBot' }),
+        sendMessage: jest.fn().mockResolvedValue({}),
+        setMyCommands: jest.fn().mockResolvedValue(true),
     },
+    options: { username: undefined },
+};
+const MinimalMockTelegrafConstructor = jest.fn((token, options) => {
+    console.log('****** TELEGRAMBOT_TEST: MinimalMockTelegrafConstructor WAS CALLED with token:', token);
+    return mockMinimalTelegrafInstance;
+});
+
+jest.unstable_mockModule('telegraf', () => {
+    console.log('****** TELEGRAMBOT_TEST: MINIMAL unstable_mockModule for telegraf CALLED ******');
+    return {
+        __esModule: true,
+        Telegraf: MinimalMockTelegrafConstructor,
+        Markup: {
+            inlineKeyboard: jest.fn((buttons) => ({ inline_keyboard: buttons })),
+            button: {
+                callback: jest.fn((text, data) => ({ text, callback_data: data })),
+                url: jest.fn((text, url) => ({ text, url })),
+            },
+        },
+    };
+});
+
+// --- Mock Logger ---
+const mockLogger = jest.fn();
+const mockSetBotInstance = jest.fn();
+const mockBootstrapLogger = jest.fn();
+jest.unstable_mockModule('./logger.js', () => ({
+    __esModule: true,
+    logger: mockLogger,
+    setBotInstance: mockSetBotInstance,
+    bootstrapLogger: mockBootstrapLogger,
 }));
 
-// Now, attempt to import parts of telegramBot.js - This will be done dynamically.
-// Static imports of TelegramBotModule and helpers from other local files are removed.
+// --- Mock other direct module dependencies of telegramBot.js ---
+jest.unstable_mockModule('./database.js', () => ({
+    __esModule: true,
+    lastAyaTime: jest.fn(),
+    setFavReciter: jest.fn(),
+    getFavReciter: jest.fn(),
+}));
+jest.unstable_mockModule('./botHelpers.js', () => ({
+    __esModule: true,
+    adminChecker: jest.fn(),
+    successSend: jest.fn(),
+    sendSorry: jest.fn(),
+    aMenuButtons: jest.fn(),
+    helperAdminProtectedAction: jest.fn((ctx, botTelegram, actionFn) => actionFn(ctx)),
+    helperAdminConditionalAction: jest.fn(),
+    sendUnrecognizedMessage: jest.fn(),
+    instructions: jest.fn(),
+}));
+jest.unstable_mockModule('./botHandlers/commandHandlers.js', () => ({
+    __esModule: true,
+    handleStartCommand: jest.fn(),
+    handleHelpCommand: jest.fn(),
+    handleSurpriseMeCommand: jest.fn(),
+    handleSupportCommand: jest.fn(),
+    handleRecitersCommand: jest.fn(),
+    handleChannelCommand: jest.fn(),
+    handleKhatmaCommand: jest.fn(),
+    handleCommandsCommand: jest.fn(),
+}));
+jest.unstable_mockModule('./botHandlers/actionHandlers.js', () => ({
+    __esModule: true,
+    handleGroupKhatmaAction: jest.fn(),
+    handleRecitersNavPageAction: jest.fn(),
+    handleSetReciterAction: jest.fn(),
+    handleInstructionsAction: jest.fn(),
+    handleSurpriseAyaAction: jest.fn(),
+    handleCurrAyaAction: jest.fn(),
+    handleAMenuAction: jest.fn(),
+    handleReciteAction: jest.fn(),
+}));
+jest.unstable_mockModule('./botFeatures/khatmaService.js', () => ({
+    __esModule: true,
+    khatmaUpdate: jest.fn(),
+}));
+jest.unstable_mockModule('./ayaSender.js', () => ({
+    __esModule: true,
+    sendAyaText: jest.fn(),
+    sendAyaRecitation: jest.fn(),
+}));
+jest.unstable_mockModule('./quranService.js', () => ({
+    __esModule: true,
+    prepareAya: jest.fn(),
+    getRecitation: jest.fn(),
+    isValidReciter: jest.fn(),
+    getRandomReciterIdentifier: jest.fn(),
+    nextAya: jest.fn(),
+    ayaId2suraAya: jest.fn(),
+    suraAya2ayaId: jest.fn(),
+    normalizedSurasArNames: [],
+    rasmifize: jest.fn(text => text),
+    getQuranData: jest.fn(() => ({ arReciters: [] })),
+    checkSource: mockCheckSource, // Use the module-scoped mock function
+}));
+jest.unstable_mockModule('./botFeatures/reciterService.js', () => ({
+    __esModule: true,
+    populateRecitersButtons: jest.fn(),
+    recitersNavPage: jest.fn(),
+}));
+jest.unstable_mockModule('./utils.js', () => ({
+    __esModule: true,
+    randomAyaNumber: jest.fn(),
+    numArabicToEnglish: jest.fn(text => text),
+}));
 
-// --- Declare module-scoped variables for telegramBot.js exports ---
-let bot, sendAya, adminChecker, NON_ADMINS_ALERT, _surpriseAya, handleText, _launchBot, botUsernameReady; // Prefixed unused
+// --- Specific mock function instances for quranService.js ---
+const mockCheckSource = jest.fn();
+// Add others from quranService if needed by other tests, e.g.
+// const mockPrepareAya = jest.fn();
 
-// --- Variable for specific logger mock access if needed by tests ---
-let actualLoggerFromLoggerModule;
+
+// --- Declare SUT variables ---
+let bot, launchBot, sendAya, surpriseAya, handleText, botUsernameReady;
+
 
 beforeAll(async () => {
-    const importedModule = await import('./telegramBot.js');
-    bot = importedModule.bot;
-    sendAya = importedModule.sendAya;
-    adminChecker = importedModule.adminChecker;
-    NON_ADMINS_ALERT = importedModule.NON_ADMINS_ALERT;
-    surpriseAya = importedModule.surpriseAya;
-    handleText = importedModule.handleText;
-    launchBot = importedModule.launchBot;
-    botUsernameReady = importedModule.botUsernameReady;
+    jest.resetModules();
 
-    const loggerModule = await import('./logger.js'); // Gets the mocked logger module
-    actualLoggerFromLoggerModule = loggerModule.logger; // This will be mockLoggerGlobal
+    const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
+    currentConfigMock = { __esModule: true, default: globalMockDefault };
+    console.log('****** TELEGRAMBOT_TEST: Set currentConfigMock to GLOBAL MOCK values ******');
 
-    await botUsernameReady; // Ensure bot initialization (like getMe) is complete
+    const telegramBotModule = await import('./telegramBot.js');
+    bot = telegramBotModule.bot;
+    launchBot = telegramBotModule.launchBot;
+    sendAya = telegramBotModule.sendAya;
+    surpriseAya = telegramBotModule.surpriseAya;
+    handleText = telegramBotModule.handleText;
+    botUsernameReady = telegramBotModule.botUsernameReady;
+
+    // Assertions moved here, immediately after module import and its top-level execution
+    console.log('****** TELEGRAMBOT_TEST: Asserting Telegraf constructor call immediately after import ******');
+    expect(MinimalMockTelegrafConstructor).toHaveBeenCalledWith(currentConfigMock.default.telegramToken, expect.any(Object));
+    expect(mockSetBotInstance).toHaveBeenCalledWith(bot);
+    expect(bot).toBe(mockMinimalTelegrafInstance);
+
+    const username = await botUsernameReady; // Ensure getMe promise resolves
+    expect(username).toBe('MinimalTestBot');
+    // Check getMe call after awaiting the promise that depends on it.
+    expect(mockMinimalTelegrafInstance.telegram.getMe).toHaveBeenCalled();
+    expect(mockMinimalTelegrafInstance.options.username).toBe('MinimalTestBot');
+    // This bootstrapLogger call happens inside the .then() of getMe()
+    expect(mockBootstrapLogger).toHaveBeenCalledWith('Bot username set to: MinimalTestBot');
+
+    // Check command registrations (these happen synchronously on module load after bot init)
+    expect(mockMinimalTelegrafInstance.start).toHaveBeenCalled();
+    expect(mockMinimalTelegrafInstance.help).toHaveBeenCalled();
+    const expectedCommands = ['surpriseme', 'support', 'reciters', 'channel', 'khatma', 'commands'];
+    expectedCommands.forEach(commandName => {
+        expect(mockMinimalTelegrafInstance.command).toHaveBeenCalledWith(commandName, expect.any(Function));
+    });
+
+    expect(mockMinimalTelegrafInstance.on).toHaveBeenCalledWith('text', expect.any(Function));
+    expect(mockMinimalTelegrafInstance.on).toHaveBeenCalledWith('my_chat_member', expect.any(Function));
+    expect(mockMinimalTelegrafInstance.action).toHaveBeenCalled(); // General check
+    expect(mockMinimalTelegrafInstance.action).toHaveBeenCalledWith(JSON.stringify({ instructionsAction: true }), expect.any(Function));
+    expect(mockMinimalTelegrafInstance.action).toHaveBeenCalledWith(expect.any(RegExp), expect.any(Function));
+    expect(mockMinimalTelegrafInstance.telegram.setMyCommands).toHaveBeenCalled();
 });
 
-// If adminChecker and other functions are not exported, we can't access them directly.
-// The alternative is to test command handlers.
-// For example, to test the '/help' command, we'd need to get the handler function
-// that telegramBot.js registers with bot.command('help', handler).
+beforeEach(() => {
+    // Clear mocks that might have their state changed by tests,
+    // or by module-level code if not fully isolated by `jest.resetModules` for every single test.
+    // For module-level calls that happen once on first import, these clears are more for subsequent tests if we had them.
+    mockLogger.mockClear();
+    mockSetBotInstance.mockClear();
+    mockBootstrapLogger.mockClear();
+    // MinimalMockTelegrafConstructor.mockClear(); // DO NOT CLEAR - its call is a one-time event in beforeAll
 
-// Skipping the entire suite due to persistent parsing errors in the sandbox environment
-describe.skip('Telegram Bot Tests - Overall Suite', () => {
-    // describe.skip('Telegram Bot Tests - Initial Setup', () => {
-    it('should initialize the bot with the mocked Telegraf instance', async () => {
-        const { Telegraf: MockedTelegrafConstructor } = await import('telegraf');
-        const { default: mockedConfig } = await import('./config.js'); // Get global mock
-        expect(MockedTelegrafConstructor).toHaveBeenCalledWith(mockedConfig.telegramToken, {
-            agent: expect.any(Object),
-        });
-        expect(bot).toBe(mockBotInstanceForTelegraf);
-    });
-
-    it('should call setBotInstance from logger', () => {
-        expect(mockSetBotInstanceGlobal).toHaveBeenCalledWith(mockBotInstanceForTelegraf);
-    });
-
-    it('should attempt to fetch bot username on init', () => {
-        expect(mockTelegrafGetMe).toHaveBeenCalled();
-    });
-
-    it('should set bot commands on init', () => {
-        expect(mockTelegrafSetMyCommands).toHaveBeenCalled();
-    });
+    mockMinimalTelegrafInstance.start.mockClear();
+    mockMinimalTelegrafInstance.help.mockClear();
+    mockMinimalTelegrafInstance.command.mockClear();
+    mockMinimalTelegrafInstance.on.mockClear();
+    mockMinimalTelegrafInstance.action.mockClear();
+    mockMinimalTelegrafInstance.launch.mockClear();
+    mockMinimalTelegrafInstance.catch.mockClear();
+    // Re-prime getMe for each test if launchBot or other test actions cause re-evaluation that involves getMe
+    mockMinimalTelegrafInstance.telegram.getMe.mockClear().mockResolvedValue({ id: 98765, is_bot: true, username: 'MinimalTestBot' });
+    mockMinimalTelegrafInstance.telegram.sendMessage.mockClear().mockResolvedValue({});
+    mockMinimalTelegrafInstance.telegram.setMyCommands.mockClear().mockResolvedValue(true);
+    mockMinimalTelegrafInstance.options.username = undefined;
 });
 
-// Destructuring from TelegramBotModule is no longer needed as variables are globally scoped
-// const { adminChecker, NON_ADMINS_ALERT } = TelegramBotModule; // REMOVE
+describe('Telegram Bot - Initialization and Structure', () => {
+    it('should have initialized correctly (verified in beforeAll)', () => {
+        expect(bot).toBe(mockMinimalTelegrafInstance);
+        expect(MinimalMockTelegrafConstructor.mock.calls.length).toBeGreaterThanOrEqual(1);
+    });
 
-describe.skip('Telegram Bot Helpers', () => {
-    // SKIPPED
-    describe.skip('adminChecker', () => {
-        // Also skip inner if needed, or rely on parent
-        beforeEach(() => {
-            mockTelegrafGetChatMember.mockClear();
-            mockTelegrafGetChatMember.mockResolvedValue({ status: 'member' });
-            if (actualLoggerFromLoggerModule) actualLoggerFromLoggerModule.mockClear();
-            else mockLoggerGlobal.mockClear();
-        });
-
-        it('should return true if chat type is private', async () => {
-            const mockCtx = { chat: { type: 'private' }, from: { id: 123 } };
-            if (!adminChecker) throw new Error('adminChecker is not defined after dynamic import');
-            const isAdmin = await adminChecker(mockCtx);
-            expect(isAdmin).toBe(true);
-            expect(mockTelegrafGetChatMember).not.toHaveBeenCalled();
-        });
-
-        it('should return true if user is creator in a group', async () => {
-            mockTelegrafGetChatMember.mockResolvedValue({ status: 'creator' });
-            const mockCtx = { chat: { type: 'group', id: 'g123' }, from: { id: 456 } };
-            const isAdmin = await adminChecker(mockCtx);
-            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith('g123', 456);
-            expect(isAdmin).toBe(true);
-        });
-
-        it('should return true if user is administrator in a group', async () => {
-            mockTelegrafGetChatMember.mockResolvedValue({ status: 'administrator' });
-            const mockCtx = { chat: { type: 'supergroup', id: 'sg123' }, from: { id: 789 } };
-            const isAdmin = await adminChecker(mockCtx);
-            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith('sg123', 789);
-            expect(isAdmin).toBe(true);
-        });
-
-        it('should return false if user is just a member in a group', async () => {
-            const mockCtx = { chat: { type: 'group', id: 'g456' }, from: { id: 101 } };
-            const isAdmin = await adminChecker(mockCtx);
-            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith('g456', 101);
-            expect(isAdmin).toBe(false);
-        });
-
-        it('should return false if getChatMember fails or throws an error', async () => {
-            mockTelegrafGetChatMember.mockRejectedValue(new Error('Telegram API error'));
-            const mockCtx = { chat: { type: 'group', id: 'g789' }, from: { id: 202 } };
-            const isAdmin = await adminChecker(mockCtx);
-            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith('g789', 202);
-            expect(isAdmin).toBe(false);
-            expect(actualLoggerFromLoggerModule || mockLoggerGlobal).toHaveBeenCalledWith(
-                'Error in adminChecker while calling getChatMember: ',
-                expect.any(Error)
-            );
-        });
-
-        it('should return false if ctx.chat or ctx.from is missing', async () => {
-            expect(await adminChecker({ from: { id: 123 } })).toBe(false);
-            expect(actualLoggerFromLoggerModule || mockLoggerGlobal).toHaveBeenCalledWith(
-                'adminChecker: Invalid context received.',
-                { from: { id: 123 } }
-            );
-
-            if (actualLoggerFromLoggerModule) actualLoggerFromLoggerModule.mockClear();
-            else mockLoggerGlobal.mockClear();
-            expect(await adminChecker({ chat: { type: 'private' } })).toBe(false);
-            expect(actualLoggerFromLoggerModule || mockLoggerGlobal).toHaveBeenCalledWith(
-                'adminChecker: Invalid context received.',
-                {
-                    chat: { type: 'private' },
-                }
-            );
-        });
+    it('launchBot should be a function', () => {
+        expect(typeof launchBot).toBe('function');
+    });
+    it('sendAya should be a function', () => {
+        expect(typeof sendAya).toBe('function');
+    });
+    it('surpriseAya should be a function', () => {
+        expect(typeof surpriseAya).toBe('function');
+    });
+    it('handleText should be a function', () => {
+        expect(typeof handleText).toBe('function');
     });
 });
 
-// --- Mocked Functions from Imports (for easier access in tests) ---
-// These were previously require() calls. Now they should refer to the top-level imports
-// or be accessed via the already imported mocked modules if needed.
-// For example, `mockRandomAyaNumber` would be `actualNumArabicToEnglish` if it's from utils.js
-// and if it's the actual function. If it's a mock, it's already mocked via jest.mock.
-// The test was likely trying to get a direct handle on the mock function.
-// Let's assume these were attempts to get the mocked functions.
-// `jest.mock` replaces the module's exports with mocks. So, direct imports will get the mocks.
-// const { sendAya: mockSendAyaFromTelegramBotInternal, bot: mockedBotObject } = TelegramBotModule; // This is fine
-// const { randomAyaNumber: mockRandomAyaNumber } = actualNumArabicToEnglish; // This is wrong, randomAyaNumber is separate
-// const { rasmifize: mockRasmifize, suraAya2ayaId: mockSuraAya2AyaId } = actualRasmifize; // This is also wrong
-// const { logger: mockLogger } = actualLoggerForAdminCheckerTests; // This is also wrong if mockLogger is different
-
-// Re-evaluating these:
-// The original require calls were likely to get the auto-mocked jest.fn() instances.
-// When using `import`, these are the same functions.
-// So, `mockRandomAyaNumber` would be `actualRandomAyaNumber` (from utils, which is mocked).
-// `mockRasmifize` would be `actualRasmifize` (from quranService, which is mocked).
-// `mockLogger` would be `actualLoggerForAdminCheckerTests` (from logger, which is mocked).
-
-// These constants are for convenience in tests. // REMOVE - No longer using TelegramBotModule statically
-// const { sendAya: importedSendAyaFromTelegramBot, bot: importedBotObject } = TelegramBotModule;
-// For mocked functions from other modules, we can directly use the globally defined mock function constants.
-// e.g. mockRandomAyaNumber, mockRasmifize, mockLoggerGlobal
-
-describe.skip('Telegram Command Handler: /surpriseme', () => {
-    // SKIPPED
-    let surprisemeHandler;
-    const mockUserCtxAdmin = {
-        chat: { id: 123, type: 'private' },
-        from: { id: 123, language_code: 'en' },
-        reply: mockTelegrafReply,
-    };
-    const mockUserCtxNonAdmin = {
-        chat: { id: 456, type: 'group' },
-        from: { id: 456, language_code: 'ar' },
-        reply: mockTelegrafReply,
-    };
-
-    beforeAll(async () => {
-        await botUsernameReady;
-        const commandCall = mockBotInstanceForTelegraf.command.mock.calls.find((call) => call[0] === 'surpriseme');
-        if (commandCall && typeof commandCall[1] === 'function') {
-            surprisemeHandler = commandCall[1];
-        } else {
-            console.error(
-                '/surpriseme handler not found. Calls:',
-                mockBotInstanceForTelegraf.command.mock.calls.map((c) => c[0])
-            );
-        }
-    });
-
+describe('launchBot', () => {
     beforeEach(() => {
-        mockTelegrafReply.mockClear();
-        mockTelegrafGetChatMember.mockClear();
-        if (sendAya) sendAya.mockClear();
+        mockMinimalTelegrafInstance.launch.mockClear();
+        mockMinimalTelegrafInstance.telegram.sendMessage.mockClear();
+        mockCheckSource.mockClear().mockResolvedValue(undefined); // Use direct mock instance
     });
 
-    it.skip('should call surpriseAya helper if user is admin (private chat)', async () => {
-        if (!surprisemeHandler) {
-            console.warn('Skipping /surpriseme admin test as handler not found');
-            return;
-        }
-        await surprisemeHandler(mockUserCtxAdmin);
-        expect(sendAya).toHaveBeenCalledWith(mockUserCtxAdmin.chat.id, null, null, 'en', 'surprise', false);
-        expect(mockTelegrafReply).not.toHaveBeenCalled();
+    it('should launch the bot and send startup message if devChatId is configured', async () => {
+        // Forcefully set username on the mock instance to bypass potential async timing issues
+        // with the SUT's getMe().then() for this specific test's condition.
+        // The main beforeAll already awaits botUsernameReady, which should set this,
+        // but this makes the condition for sendMessage explicit for this test.
+        mockMinimalTelegrafInstance.options.username = 'MinimalTestBot';
+
+        await launchBot();
+
+        expect(mockMinimalTelegrafInstance.launch).toHaveBeenCalled();
+        expect(mockMinimalTelegrafInstance.telegram.sendMessage).toHaveBeenCalledWith(
+            currentConfigMock.default.devChatId,
+            expect.stringContaining(`DailyAyaTelegram ${currentConfigMock.default.branch} instance`)
+        );
+        expect(mockCheckSource).toHaveBeenCalled();
     });
 
-    it.skip('should log and not call sendAya if user is not admin in a group', async () => {
-        if (!surprisemeHandler) {
-            console.warn('Skipping /surpriseme non-admin test as handler not found');
-            return;
-        }
-        mockTelegrafGetChatMember.mockResolvedValue({ status: 'member' });
-        await surprisemeHandler(mockUserCtxNonAdmin);
-        expect(mockTelegrafGetChatMember).toHaveBeenCalledWith(
-            mockUserCtxNonAdmin.chat.id,
-            mockUserCtxNonAdmin.from.id
+    it('should not send startup message if devChatId is not configured', async () => {
+        const originalDevChatId = currentConfigMock.default.devChatId;
+        currentConfigMock.default.devChatId = null; // Modify for this test
+
+        await launchBot();
+
+        expect(mockMinimalTelegrafInstance.launch).toHaveBeenCalled();
+        expect(mockMinimalTelegrafInstance.telegram.sendMessage).not.toHaveBeenCalledWith(
+            expect.anything(), // Or originalDevChatId
+            expect.stringContaining('DailyAyaTelegram')
         );
-        expect(mockLoggerGlobal).toHaveBeenCalledWith(
-            expect.stringContaining('Ignored /surpriseme command from non-admin')
-        );
-        expect(sendAya).not.toHaveBeenCalled();
+
+        // Restore devChatId if other tests depend on it, though mocks should isolate.
+        // Better to use a fresh config load if this becomes an issue. For now, this is okay.
+        currentConfigMock.default.devChatId = originalDevChatId;
+    });
+
+    it('should handle bot.launch() failure', async () => {
+        mockMinimalTelegrafInstance.launch.mockImplementationOnce(() => {
+            throw new Error('Launch Failed');
+        });
+
+        await expect(launchBot()).rejects.toThrow('Launch Failed');
+        expect(mockBootstrapLogger).toHaveBeenCalledWith('Failed to complete critical launchBot setup steps. Error:', expect.any(Error));
+    });
+
+    it('should not call checkSource if debugging is true', async () => {
+        const originalDebugging = currentConfigMock.default.debugging;
+        currentConfigMock.default.debugging = true;
+
+        await launchBot();
+
+        expect(mockCheckSource).not.toHaveBeenCalled(); // Use the direct mock function instance
+
+        currentConfigMock.default.debugging = originalDebugging; // Restore
     });
 });
 
-describe.skip('Telegram Action Handler: surpriseAyaAction', () => {
-    // SKIPPED
-    let surpriseAyaActionHandler;
-    const mockCbCtxAdmin = {
-        chat: { id: 789, type: 'private' },
-        from: { id: 789, language_code: 'fr' },
-        update: { callback_query: { data: JSON.stringify({ surpriseAyaAction: true }) } },
-        answerCbQuery: mockTelegrafAnswerCbQuery,
-    };
-    const mockCbCtxNonAdmin = {
-        chat: { id: 'g789', type: 'group' },
-        from: { id: 101, language_code: 'es' },
-        update: { callback_query: { data: JSON.stringify({ surpriseAyaAction: true }) } },
-        answerCbQuery: mockTelegrafAnswerCbQuery,
-    };
-
-    beforeAll(async () => {
-        await botUsernameReady;
-        const surpriseAyaRegex = /^{"surpriseAyaAction":true(?:,"a":\d+)?}$/;
-        const foundByRegex = mockBotInstanceForTelegraf.action.mock.calls.find(
-            (call) => call[0] instanceof RegExp && call[0].toString() === surpriseAyaRegex.toString()
-        );
-        if (foundByRegex && typeof foundByRegex[1] === 'function') {
-            surpriseAyaActionHandler = foundByRegex[1];
-        } else {
-            console.error(
-                'surpriseAyaAction handler not found. Calls:',
-                mockBotInstanceForTelegraf.action.mock.calls.map((c) => c[0])
-            );
-        }
-    });
-
-    beforeEach(() => {
-        mockTelegrafAnswerCbQuery.mockClear();
-        if (sendAya) sendAya.mockClear();
-        mockTelegrafGetChatMember.mockClear();
-    });
-
-    it.skip('should call surpriseAya helper and answerCbQuery if user is admin', async () => {
-        if (!surpriseAyaActionHandler) {
-            console.warn('Skipping surpriseAyaAction admin test: handler not found.');
-            return;
-        }
-        await surpriseAyaActionHandler(mockCbCtxAdmin);
-        expect(sendAya).toHaveBeenCalledWith(mockCbCtxAdmin.chat.id, null, null, 'fr', 'surprise', false);
-        expect(mockTelegrafAnswerCbQuery).toHaveBeenCalled();
-    });
-
-    it.skip('should use NON_ADMINS_ALERT with answerCbQuery if user is not admin in group', async () => {
-        if (!surpriseAyaActionHandler) {
-            console.warn('Skipping surpriseAyaAction non-admin test: handler not found.');
-            return;
-        }
-        mockTelegrafGetChatMember.mockResolvedValue({ status: 'member' });
-        await surpriseAyaActionHandler(mockCbCtxNonAdmin);
-        expect(mockTelegrafGetChatMember).toHaveBeenCalledWith(mockCbCtxNonAdmin.chat.id, mockCbCtxNonAdmin.from.id);
-        expect(mockTelegrafAnswerCbQuery).toHaveBeenCalledWith(NON_ADMINS_ALERT, { show_alert: true });
-        expect(sendAya).not.toHaveBeenCalled();
-    });
+// Placeholder describe blocks for other major functions
+describe('sendAya', () => {
+    it.todo('should correctly call senderSendAyaText');
+    it.todo('should call senderSendAyaRecitation if withRecitation is true');
+    it.todo('should handle errors from ayaSender functions');
+    it.todo('should update lastAyaTime on block error');
 });
 
-describe.skip('Telegram Bot: handleText Function', () => {
-    // SKIPPED
-    const mockCtxBase = {
-        from: { id: 123, language_code: 'en', username: 'testuser' },
-        chat: { id: 12345, type: 'private' },
-    };
-
-    let quranServiceMockForHandleText;
-
-    beforeAll(async () => {
-        await botUsernameReady;
-        quranServiceMockForHandleText = jest.requireMock('./quranService.js');
-    });
-
-    beforeEach(() => {
-        if (sendAya) sendAya.mockClear();
-
-        mockSuraAya2AyaId.mockClear();
-        mockRasmifize.mockClear();
-        mockGetQuranData.mockClear();
-        mockNumArabicToEnglish.mockClear();
-
-        mockRasmifize.mockImplementation((text) => {
-            if (text === 'الكرسي') return 'الكرسي';
-            if (text === 'البقرة') return 'البقره';
-            if (text === '2') return '2';
-            if (text === '255') return '255';
-            return text;
-        });
-
-        mockGetQuranData.mockReturnValue({
-            enQuran: [
-                { name: 'Surat Al-Fatiha', englishName: 'Al-Fatiha', ayahs: [] },
-                { name: 'Surat Al-Baqarah', englishName: 'Al-Baqarah', ayahs: [] },
-            ],
-            arReciters: [{ identifier: 'ar.alafasy', name: 'Alafasy', language: 'ar', englishName: 'Alafasy' }],
-        });
-
-        if (quranServiceMockForHandleText && quranServiceMockForHandleText.__setMockNormalizedSurasArNames) {
-            quranServiceMockForHandleText.__setMockNormalizedSurasArNames([
-                mockRasmifize('الفاتحة'),
-                mockRasmifize('البقرة'),
-            ]);
-        } else {
-            __mockableNormalizedSurasArNamesForBotTest = [mockRasmifize('الفاتحة'), mockRasmifize('البقرة')];
-        }
-
-        mockTelegrafSendMessage.mockClear();
-    });
-
-    it.skip('should call sendAya for "آية الكرسي" (Ayat al-Kursi)', async () => {
-        const mockCtx = { ...mockCtxBase, message: { text: 'آية الكرسي' } };
-        await handleText(mockCtx);
-        expect(sendAya).toHaveBeenCalledWith(mockCtx.chat.id, 262, null, 'en', 'request', false);
-    });
-
-    it('should call sendAya for Sura and Aya numbers (e.g., "2 255")', async () => {
-        const mockCtx = { ...mockCtxBase, message: { text: '2 255' } };
-        mockSuraAya2AyaId.mockReturnValueOnce(262);
-        await handleText(mockCtx);
-        expect(mockSuraAya2AyaId).toHaveBeenCalledWith({ sura: 2, aya: 255 });
-        expect(sendAya).toHaveBeenCalledWith(mockCtx.chat.id, 262, null, 'en', 'request', false);
-    });
-
-    it('should call sendAya for Sura name and Aya number (e.g., "البقرة ٢٥٥")', async () => {
-        const mockCtx = { ...mockCtxBase, message: { text: 'البقرة ٢٥٥' } };
-        mockNumArabicToEnglish.mockImplementationOnce((str) => str.replace('٢٥٥', '255'));
-        mockSuraAya2AyaId.mockReturnValueOnce(262);
-        await handleText(mockCtx);
-        expect(mockNumArabicToEnglish).toHaveBeenCalledWith('البقرة ٢٥٥');
-        expect(mockRasmifize).toHaveBeenCalledWith('البقرة 255');
-        expect(mockSuraAya2AyaId).toHaveBeenCalledWith({ sura: 2, aya: 255 });
-        expect(sendAya).toHaveBeenCalledWith(mockCtx.chat.id, 262, null, 'en', 'request', false);
-    });
-
-    it('should call unrecognized for invalid Sura number (e.g., "999 1")', async () => {
-        const mockCtx = { ...mockCtxBase, message: { text: '999 1' } };
-        mockSuraAya2AyaId.mockReturnValueOnce(-1);
-        await handleText(mockCtx);
-        expect(mockTelegrafSendMessage).toHaveBeenCalledWith(
-            mockCtx.chat.id,
-            expect.stringContaining('عذرا، لم نتعرف على اسم سورة'),
-            expect.any(Object)
-        );
-        expect(sendAya).not.toHaveBeenCalled();
-    });
-
-    it('should call unrecognized for valid Sura but invalid Aya (e.g., "1 99")', async () => {
-        const mockCtx = { ...mockCtxBase, message: { text: '1 99' } };
-        mockSuraAya2AyaId.mockReturnValueOnce(0);
-        await handleText(mockCtx);
-        expect(mockTelegrafSendMessage).toHaveBeenCalledWith(
-            mockCtx.chat.id,
-            expect.stringContaining('عذرا، رقم الآية ليس في السورة المطلوبة'),
-            expect.any(Object)
-        );
-        expect(sendAya).not.toHaveBeenCalled();
-    });
-
-    it('should call unrecognized for purely textual message not matching any pattern', async () => {
-        const mockCtx = { ...mockCtxBase, message: { text: 'Hello world' } };
-        await handleText(mockCtx);
-        expect(mockTelegrafSendMessage).toHaveBeenCalledWith(
-            mockCtx.chat.id,
-            expect.stringContaining('عذرا، لم نتعرف على اسم سورة'),
-            expect.any(Object)
-        );
-        expect(sendAya).not.toHaveBeenCalled();
-    });
+describe('surpriseAya', () => {
+    it.todo('should call sendAya with null ayaId, null reciter, and surprise trigger');
 });
 
-describe.skip('Telegram Command Handlers', () => {
-    // SKIPPED
-    describe.skip('/help command', () => {
-        // Also skip inner
-        let helpHandler;
-        const mockUserCtx = {
-            chat: { id: 12345, type: 'private' },
-            from: { id: 123, is_bot: false, first_name: 'TestUser' },
-            reply: mockTelegrafReply,
-        };
-        const mockGroupCtxNonAdmin = {
-            chat: { id: 'g123', type: 'group' },
-            from: { id: 456, is_bot: false, first_name: 'NonAdminUser' },
-            reply: mockTelegrafReply,
-        };
-
-        beforeAll(async () => {
-            await botUsernameReady;
-            const commandCall = mockBotInstanceForTelegraf.command.mock.calls.find((call) => call[0] === 'help');
-            if (commandCall && typeof commandCall[1] === 'function') {
-                helpHandler = commandCall[1];
-            } else {
-                console.error(
-                    'Help command handler not found. Calls:',
-                    mockBotInstanceForTelegraf.command.mock.calls.map((c) => c[0])
-                );
-            }
-        });
-
-        beforeEach(() => {
-            mockTelegrafSendMessage.mockClear();
-            mockTelegrafReply.mockClear();
-            mockTelegrafGetChatMember.mockClear();
-            mockTelegrafGetChatMember.mockResolvedValue({ status: 'member' });
-        });
-
-        it.skip('should send instructions message if handler is found and user is admin (private chat)', async () => {
-            if (!helpHandler) {
-                console.warn('Skipping /help admin private test: handler not found.');
-                return;
-            }
-            await helpHandler(mockUserCtx);
-            expect(mockTelegrafSendMessage).toHaveBeenCalledWith(
-                mockUserCtx.chat.id,
-                expect.stringContaining('يمكنك طلب آية محددة')
-            );
-            expect(mockTelegrafReply).not.toHaveBeenCalled();
-        });
-
-        it.skip('should send instructions message if handler is found and user is admin (group chat)', async () => {
-            if (!helpHandler) {
-                console.warn('Skipping /help admin group test: handler not found.');
-                return;
-            }
-            mockTelegrafGetChatMember.mockResolvedValue({ status: 'administrator' });
-            const groupAdminCtx = { ...mockGroupCtxNonAdmin, from: { ...mockGroupCtxNonAdmin.from, id: 999 } };
-            await helpHandler(groupAdminCtx);
-            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith(groupAdminCtx.chat.id, groupAdminCtx.from.id);
-            expect(mockTelegrafSendMessage).toHaveBeenCalledWith(
-                groupAdminCtx.chat.id,
-                expect.stringContaining('يمكنك طلب آية محددة')
-            );
-            expect(mockTelegrafReply).not.toHaveBeenCalled();
-        });
-
-        it.skip('should log and not send instructions if user is not admin in a group chat', async () => {
-            if (!helpHandler) {
-                console.warn('Skipping /help non-admin group test: handler not found.');
-                return;
-            }
-            await helpHandler(mockGroupCtxNonAdmin);
-            expect(mockTelegrafGetChatMember).toHaveBeenCalledWith(
-                mockGroupCtxNonAdmin.chat.id,
-                mockGroupCtxNonAdmin.from.id
-            );
-            expect(mockLoggerGlobal).toHaveBeenCalledWith(
-                expect.stringContaining('Ignored /help command from non-admin')
-            );
-            expect(mockTelegrafSendMessage).not.toHaveBeenCalled();
-            expect(mockTelegrafReply).not.toHaveBeenCalledWith(NON_ADMINS_ALERT);
-        });
-    });
+describe('handleText', () => {
+    it.todo('should correctly parse Sura and Aya from text');
+    it.todo('should call sendAya for valid requests');
+    it.todo('should call helperSendUnrecognizedMessage for invalid requests');
 });

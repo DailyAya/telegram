@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2025.07.06-1114] - 2025-07-06
+## [2025.07.06-1215] - 2025-07-06
 
 ### Changed
 
@@ -32,17 +32,22 @@ All notable changes to this project will be documented in this file.
 - **`actionHandlers.test.js` Restoration & Basic Tests:**
     - Fixed the parsing error (`ReferenceError: require is not defined`) by simplifying the test file to a minimal ESM shell and correctly applying the manual `config.js` mocking pattern (for its dependencies like `logger.js`).
     - Implemented and fixed basic unit tests for the `handleGroupKhatmaAction` function, covering success and error paths.
+- **`telegramBot.test.js` Restoration & Basic Tests:**
+    - Resolved the persistent parsing error (`ReferenceError: require is not defined` and subsequent `SyntaxError`) by completely rebuilding the test file with a clean ESM structure.
+    - Implemented comprehensive top-level mocks for all direct dependencies of `telegramBot.js` using `jest.unstable_mockModule` and the established manual `config.js` mocking pattern.
+    - Added initial tests that verify module parsing, correct Telegraf instantiation, setting of `bot.options.username` via mocked `getMe()`, registration of command/action/event handlers, and basic functionality of the `launchBot` function.
 
 ### Fixed
 
 - Resolved `config.js` loading errors (typically "CRITICAL: telegramToken is not defined") in `utils.test.js`, `quranService.test.js`, and `database.test.js` by applying the new manual config mocking strategy.
 - The `SyntaxError: The requested module '../botHelpers.js' does not provide an export named 'instructions'` in `commandHandlers.test.js` is resolved.
 - `src/botHandlers/actionHandlers.test.js` is now parsable and its initial tests for `handleGroupKhatmaAction` pass.
-- All test suites now pass _except_ for `telegramBot.test.js` due to its persistent parsing issue.
+- `src/telegramBot.test.js` is now parsable and its initial tests for structure, initialization, and `launchBot` pass.
+- All 7 test suites are now passing.
 
 ### Known Issues
 
-- **Parsing Issues:** `telegramBot.test.js` continues to fail at the parsing stage with `ReferenceError: require is not defined`. This is suspected to be a sandbox or tooling limitation with large/complex test file modifications and prevents tests in this crucial file from running. This will require careful recreation or investigation in a fresh environment.
+- **Test Coverage:** While all test suites pass the parsing stage and have some tests, full test coverage for the refactored `telegramBot.js` (especially `sendAya`, `surpriseAya`, `handleText`) and the entirety of `actionHandlers.js` is still pending.
 
 ## [2025.07.06-0217] - 2025-07-06
 
