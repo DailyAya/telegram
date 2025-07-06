@@ -1,6 +1,36 @@
 import { jest } from '@jest/globals'; // Explicitly import jest
 
-// Config mock removed - will be handled by moduleNameMapper in jest.config.mjs
+// --- Manage config.js mock manually ---
+// config.js is imported by quranService.js as './config.js'
+let currentConfigMock = {
+    __esModule: true,
+    default: { // Minimal valid config to prevent errors
+        telegramToken: 'QURAN_TEST_INITIAL_TOKEN',
+        devChatId: 'QURAN_TEST_INITIAL_DEV_CHAT_ID',
+        mongoDbCredentials: 'test-user:test-pass',
+        mongoSubdomain: 'test-cluster.mongodb.net',
+        mongoURI: 'mongodb+srv://test-user:test-pass@test-cluster.mongodb.net/?retryWrites=true&w=majority',
+        branch: 'test-branch',
+        inst: 'test-inst',
+        host: 'test-host',
+        totalInst: '1',
+        debugging: false,
+        codeVer: 'test-v0.0.0',
+        instActiveUntil: '2000-01-01',
+        port: 3004, // Different port
+        timerCheckMinutes: 60,
+        timerSendHours: 24,
+        pingTargetGeneral: 'http://test.example.com',
+        pingTargetAlternative: 'http://test.example.org',
+        pingTargetTelegramApiBase: 'http://test.api.telegram.org',
+        botLaunchRetryDelay: 1000,
+        maxBotLaunchRetries: 1,
+    },
+};
+jest.unstable_mockModule('./config.js', () => { // Path relative to quranService.test.js
+    console.log(`****** unstable_mockModule for ./config.js (quranService.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`);
+    return currentConfigMock;
+});
 
 // Declare variables for the functions to be tested
 let rasmifize,
@@ -23,10 +53,18 @@ const mockApiGet = jest.fn();
 const mockApiHead = jest.fn();
 
 beforeAll(async () => {
+    jest.resetModules(); // Reset modules before setting config and importing SUT
+
+    // Set currentConfigMock to use values from the global mock file
+    // Path from src/quranService.test.js to src/__mocks__/config.mock.js is './__mocks__/config.mock.js'
+    const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
+    currentConfigMock = { __esModule: true, default: globalMockDefault };
+    console.log('****** Set currentConfigMock to GLOBAL MOCK values for quranService.test.js ******');
+
     // Dynamically import the module under test AFTER mocks are set up
     const quranServiceModule = await import('./quranService.js');
     rasmifize = quranServiceModule.rasmifize;
-    actualGetQuranDataOriginal = quranServiceModule.getQuranData;
+    actualGetQuranDataOriginal = quranServiceModule.getQuranData; // This is fine
     normalizedSurasArNames = quranServiceModule.normalizedSurasArNames;
     isValidReciter = quranServiceModule.isValidReciter;
     getRandomReciterIdentifier = quranServiceModule.getRandomReciterIdentifier;

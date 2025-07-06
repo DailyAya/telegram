@@ -47,6 +47,34 @@ export async function adminChecker(ctx, botTelegram) {
 }
 
 /**
+ * Sends instructions on how to request specific Ayas.
+ * @async
+ * @export
+ * @param {number|string} chatId - The ID of the chat to send instructions to.
+ * @param {object} botTelegram - The `bot.telegram` object from Telegraf.
+ */
+export async function instructions(chatId, botTelegram) {
+    const msg = `يمكنك طلب آية محددة بإرسال اسم أو رقم السورة ورقم الآية.
+مثل: البقرة   ٢٥٥
+أو مثل: ٢   ٢٥٥
+أو آية الكرسي
+
+وأيضا اسم أو رقم السورة فقط
+مثل : البقرة
+أو مثل : ٢
+
+You can request a specific Aya by sending the numbers of Aya and Sura.
+Example: 2   255
+Or Sura number only: 2`;
+    try {
+        await botTelegram.sendMessage(chatId, msg);
+        logger('Sent instructions message to chat ' + chatId);
+    } catch (e) {
+        logger('Failed to send instructions message to chat ' + chatId, e);
+    }
+}
+
+/**
  * Logs a successful Aya send operation and updates the database with the last Aya time.
  * (Assumes lastAyaTime is imported and used elsewhere or passed if needed, currently it's from database.js)
  * @async
@@ -153,4 +181,131 @@ export function aMenuButtons(menuState, ayaId, reciter, botUsername, ayaId2suraA
         callback_data: JSON.stringify({ currAya: ayaId, r: reciter }),
     });
     return buttons;
+}
+
+/**
+ * Sends a message explaining why a user's request was not recognized.
+ * This is only sent if the user is an admin in the chat.
+ * @async
+ * @param {import('telegraf').Context} ctx - The Telegraf context object.
+ * @param {1|2|3|number} reason - A code indicating the reason for non-recognition.
+ * @param {object} botTelegram - The bot.telegram object from Telegraf.
+ */
+export async function sendUnrecognizedMessage(ctx, reason, botTelegram) {
+    // Renamed to avoid conflict
+    const chatId = ctx.chat.id;
+    // adminChecker is available in this file's scope
+    const isUserAdmin = await adminChecker(ctx, botTelegram);
+    if (!isUserAdmin) {
+        logger(`Ignored unrecognized message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`);
+        return;
+    }
+
+    let msg;
+    switch (reason) {
+        case 1:
+            msg = `عذرا، لم نتعرف على اسم سورة باللغة العربية أو رقم سورة من 1 إلى 114.\n\nSorry, we couldn't recognize a Sura name in Arabic or Sura number from 1 to 114.`;
+            break;
+        case 2:
+            msg = `عذرا، رقم الآية ليس في السورة المطلوبة.\n\nSorry, Aya number is not in the requested Sura.`;
+            break;
+        case 3:
+            msg = `عذرا، حاليا نتعرف فقط على أسماء السور باللغة العربية أو أرقام السور والآيات في الرسائل النصية.\n\nSorry, we currently only recognize Sura names in Arabic or numbers of Sura and Aya in text messages.`;
+            break;
+        default:
+            msg = `خطأ غير معروف!\n\nUnknown error!`;
+            break;
+    }
+
+    try {
+        await botTelegram.sendMessage(chatId, msg, {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: '🎁', callback_data: JSON.stringify({ surpriseAyaAction: true }) },
+                        { text: '🤔', callback_data: JSON.stringify({ instructionsAction: true }) },
+                    ],
+                ],
+            },
+        });
+        logger('Sent reason of unrecognized request to chat ' + chatId);
+    } catch (e) {
+        logger('Failed to send reason of unrecognized request to chat ' + chatId, e);
+    }
+}
+
+/**
+ * Generic wrapper for action handlers that require admin privileges.
+ * @async
+ * @param {import('telegraf').Context} ctx - The Telegraf context object from the callback query.
+ * @param {object} botTelegram - The bot.telegram object from Telegraf.
+ * @param {function(import('telegraf').Context): Promise<void>} actionFn - The function to execute if the user is an admin.
+ * @param {boolean} [alertIfNotAdmin=true] - Whether to show an alert to non-admins.
+ */
+export async function helperAdminProtectedAction(ctx, botTelegram, actionFn, alertIfNotAdmin = true) {
+    // adminChecker is already imported/defined in this file if this is where it lives,
+    // or it needs to be passed/imported if it's elsewhere.
+    // Assuming adminChecker is available in this scope (it is, as it's defined above in botHelpers.js)
+    const isUserAdmin = await adminChecker(ctx, botTelegram);
+    if (!isUserAdmin) {
+        if (alertIfNotAdmin)
+            await ctx
+                .answerCbQuery(NON_ADMINS_ALERT, { show_alert: true }) // NON_ADMINS_ALERT is also in this file
+                .catch((e) => logger('Error answering CBQ for non-admin:', e));
+        else await ctx.answerCbQuery().catch((e) => logger('Error answering CBQ (silent) for non-admin:', e));
+        return;
+    }
+    try {
+        await actionFn(ctx);
+        await ctx.answerCbQuery().catch((e) => logger('Error answering CBQ after admin action:', e));
+    } catch (error) {
+        logger('Error in helperAdminProtectedAction executing actionFn:', error); // Updated log message
+        await ctx
+            .answerCbQuery('An error occurred.', { show_alert: true })
+            .catch((e) => logger('Error answering CBQ after actionFn error:', e));
+    }
+}
+
+/**
+ * Generic wrapper for action handlers that have different behaviors for admins and non-admins,
+ * often involving opening a URL for non-admins.
+ * @async
+ * @param {import('telegraf').Context} ctx - The Telegraf context object.
+ * @param {object} botTelegram - The bot.telegram object from Telegraf.
+ * @param {function(import('telegraf').Context): Promise<void>} adminFn - Function to execute for admin users.
+ * @param {function(import('telegraf').Context): Promise<string>} nonAdminCb - Function that returns a URL for non-admin users.
+ * @param {boolean} [nonAdminAlert=false] - Whether to show an alert to non-admins before redirecting.
+ * @param {string|null} [nonAdminUrl=null] - Pre-calculated URL for non-admins (if `nonAdminCb` is not used).
+ */
+export async function helperAdminConditionalAction(
+    ctx,
+    botTelegram,
+    adminFn,
+    nonAdminCb,
+    nonAdminAlert = false,
+    nonAdminUrl = null
+) {
+    const isUserAdmin = await adminChecker(ctx, botTelegram); // Uses adminChecker from this file
+    if (isUserAdmin) {
+        try {
+            await adminFn(ctx);
+            await ctx.answerCbQuery().catch((e) => logger('Error answering CBQ after admin fn in conditional:', e));
+        } catch (error) {
+            logger('Error in helperAdminConditionalAction executing adminFn:', error); // Updated log message
+            await ctx
+                .answerCbQuery('An error occurred.', { show_alert: true })
+                .catch((e) => logger('Error answering CBQ after adminFn error in conditional:', e));
+        }
+    } else {
+        const urlToOpen = nonAdminUrl || (typeof nonAdminCb === 'function' ? await nonAdminCb(ctx) : null);
+        if (urlToOpen) {
+            await ctx
+                .answerCbQuery(nonAdminAlert ? NON_ADMINS_ALERT : '', { url: urlToOpen }) // Uses NON_ADMINS_ALERT from this file
+                .catch((e) => logger('Error answering CBQ with URL for non-admin:', e));
+        } else {
+            await ctx
+                .answerCbQuery(nonAdminAlert ? NON_ADMINS_ALERT : '', { show_alert: nonAdminAlert })
+                .catch((e) => logger('Error answering CBQ for non-admin (no URL):', e));
+        }
+    }
 }

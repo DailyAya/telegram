@@ -2,14 +2,22 @@ import https from 'https';
 import { Telegraf, Markup } from 'telegraf';
 import config from './config.js';
 import { logger, setBotInstance, bootstrapLogger } from './logger.js';
-import { lastAyaTime, setFavReciter, getFavReciter, getDB } from './database.js';
+import { lastAyaTime, setFavReciter, getFavReciter } from './database.js'; // Removed getDB
 import {
-    NON_ADMINS_ALERT as BOT_NON_ADMINS_ALERT, // Alias to avoid conflict if this file also defines it
+    // NON_ADMINS_ALERT as BOT_NON_ADMINS_ALERT, // Removed unused import alias
     adminChecker as helperAdminChecker,
     successSend as helperSuccessSend,
     sendSorry as helperSendSorry,
     aMenuButtons as helperAMenuButtons,
+    helperAdminProtectedAction,
+    helperAdminConditionalAction,
+    sendUnrecognizedMessage as helperSendUnrecognizedMessage,
+    instructions as helperInstructions, // Import new helper
 } from './botHelpers.js';
+import * as commandHandlers from './botHandlers/commandHandlers.js';
+import * as actionHandlers from './botHandlers/actionHandlers.js';
+import { khatmaUpdate as khatmaServiceKhatmaUpdate } from './botFeatures/khatmaService.js';
+import { sendAyaText as senderSendAyaText, sendAyaRecitation as senderSendAyaRecitation } from './ayaSender.js'; // Import new aya senders
 import {
     prepareAya,
     getRecitation,
@@ -23,6 +31,10 @@ import {
     getQuranData,
     checkSource,
 } from './quranService.js';
+import {
+    populateRecitersButtons as servicePopulateRecitersButtons,
+    recitersNavPage as serviceRecitersNavPage,
+} from './botFeatures/reciterService.js';
 import { randomAyaNumber, numArabicToEnglish } from './utils.js';
 
 /**
@@ -105,188 +117,7 @@ const quranData = getQuranData();
 // sendSorry is now imported as helperSendSorry from botHelpers.js
 // aMenuButtons is now imported as helperAMenuButtons from botHelpers.js
 
-/**
- * Sends the text part of an Aya (Arabic and English translation) to a chat.
- * Includes inline buttons for interaction.
- * @async
- * @private
- * @function sendAyaText
- * @param {number|string} chatId - The ID of the chat to send the Aya to.
- * @param {number} ayaId - The global ID of the Aya.
- * @param {string|null} reciter - The identifier of the reciter (or null for default/random).
- * @param {string|undefined} lang - The language code of the user/chat.
- * @param {string} trigger - The trigger for sending the Aya.
- * @returns {Promise<import('telegraf/typings/core/types/typegram').Message.TextMessage | null>}
- *          A promise that resolves to the sent message context, or null if sending failed (e.g. Aya text not prepared).
- * @throws {Error} If sending the message via Telegram API fails for reasons other than supergroup migration.
- */
-async function sendAyaText(chatId, ayaId, reciter, lang, trigger) {
-    logger(`Formatting Aya ${ayaId} for chat ${chatId}`);
-    const currentReciter = reciter || 'None';
-
-    if (!bot.options.username) {
-        logger(
-            'sendAyaText: bot.options.username not available for prepareAya.',
-            new Error('bot.options.username missing')
-        );
-    }
-    const preparedAya = prepareAya(ayaId, bot.options.username || 'DailyAyaBot');
-
-    if (preparedAya.arText.startsWith('Error:')) {
-        logger(`sendAyaText: Error preparing Aya ${ayaId}: ${preparedAya.arText}`);
-        await helperSendSorry(bot.telegram, chatId, 'text');
-        return null;
-    }
-
-    const ayaDualText = `${preparedAya.arText}\n\n${preparedAya.enText}`;
-    const buttons = helperAMenuButtons('t0', ayaId, currentReciter, bot.options.username, ayaId2suraAya);
-
-    try {
-        const sentMessageCtx = await bot.telegram.sendMessage(chatId, ayaDualText, {
-            disable_web_page_preview: true,
-            disable_notification: true,
-            parse_mode: 'HTML',
-            reply_markup: buttons,
-        });
-        await helperSuccessSend(sentMessageCtx, ayaId, lang, trigger, lastAyaTime);
-        return sentMessageCtx;
-    } catch (e) {
-        logger(`Error in sendAyaText sending message to chat ${chatId} for Aya ${ayaId}:`, e);
-        if (e.response && e.response.description && e.response.description.includes('upgraded to a supergroup')) {
-            logger(`Chat ${chatId} upgraded to supergroup ${e.response.parameters.migrate_to_chat_id}. Retrying.`);
-            await lastAyaTime(chatId, 'blocked');
-            return sendAyaText(e.response.parameters.migrate_to_chat_id, ayaId, reciter, lang, trigger);
-        }
-        throw e;
-    }
-}
-
-/**
- * Sends the audio recitation of an Aya to a chat.
- * It determines the appropriate reciter based on user preference or a random selection.
- * Handles editing of message reply markup to attach buttons to the audio message.
- * @async
- * @private
- * @function sendAyaRecitation
- * @param {import('telegraf').Context} ctx - The Telegraf context object, used to determine chat ID and original message ID.
- * @param {number} ayaId - The global ID of the Aya.
- * @param {string|null} reciterIdentifier - The preferred reciter identifier, or null.
- */
-async function sendAyaRecitation(ctx, ayaId, reciterIdentifier) {
-    const chatId = ctx.chat?.id || ctx.update?.callback_query?.message?.chat?.id;
-    if (!chatId) {
-        logger('sendAyaRecitation: Could not determine chatId from context.', ctx);
-        return;
-    }
-
-    let finalReciter = reciterIdentifier;
-    if (!isValidReciter(reciterIdentifier)) {
-        const favReciterResult = await getFavReciter(chatId);
-        if (favReciterResult.success && isValidReciter(favReciterResult.data)) {
-            finalReciter = favReciterResult.data;
-        } else {
-            finalReciter = getRandomReciterIdentifier();
-            if (!finalReciter) {
-                logger(
-                    `sendAyaRecitation: Could not determine a valid reciter for chat ${chatId}.`,
-                    new Error('No reciter available')
-                );
-                await helperSendSorry(bot.telegram, chatId, 'audio');
-                return;
-            }
-        }
-    }
-    logger(`sendAyaRecitation: Chat ${chatId} using reciter: ${finalReciter} for Aya ${ayaId}`);
-
-    try {
-        const recitationUrl = await getRecitation(ayaId, finalReciter);
-        const suraAyaIndex = ayaId2suraAya(ayaId);
-        const recitationCaption = `<a href="t.me/${bot.options.username || 'DailyAyaBot'}?start=${suraAyaIndex.sura}-${suraAyaIndex.aya}">@${bot.options.username || 'DailyAyaBot'} ➔ ${suraAyaIndex.sura}:${suraAyaIndex.aya}</a>`;
-        const buttons = helperAMenuButtons('r0', ayaId, finalReciter, bot.options.username, ayaId2suraAya);
-
-        const sentAudioCtx = await bot.telegram.sendAudio(chatId, recitationUrl, {
-            caption: recitationCaption,
-            parse_mode: 'HTML',
-            disable_notification: true,
-        });
-
-        const originalMessageId = ctx.message?.message_id || ctx.update?.callback_query?.message?.message_id;
-
-        if (originalMessageId) {
-            if (sentAudioCtx.message_id === originalMessageId + 1) {
-                // Audio sent immediately after text
-                await bot.telegram
-                    .editMessageReplyMarkup(chatId, originalMessageId, undefined, undefined)
-                    .catch((e) =>
-                        logger(
-                            'Warning: Message not modified or ID invalid when removing markup from text msg (recitation) (non-critical):',
-                            e
-                        )
-                    );
-                await bot.telegram
-                    .editMessageReplyMarkup(chatId, sentAudioCtx.message_id, undefined, buttons)
-                    .catch((e) =>
-                        logger(
-                            'Warning: Message not modified or ID invalid when adding markup to audio msg (recitation) (non-critical):',
-                            e
-                        )
-                    );
-            } else {
-                // Audio sent later or as a result of callback; reply to original text
-                await bot.telegram
-                    .deleteMessage(chatId, sentAudioCtx.message_id)
-                    .catch((e) =>
-                        logger(
-                            'Warning: Message ID invalid when deleting initial audio msg (recitation reply) (non-critical):',
-                            e
-                        )
-                    );
-                /*const repliedAudioCtx =*/ await bot.telegram.sendAudio(chatId, recitationUrl, {
-                    // We don't use repliedAudioCtx currently
-                    reply_to_message_id: originalMessageId,
-                    caption: recitationCaption,
-                    parse_mode: 'HTML',
-                    disable_notification: true,
-                    reply_markup: buttons,
-                });
-                await bot.telegram
-                    .editMessageReplyMarkup(chatId, originalMessageId, undefined, undefined)
-                    .catch((e) =>
-                        logger(
-                            'Warning: Message not modified or ID invalid when removing markup from text msg (recitation reply) (non-critical):',
-                            e
-                        )
-                    );
-            }
-        } else {
-            // No original message context (e.g., direct /recite command - though not implemented)
-            await bot.telegram
-                .editMessageReplyMarkup(chatId, sentAudioCtx.message_id, undefined, buttons)
-                .catch((e) =>
-                    logger(
-                        'Warning: Message not modified or ID invalid when adding markup to direct audio msg (recitation) (non-critical):',
-                        e
-                    )
-                );
-        }
-    } catch (error) {
-        logger(`Error in sendAyaRecitation for aya ${ayaId} by ${finalReciter} to chat ${chatId}:`, error);
-        if (error.response && error.response.description) {
-            const errorDesc = error.response.description.toLowerCase();
-            if (
-                errorDesc.includes('blocked by the user') ||
-                errorDesc.includes('user is deactivated') ||
-                errorDesc.includes('chat not found')
-            ) {
-                await lastAyaTime(chatId, 'blocked');
-            } else {
-                await helperSendSorry(bot.telegram, chatId, 'audio');
-            }
-        } else {
-            await helperSendSorry(bot.telegram, chatId, 'audio');
-        }
-    }
-}
+// sendAyaText and sendAyaRecitation moved to src/ayaSender.js
 
 /**
  * Main function to send an Aya (text and optionally recitation) to a chat.
@@ -308,10 +139,26 @@ async function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation = f
 
     const targetAyaId = ayaId || randomAyaNumber();
 
+    const senderDependencies = {
+        botTelegram: bot.telegram,
+        botUsername: bot.options.username,
+        prepareAyaFn: prepareAya, // from quranService
+        helperSendSorryFn: helperSendSorry, // from botHelpers
+        helperAMenuButtonsFn: helperAMenuButtons, // from botHelpers
+        helperSuccessSendFn: helperSuccessSend, // from botHelpers
+        lastAyaTimeDbFn: lastAyaTime, // from database
+        ayaId2suraAyaFn: ayaId2suraAya, // from quranService
+        isValidReciterFn: isValidReciter, // from quranService
+        getFavReciterDbFn: getFavReciter, // from database
+        getRandomReciterIdentifierFn: getRandomReciterIdentifier, // from quranService
+        getRecitationFn: getRecitation, // from quranService
+    };
+
     try {
-        const sentTextCtx = await sendAyaText(chatId, targetAyaId, reciter, lang, trigger);
+        const sentTextCtx = await senderSendAyaText(senderDependencies, chatId, targetAyaId, reciter, lang, trigger);
         if (sentTextCtx && withRecitation) {
-            await sendAyaRecitation(sentTextCtx, targetAyaId, reciter);
+            // sendAyaRecitation takes ctx (which is sentTextCtx here), ayaId, reciterIdentifier
+            await senderSendAyaRecitation(senderDependencies, sentTextCtx, targetAyaId, reciter);
         }
     } catch (e) {
         logger(`sendAya: Error caught while sending Aya ${targetAyaId} to chat ${chatId}. Trigger: ${trigger}`, e);
@@ -393,7 +240,7 @@ export async function handleText(ctx) {
         let reasonCode = 3;
         if (ayaId === 0) reasonCode = 2;
         else if (ayaId === -1) reasonCode = 1;
-        await unrecognized(ctx, reasonCode);
+        await helperSendUnrecognizedMessage(ctx, reasonCode, bot.telegram);
     }
 }
 
@@ -406,25 +253,9 @@ export async function handleText(ctx) {
  * @param {number|string} chatId - The ID of the chat to send the message to.
  * @param {import('telegraf').Context|null} [ctx=null] - Optional Telegraf context, used for `summaryStats` if provided.
  */
-async function startCommandLogic(chatId, ctx = null) {
-    const msg = `دايلي آية يرسل آية واحدة يوميا في نفس موعد آخر آية تطلبوها في الدردشات الشخصية أو المجموعات والقنوات حتى لا ينقطع وردكم اليومي.
-لمعرفة الأوامر المتاحة: /commands
-
-Daily Aya sends one Aya daily at the same time of the last Aya you request in private chats or groups and channels so your daily read doesn't stop.
-For available commands: /commands`;
-
-    try {
-        const sentMsgCtx = await bot.telegram.sendMessage(chatId, msg, {
-            reply_markup: {
-                inline_keyboard: [[{ text: '🎁', callback_data: JSON.stringify({ surpriseAyaAction: true }) }]],
-            },
-        });
-        await helperSuccessSend(sentMsgCtx, 0, ctx?.from?.language_code || '', 'request', lastAyaTime); // ayaId 0 for start message
-        if (ctx) await summaryStats(ctx);
-    } catch (e) {
-        logger(`Error while sending start message to chat ${chatId}:`, e);
-    }
-}
+// async function startCommandLogic(chatId, ctx = null) { // MOVED to commandHandlers.js
+// ...
+// }
 
 /**
  * Sends a summary of chat statistics (active, blocked) to the development chat.
@@ -433,54 +264,11 @@ For available commands: /commands`;
  * @function summaryStats
  * @param {import('telegraf').Context} ctx - The Telegraf context (used to ensure devChatId is available via config).
  */
-async function summaryStats(ctx) {
-    // ctx is passed to ensure config context, though not directly used for properties
-    try {
-        const db = getDB();
-        const privateActiveChats = await db.collection('chats').countDocuments({ blocked: false, chatType: 'private' });
-        const otherActiveChats = await db
-            .collection('chats')
-            .countDocuments({ blocked: false, chatType: { $ne: 'private' } });
-        const totalBlockedChats = await db.collection('chats').countDocuments({ blocked: true });
+// async function summaryStats(ctx) { // MOVED to commandHandlers.js
+// ...
+// }
 
-        const totalChatsMsg = `Total Active: ${privateActiveChats + otherActiveChats} | Blocked: ${totalBlockedChats}\nPrivate Active: ${privateActiveChats} | Others: ${otherActiveChats}`;
-        logger(totalChatsMsg);
-
-        if (config.devChatId) {
-            await bot.telegram.sendMessage(config.devChatId, totalChatsMsg);
-        }
-    } catch (e) {
-        logger('Error while getting total chats for summaryStats:', e);
-    }
-}
-
-/**
- * Sends instructions on how to request specific Ayas.
- * @async
- * @private
- * @function instructions
- * @param {number|string} chatId - The ID of the chat to send instructions to.
- */
-async function instructions(chatId) {
-    const msg = `يمكنك طلب آية محددة بإرسال اسم أو رقم السورة ورقم الآية.
-مثل: البقرة   ٢٥٥
-أو مثل: ٢   ٢٥٥
-أو آية الكرسي
-
-وأيضا اسم أو رقم السورة فقط
-مثل : البقرة
-أو مثل : ٢
-
-You can request a specific Aya by sending the numbers of Aya and Sura.
-Example: 2   255
-Or Sura number only: 2`;
-    try {
-        await bot.telegram.sendMessage(chatId, msg);
-        logger('Sent instructions message to chat ' + chatId);
-    } catch (e) {
-        logger('Failed to send instructions message to chat ' + chatId, e);
-    }
-}
+// instructions function has been moved to botHelpers.js
 
 /**
  * Sends a message explaining why a user's request was not recognized.
@@ -495,138 +283,54 @@ Or Sura number only: 2`;
  *                                3: Unrecognized message type (e.g., sticker instead of text).
  *                                Other: Unknown error.
  */
-async function unrecognized(ctx, reason) {
-    const chatId = ctx.chat.id;
-    const isUserAdmin = await helperAdminChecker(ctx, bot.telegram);
-    if (!isUserAdmin) {
-        logger(`Ignored unrecognized message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`);
-        return;
-    }
+// async function unrecognized(ctx, reason) { // MOVED to botHelpers.js as sendUnrecognizedMessage
+//     const chatId = ctx.chat.id;
+//     const isUserAdmin = await helperAdminChecker(ctx, bot.telegram);
+//     if (!isUserAdmin) {
+//         logger(`Ignored unrecognized message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`);
+//         return;
+//     }
 
-    let msg;
-    switch (reason) {
-        case 1:
-            msg = `عذرا، لم نتعرف على اسم سورة باللغة العربية أو رقم سورة من 1 إلى 114.\n\nSorry, we couldn't recognize a Sura name in Arabic or Sura number from 1 to 114.`;
-            break;
-        case 2:
-            msg = `عذرا، رقم الآية ليس في السورة المطلوبة.\n\nSorry, Aya number is not in the requested Sura.`;
-            break;
-        case 3:
-            msg = `عذرا، حاليا نتعرف فقط على أسماء السور باللغة العربية أو أرقام السور والآيات في الرسائل النصية.\n\nSorry, we currently only recognize Sura names in Arabic or numbers of Sura and Aya in text messages.`;
-            break;
-        default:
-            msg = `خطأ غير معروف!\n\nUnknown error!`;
-            break;
-    }
+//     let msg;
+//     switch (reason) {
+//         case 1:
+//             msg = `عذرا، لم نتعرف على اسم سورة باللغة العربية أو رقم سورة من 1 إلى 114.\n\nSorry, we couldn't recognize a Sura name in Arabic or Sura number from 1 to 114.`;
+//             break;
+//         case 2:
+//             msg = `عذرا، رقم الآية ليس في السورة المطلوبة.\n\nSorry, Aya number is not in the requested Sura.`;
+//             break;
+//         case 3:
+//             msg = `عذرا، حاليا نتعرف فقط على أسماء السور باللغة العربية أو أرقام السور والآيات في الرسائل النصية.\n\nSorry, we currently only recognize Sura names in Arabic or numbers of Sura and Aya in text messages.`;
+//             break;
+//         default:
+//             msg = `خطأ غير معروف!\n\nUnknown error!`;
+//             break;
+//     }
 
-    try {
-        await bot.telegram.sendMessage(chatId, msg, {
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        { text: '🎁', callback_data: JSON.stringify({ surpriseAyaAction: true }) },
-                        { text: '🤔', callback_data: JSON.stringify({ instructionsAction: true }) },
-                    ],
-                ],
-            },
-        });
-        logger('Sent reason of unrecognized request to chat ' + chatId);
-    } catch (e) {
-        logger('Failed to send reason of unrecognized request to chat ' + chatId, e);
-    }
-}
+//     try {
+//         await bot.telegram.sendMessage(chatId, msg, {
+//             reply_markup: {
+//                 inline_keyboard: [
+//                     [
+//                         { text: '🎁', callback_data: JSON.stringify({ surpriseAyaAction: true }) },
+//                         { text: '🤔', callback_data: JSON.stringify({ instructionsAction: true }) },
+//                     ],
+//                 ],
+//             },
+//         });
+//         logger('Sent reason of unrecognized request to chat ' + chatId);
+//     } catch (e) {
+//         logger('Failed to send reason of unrecognized request to chat ' + chatId, e);
+//     }
+// }
 
 // --- Reciters Command Helpers ---
-/**
- * Cache for inline keyboard buttons for reciter selection.
- * Populated by {@link populateRecitersButtons}.
- * @private
- * @type {Array<Array<import('telegraf/typings/core/types/typegram').InlineKeyboardButton.CallbackButton>>}
- */
-let recitersInlineButtonsCache = [];
+// Moved to src/botFeatures/reciterService.js
+// Cache `recitersInlineButtonsCache` is now internal to reciterService.js
+// `populateRecitersButtons` is now imported as `servicePopulateRecitersButtons`.
+// `recitersNavPage` is now imported as `serviceRecitersNavPage`.
 
-/**
- * Populates the `recitersInlineButtonsCache` with buttons for each available Arabic reciter.
- * This is called once at bot setup.
- * @private
- * @function populateRecitersButtons
- */
-function populateRecitersButtons() {
-    if (!quranData.arReciters || quranData.arReciters.length === 0) {
-        logger('populateRecitersButtons: No Arabic reciters loaded.', new Error('arReciters data missing'));
-        recitersInlineButtonsCache = [];
-        return;
-    }
-    recitersInlineButtonsCache = quranData.arReciters.map((reciter) => [
-        {
-            text: `${reciter.englishName} ${reciter.name}`,
-            callback_data: JSON.stringify({ setReciter: reciter.identifier }),
-        },
-    ]);
-    logger('Reciters buttons populated and cached.');
-}
-populateRecitersButtons(); // Call at setup
-
-// (Place this function where recitersNavPageMarkup was, or in a suitable location)
-function recitersNavPage(page) {
-    // Adapted from original index.js
-    const recitersPerPage = 5;
-    if (!recitersInlineButtonsCache || recitersInlineButtonsCache.length === 0) {
-        logger('recitersNavPage: recitersInlineButtonsCache is empty or not initialized.');
-        // Return a minimal navigation row even if there are no reciters
-        return [
-            [
-                {
-                    text: `🎲`,
-                    callback_data: JSON.stringify({ setReciter: 'surprise' }),
-                },
-                {
-                    text: `＜`,
-                    callback_data: JSON.stringify({ recitersNavPage: 1 }),
-                },
-                {
-                    text: `1/1`, // Show 1/1 if no reciters
-                    callback_data: JSON.stringify({ inactive: true }),
-                },
-                {
-                    text: `＞`,
-                    callback_data: JSON.stringify({ recitersNavPage: 1 }),
-                },
-            ],
-        ];
-    }
-
-    const totalPages = Math.max(1, Math.ceil(recitersInlineButtonsCache.length / recitersPerPage)); // Ensure totalPages is at least 1
-    const currentPage = Math.min(Math.max(page, 1), totalPages); // Normalize currentPage
-
-    // Slice the cache, which contains arrays of buttons (rows)
-    const buttonsSlice = recitersInlineButtonsCache.slice(
-        (currentPage - 1) * recitersPerPage,
-        currentPage * recitersPerPage
-    );
-
-    const navRow = [
-        {
-            text: `🎲`,
-            callback_data: JSON.stringify({ setReciter: 'surprise' }),
-        },
-        {
-            text: `＜`,
-            callback_data: JSON.stringify({ recitersNavPage: currentPage > 1 ? currentPage - 1 : totalPages }),
-        },
-        {
-            text: `${currentPage}/${totalPages}`,
-            callback_data: JSON.stringify({ inactive: true }),
-        },
-        {
-            text: `＞`,
-            callback_data: JSON.stringify({ recitersNavPage: currentPage < totalPages ? currentPage + 1 : 1 }),
-        },
-    ];
-
-    // buttonsSlice is an array of rows. Add navRow as the last row.
-    return [...buttonsSlice, navRow];
-}
+servicePopulateRecitersButtons(); // Call at setup to populate the cache in the service
 
 // --- Khatma Command Helpers ---
 /**
@@ -643,58 +347,61 @@ function recitersNavPage(page) {
  * @param {number} params.juz - The Juz number selected by the user.
  * @returns {string|false} The updated message text with HTML links, or `false` if no change was made (user selected the same Juz).
  */
-function khatmaUpdate({ userId, firstName, currentText, currentEntities, juz }) {
-    let textOffset = 0;
-    let newText = currentText;
+// function khatmaUpdate({ userId, firstName, currentText, currentEntities, juz }) { // MOVED to khatmaService.js
+//     let textOffset = 0;
+//     let newText = currentText;
 
-    (currentEntities || []).forEach((entity) => {
-        if (entity.type === 'text_mention' && entity.user) {
-            const mention = `<a href="tg://user?id=${entity.user.id}">${entity.user.first_name}</a>`;
-            newText =
-                newText.substring(0, textOffset + entity.offset) +
-                mention +
-                newText.substring(textOffset + entity.offset + entity.length);
-            textOffset += mention.length - entity.length;
-        }
-    });
+//     (currentEntities || []).forEach((entity) => {
+//         if (entity.type === 'text_mention' && entity.user) {
+//             const mention = `<a href="tg://user?id=${entity.user.id}">${entity.user.first_name}</a>`;
+//             newText =
+//                 newText.substring(0, textOffset + entity.offset) +
+//                 mention +
+//                 newText.substring(textOffset + entity.offset + entity.length);
+//             textOffset += mention.length - entity.length;
+//         }
+//     });
 
-    const userUpdateLine = `<a href="tg://user?id=${userId}">${firstName}</a> ➔ ${juz} ${juz === 30 ? '🏆' : '💪'}`;
-    const textArray = newText.split('\n\n');
-    const header = textArray.shift();
+//     const userUpdateLine = `<a href="tg://user?id=${userId}">${firstName}</a> ➔ ${juz} ${juz === 30 ? '🏆' : '💪'}`;
+//     const textArray = newText.split('\n\n');
+//     const header = textArray.shift();
 
-    const existingUserEntryIndex = textArray.findIndex((item) => item.includes(`<a href="tg://user?id=${userId}">`));
-    if (existingUserEntryIndex !== -1 && textArray[existingUserEntryIndex] === userUpdateLine) {
-        return false;
-    }
+//     const existingUserEntryIndex = textArray.findIndex((item) => item.includes(`<a href="tg://user?id=${userId}">`));
+//     if (existingUserEntryIndex !== -1 && textArray[existingUserEntryIndex] === userUpdateLine) {
+//         return false;
+//     }
 
-    const filteredArray = textArray.filter((item) => !item.includes(`<a href="tg://user?id=${userId}">`));
+//     const filteredArray = textArray.filter((item) => !item.includes(`<a href="tg://user?id=${userId}">`));
 
-    let insertAtIndex = filteredArray.findIndex((item) => {
-        const match = item.match(/(\d+)(?: .{1,2})$/);
-        return match && parseInt(match[1], 10) < juz;
-    });
+//     // Corrected logic for ascending sort by Juz:
+//     // Find the index of the first element whose Juz number is GREATER than the new Juz.
+//     // Insert the new Juz BEFORE this element. If no such element, append to end.
+//     let insertAtIndex = filteredArray.findIndex((item) => {
+//         const match = item.match(/(\d+)(?: .{1,2})$/);
+//         return match && parseInt(match[1], 10) > juz;
+//     });
+//     if (insertAtIndex === -1) { // No element is greater, so append
+//         filteredArray.push(userUpdateLine);
+//     } else { // Found an element greater, insert before it
+//         filteredArray.splice(insertAtIndex, 0, userUpdateLine);
+//     }
 
-    if (insertAtIndex === -1) {
-        filteredArray.push(userUpdateLine);
-    } else {
-        filteredArray.splice(insertAtIndex, 0, userUpdateLine);
-    }
-
-    return [header, ...filteredArray].join('\n\n');
-}
+//     return [header, ...filteredArray].join('\n\n');
+// }
 
 // --- Command Handlers ---
 bot.start(async (ctx) => {
+    // Admin check remains here for now, or could be moved into the handler if preferred
     if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, bot.telegram))) {
         logger(`Ignored /start command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return;
     }
-    // If in private chat, or if admin in group, proceed:
-    if (ctx.startPayload && ctx.startPayload.length) {
-        logger(`/start with payload: ${ctx.startPayload} from chat ${ctx.chat.id}`);
-        return handleText(ctx);
-    }
-    await startCommandLogic(ctx.chat.id, ctx);
+    // Pass necessary parts of bot (telegram, options) and handleText function to the handler
+    await commandHandlers.handleStartCommand(ctx, {
+        telegram: bot.telegram,
+        options: bot.options,
+        handleTextFn: handleText,
+    });
 });
 
 bot.help(async (ctx) => {
@@ -702,8 +409,7 @@ bot.help(async (ctx) => {
         logger(`Ignored /help command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
         return; // Silently ignore in groups if not admin
     }
-    // If in private chat, or if admin in group, proceed:
-    await instructions(ctx.chat.id);
+    await commandHandlers.handleHelpCommand(ctx, { telegram: bot.telegram });
 });
 
 bot.command('surpriseme', async (ctx) => {
@@ -713,7 +419,15 @@ bot.command('surpriseme', async (ctx) => {
         );
         return;
     }
-    await surpriseAya(ctx);
+    // surpriseAya is still in telegramBot.js, handleText also.
+    // The handleSurpriseMeCommand in commandHandlers.js calls the original surpriseAya.
+    // This needs careful thought: either pass the original surpriseAya function or the whole bot instance.
+    // For now, let's assume commandHandlers.handleSurpriseMeCommand can take ctx and the bot instance.
+    await commandHandlers.handleSurpriseMeCommand(ctx, {
+        telegram: bot.telegram,
+        options: bot.options,
+        surpriseAyaFn: surpriseAya,
+    });
 });
 
 bot.command('support', async (ctx) => {
@@ -723,16 +437,7 @@ bot.command('support', async (ctx) => {
         );
         return;
     }
-    const msg = `👨‍💻`;
-    await ctx
-        .reply(
-            msg,
-            Markup.inlineKeyboard([
-                [Markup.button.url('Contact Us 💬 تواصل معنا', 'https://t.me/sherbeeny')],
-                [Markup.button.url('Support Us 🌱 دعم استمرارنا', 'https://www.paypal.me/sherbeeny/10')],
-            ])
-        )
-        .catch((e) => logger('Error sending /support message:', e));
+    await commandHandlers.handleSupportCommand(ctx, Markup); // Pass Markup
 });
 
 bot.command('reciters', async (ctx) => {
@@ -742,10 +447,7 @@ bot.command('reciters', async (ctx) => {
         );
         return;
     }
-    const msg = `من هو قارئك المفضل؟\n\nWho is your favorite Reciter?`;
-    await ctx
-        .reply(msg, { reply_markup: { inline_keyboard: recitersNavPage(1) } })
-        .catch((e) => logger('Error sending /reciters message:', e));
+    await commandHandlers.handleRecitersCommand(ctx, serviceRecitersNavPage); // Pass imported serviceRecitersNavPage
 });
 
 bot.command('channel', async (ctx) => {
@@ -755,7 +457,7 @@ bot.command('channel', async (ctx) => {
         );
         return;
     }
-    await ctx.reply('https://t.me/DailyAyaGlobal').catch((e) => logger('Error sending /channel message:', e));
+    await commandHandlers.handleChannelCommand(ctx);
 });
 
 bot.command('khatma', async (ctx) => {
@@ -765,16 +467,7 @@ bot.command('khatma', async (ctx) => {
         );
         return;
     }
-    const msg = `كم جزء قرأت؟ \nHow many ajzaa did you read?`;
-    const quran30btns = [];
-    for (let i = 0; i < 6; i++) {
-        const row = [];
-        for (let juz = 1 + 5 * i; juz <= 5 + 5 * i; juz++) {
-            row.push(Markup.button.callback(juz.toString(), JSON.stringify({ groupkhatma: juz })));
-        }
-        quran30btns.push(row);
-    }
-    await ctx.reply(msg, Markup.inlineKeyboard(quran30btns)).catch((e) => logger('Error sending /khatma message:', e));
+    await commandHandlers.handleKhatmaCommand(ctx, Markup); // Pass Markup
 });
 
 bot.command('commands', async (ctx) => {
@@ -784,17 +477,7 @@ bot.command('commands', async (ctx) => {
         );
         return;
     }
-    try {
-        const myCommands = await bot.telegram.getMyCommands();
-        let msg = myCommands.map((c) => `/${c.command}\n${c.description}`).join('\n\n');
-        if (!msg) msg = 'No commands found or an error occurred.';
-        await ctx.reply(msg);
-    } catch (e) {
-        logger('Error fetching/sending commands:', e);
-        await ctx
-            .reply("Sorry, couldn't fetch commands at the moment.")
-            .catch((e) => logger('Error replying to /commands after fetch error:', e));
-    }
+    await commandHandlers.handleCommandsCommand(ctx, bot.telegram);
 });
 
 // Set bot commands for Telegram menu
@@ -811,287 +494,77 @@ bot.telegram
 
 // --- Action Handlers (Callback Queries) ---
 
-/**
- * Generic wrapper for action handlers that require admin privileges.
- * @async
- * @private
- * @function adminProtectedAction
- * @param {import('telegraf').Context} ctx - The Telegraf context object from the callback query.
- * @param {function(import('telegraf').Context): Promise<void>} actionFn - The function to execute if the user is an admin.
- * @param {boolean} [alertIfNotAdmin=true] - Whether to show an alert to non-admins.
- */
-async function adminProtectedAction(ctx, actionFn, alertIfNotAdmin = true) {
-    const isUserAdmin = await helperAdminChecker(ctx, bot.telegram);
-    if (!isUserAdmin) {
-        if (alertIfNotAdmin)
-            await ctx
-                .answerCbQuery(BOT_NON_ADMINS_ALERT, { show_alert: true })
-                .catch((e) => logger('Error answering CBQ for non-admin:', e));
-        else await ctx.answerCbQuery().catch((e) => logger('Error answering CBQ (silent) for non-admin:', e));
-        return;
-    }
-    try {
-        await actionFn(ctx);
-        await ctx.answerCbQuery().catch((e) => logger('Error answering CBQ after admin action:', e));
-    } catch (error) {
-        logger('Error in adminProtectedAction executing actionFn:', error);
-        await ctx
-            .answerCbQuery('An error occurred.', { show_alert: true })
-            .catch((e) => logger('Error answering CBQ after actionFn error:', e));
-    }
-}
-
-/**
- * Generic wrapper for action handlers that have different behaviors for admins and non-admins,
- * often involving opening a URL for non-admins.
- * @async
- * @private
- * @function adminConditionalAction
- * @param {import('telegraf').Context} ctx - The Telegraf context object.
- * @param {function(import('telegraf').Context): Promise<void>} adminFn - Function to execute for admin users.
- * @param {function(import('telegraf').Context): Promise<string>} nonAdminCb - Function that returns a URL for non-admin users.
- * @param {boolean} [nonAdminAlert=false] - Whether to show an alert to non-admins before redirecting.
- * @param {string|null} [nonAdminUrl=null] - Pre-calculated URL for non-admins (if `nonAdminCb` is not used).
- */
-async function adminConditionalAction(ctx, adminFn, nonAdminCb, nonAdminAlert = false, nonAdminUrl = null) {
-    const isUserAdmin = await helperAdminChecker(ctx, bot.telegram); // Updated call
-    if (isUserAdmin) {
-        try {
-            await adminFn(ctx);
-            await ctx.answerCbQuery().catch((e) => logger('Error answering CBQ after admin fn in conditional:', e));
-        } catch (error) {
-            logger('Error in adminConditionalAction executing adminFn:', error);
-            await ctx
-                .answerCbQuery('An error occurred.', { show_alert: true })
-                .catch((e) => logger('Error answering CBQ after adminFn error in conditional:', e));
-        }
-    } else {
-        const urlToOpen = nonAdminUrl || (typeof nonAdminCb === 'function' ? await nonAdminCb(ctx) : null);
-        if (urlToOpen) {
-            await ctx
-                .answerCbQuery(nonAdminAlert ? BOT_NON_ADMINS_ALERT : '', { url: urlToOpen })
-                .catch((e) => logger('Error answering CBQ with URL for non-admin:', e));
-        } else {
-            await ctx
-                .answerCbQuery(nonAdminAlert ? BOT_NON_ADMINS_ALERT : '', { show_alert: nonAdminAlert })
-                .catch((e) => logger('Error answering CBQ for non-admin (no URL):', e));
-        }
-    }
-}
+// adminProtectedAction and adminConditionalAction are now imported from botHelpers.js
+// as helperAdminProtectedAction and helperAdminConditionalAction.
 
 // Action handlers using the new structure
-bot.action(/^{"groupkhatma":\d+}$/, async (ctx) => {
-    // Admin check removed - all users can press these buttons
-
-    let callbackData;
-    try {
-        callbackData = JSON.parse(ctx.update.callback_query.data);
-    } catch (parseError) {
-        logger('groupkhatma action: Failed to parse callback_data', parseError);
-        ctx.answerCbQuery('Error processing your request.').catch((e) =>
-            logger('groupkhatma action: CbQ error on parse fail', e)
-        );
-        return;
-    }
-
-    const juz = callbackData.groupkhatma;
-    if (typeof juz !== 'number' || juz < 1 || juz > 30) {
-        logger(
-            'groupkhatma action: Invalid Juz number in callback.',
-            new Error(`Data: ${JSON.stringify(callbackData)}`)
-        );
-        ctx.answerCbQuery('Error: Invalid Juz number.').catch((e) =>
-            logger('groupkhatma action: CbQ error on invalid Juz', e)
-        );
-        return;
-    }
-
-    const updatedText = khatmaUpdate({
-        userId: ctx.from.id,
-        firstName: ctx.from.first_name || `User${ctx.from.id}`,
-        currentText: ctx.update.callback_query.message.text,
-        currentEntities: ctx.update.callback_query.message.entities,
-        juz: juz,
-    });
-
-    if (updatedText === false) {
-        // No change, user selected same Juz
-        return ctx
-            .answerCbQuery(`هذا الجزء هو اختيارك الحالي بالفعل ⚠️\n\n⚠️ This Juz is already your current selection.`, {
-                show_alert: true,
-            })
-            .catch((e) => logger('Error CBQ khatma no change:', e));
-    }
-
-    try {
-        await ctx.editMessageText(updatedText, {
-            parse_mode: 'HTML',
-            reply_markup: ctx.update.callback_query.message.reply_markup, // Keep existing buttons
-        });
-        await ctx
-            .replyWithHTML(
-                `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name || `User${ctx.from.id}`}</a> ➔ ${juz} ${juz === 30 ? '🏆' : '💪'}`,
-                { disable_notification: true, reply_to_message_id: ctx.update.callback_query.message.message_id }
-            )
-            .catch((e) => logger('Error replying to Khatma update:', e));
-        await ctx.answerCbQuery(
-            `تم التحديث ✔️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n✔️ Updated!\n🤲 May Allah accept from us and you.`,
-            { show_alert: true }
-        );
-    } catch (e) {
-        logger(`Error while updating khatma message or replying:`, e);
-        await ctx
-            .answerCbQuery(
-                `تم الإرسال ✔️\nالملخص قد يكون ممتلئ ⚠️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n✔️ Sent!\n⚠️ Summary might be full.\n🤲 May Allah accept from us and you.`,
-                { show_alert: true }
-            )
-            .catch((eCb) => logger('Error CBQ khatma update error:', eCb));
-    }
-});
-
-bot.action(/^{"recitersNavPage":\s*\d+\s*}$/, async (ctx) => {
-    // Regex adapted slightly for potential spaces
-    await adminProtectedAction(ctx, async (adminCtx) => {
-        let callbackData;
-        try {
-            callbackData = JSON.parse(adminCtx.update.callback_query.data);
-        } catch (e) {
-            logger('recitersNavPage (action): Failed to parse callback_data', e);
-            adminCtx
-                .answerCbQuery('Error processing request.')
-                .catch((eAns) => logger('recitersNavPage (action): Error answering CBQ on parse fail', eAns));
-            return;
-        }
-
-        const requestedRecitersNavPage = callbackData.recitersNavPage;
-        if (typeof requestedRecitersNavPage !== 'number') {
-            logger(
-                'recitersNavPage (action): requestedRecitersNavPage is not a number.',
-                new Error(`Callback data: ${JSON.stringify(callbackData)}`)
-            );
-            adminCtx
-                .answerCbQuery('Error: Invalid page number.')
-                .catch((eAns) => logger('recitersNavPage (action): Error answering CBQ on invalid page type', eAns));
-            return;
-        }
-
-        logger(`recitersNavPage (action): Navigating to page ${requestedRecitersNavPage}`);
-        try {
-            const newKeyboard = recitersNavPage(requestedRecitersNavPage);
-            // Log the generated keyboard for debugging if needed
-            // logger(`recitersNavPage (action): Generated keyboard: ${JSON.stringify(newKeyboard)}`);
-
-            await adminCtx.editMessageReplyMarkup({ inline_keyboard: newKeyboard });
-            // No need to explicitly answerCbQuery if editMessageReplyMarkup succeeds,
-            // unless there's specific feedback to give. Telegraf often handles this.
-            // However, the original code had ctx.answerCbQuery(), so keeping it for consistency if it doesn't cause issues.
-            adminCtx
-                .answerCbQuery()
-                .catch((eAns) =>
-                    logger('recitersNavPage (action): Error answering CBQ post-edit (non-critical)', eAns)
-                );
-        } catch (e) {
-            logger('recitersNavPage (action): Error editing message reply markup', e);
-            adminCtx
-                .answerCbQuery('Error updating list.')
-                .catch((eAns) => logger('recitersNavPage (action): Error answering CBQ on edit error', eAns));
-        }
-    });
-});
-
-bot.action(/^{"setReciter":"[^"]+"(?:,"a":\d+)?}$/, async (ctx) => {
-    await adminProtectedAction(ctx, async (adminCtx) => {
-        const callbackData = JSON.parse(adminCtx.update.callback_query.data);
-        const requestedFavReciter = callbackData.setReciter;
-
-        const result = await setFavReciter(adminCtx.chat.id, requestedFavReciter);
-        let replyMsg;
-        if (result.success) {
-            if (requestedFavReciter === 'surprise') {
-                replyMsg = `سيتم تغيير القارئ مع كل آية مفاجئة.\n\nReciter will be changed with each surprise Aya.`;
-            } else {
-                const reciterData = quranData.arReciters.find((r) => r.identifier === requestedFavReciter);
-                replyMsg = reciterData
-                    ? `القارئ المفضل الحالي: ${reciterData.name}\n\nCurrent Favorit Reciter: ${reciterData.englishName}`
-                    : `Favorite reciter set to: ${requestedFavReciter}`;
-            }
-        } else {
-            replyMsg = `عذرا.. نواجه مشكلة أثناء حفظ القارئ المفضل ونأمل حلها قريبا.\n\nSorry.. There's an issue while setting favorite reciters and we hope it gets fixed soon.`;
-        }
-        const inlineKeyboard = callbackData.a
-            ? [[Markup.button.callback('🎁', JSON.stringify({ surpriseAyaAction: true, a: callbackData.a }))]]
-            : [[Markup.button.callback('🎁', JSON.stringify({ surpriseAyaAction: true }))]];
-
-        await adminCtx
-            .reply(replyMsg, Markup.inlineKeyboard(inlineKeyboard))
-            .catch((e) => logger('Error replying to setReciter action:', e));
-    });
-});
-
-bot.action(
-    JSON.stringify({ instructionsAction: true }),
-    async (ctx) => await adminProtectedAction(ctx, (adminCtx) => instructions(adminCtx.chat.id))
+bot.action(/^{"groupkhatma":\d+}$/, async (ctx) =>
+    actionHandlers.handleGroupKhatmaAction(ctx, { khatmaUpdateFn: khatmaServiceKhatmaUpdate })
 );
-bot.action(/^{"surpriseAyaAction":true(?:,"a":\d+)?}$/, async (ctx) => await adminProtectedAction(ctx, surpriseAya));
 
-bot.action(/^{"currAya":\d+,"r":"[^"]+"}$/, async (ctx) => {
-    const callbackData = JSON.parse(ctx.update.callback_query.data);
-    await adminConditionalAction(
-        ctx,
-        async (adminCtx) => {
-            logger(`Next Aya after ${callbackData.currAya} by ${callbackData.r} for chat ${adminCtx.chat.id}`);
-            await sendAya(
-                adminCtx.chat.id,
-                nextAya(callbackData.currAya),
-                callbackData.r,
-                adminCtx.from?.language_code,
-                'next',
-                false // <--- Changed value
-            );
-        },
-        async (_nonAdminCtx) => {
-            // Prefixed with underscore
-            const ayaIndex = ayaId2suraAya(nextAya(callbackData.currAya));
-            return `t.me/${bot.options.username || 'DailyAyaBot'}?start=${ayaIndex.sura}-${ayaIndex.aya}`;
-        },
-        false,
-        `t.me/${bot.options.username || 'DailyAyaBot'}?start=${ayaId2suraAya(nextAya(callbackData.currAya)).sura}-${ayaId2suraAya(nextAya(callbackData.currAya)).aya}`
-    );
-});
+bot.action(/^{"recitersNavPage":\s*\d+\s*}$/, async (ctx) =>
+    actionHandlers.handleRecitersNavPageAction(ctx, {
+        botTelegram: bot.telegram,
+        recitersNavPageFn: serviceRecitersNavPage, // Use imported serviceRecitersNavPage
+        helperAdminProtectedAction: helperAdminProtectedAction,
+    })
+);
 
-bot.action(/^{"aMenu":"[^"]+","a":\d+,"r":"[^"]+"}$/, async (ctx) => {
-    await adminProtectedAction(ctx, async (adminCtx) => {
-        const callbackData = JSON.parse(adminCtx.update.callback_query.data);
-        const menu = callbackData.aMenu.includes('1')
-            ? callbackData.aMenu.replace('1', '0')
-            : callbackData.aMenu.replace('0', '1');
-        const buttons = helperAMenuButtons(menu, callbackData.a, callbackData.r, bot.options.username, ayaId2suraAya);
-        try {
-            await adminCtx.editMessageReplyMarkup(buttons);
-        } catch (e) {
-            // Can fail if message is too old, etc.
-            logger(`Warning: Error toggling aMenu (MESSAGE_ID_INVALID or other non-critical): `, e);
-        }
-    });
-});
+bot.action(/^{"setReciter":"[^"]+"(?:,"a":\d+)?}$/, async (ctx) =>
+    actionHandlers.handleSetReciterAction(ctx, {
+        botTelegram: bot.telegram,
+        helperAdminProtectedAction: helperAdminProtectedAction,
+        dbSetFavReciter: setFavReciter, // from database.js
+        getQuranDataFn: getQuranData, // from quranService.js (imported in telegramBot.js)
+        TelegrafMarkup: Markup, // from telegraf
+    })
+);
 
-bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
-    const callbackData = JSON.parse(ctx.update.callback_query.data);
-    await adminConditionalAction(
-        ctx,
-        async (adminCtx) => {
-            logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite} in chat ${adminCtx.chat.id}`);
-            await sendAyaRecitation(adminCtx, callbackData.recite, callbackData.r);
-        },
-        async (_nonAdminCtx) => {
-            // Prefixed with underscore
-            const ayaIndex = ayaId2suraAya(callbackData.recite);
-            return `t.me/${bot.options.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
-        },
-        false,
-        `t.me/${bot.options.username || 'DailyAyaBot'}?start=r${ayaId2suraAya(callbackData.recite).sura}-${ayaId2suraAya(callbackData.recite).aya}`
-    );
-});
+bot.action(JSON.stringify({ instructionsAction: true }), async (ctx) =>
+    actionHandlers.handleInstructionsAction(ctx, {
+        botTelegram: bot.telegram,
+        helperAdminProtectedAction: helperAdminProtectedAction,
+        instructionsFn: helperInstructions, // Pass the imported helperInstructions
+    })
+);
+bot.action(/^{"surpriseAyaAction":true(?:,"a":\d+)?}$/, async (ctx) =>
+    actionHandlers.handleSurpriseAyaAction(ctx, {
+        botTelegram: bot.telegram,
+        helperAdminProtectedAction: helperAdminProtectedAction,
+        surpriseAyaFn: surpriseAya, // Pass the local surpriseAya function
+    })
+);
+
+bot.action(/^{"currAya":\d+,"r":"[^"]+"}$/, async (ctx) =>
+    actionHandlers.handleCurrAyaAction(ctx, {
+        botTelegram: bot.telegram,
+        botOptions: bot.options,
+        helperAdminConditionalAction: helperAdminConditionalAction,
+        sendAyaFn: sendAya, // sendAya from telegramBot.js
+        nextAyaFn: nextAya, // nextAya from quranService (imported in telegramBot.js)
+        ayaId2suraAyaFn: ayaId2suraAya, // ayaId2suraAya from quranService (imported in telegramBot.js)
+    })
+);
+
+bot.action(/^{"aMenu":"[^"]+","a":\d+,"r":"[^"]+"}$/, async (ctx) =>
+    actionHandlers.handleAMenuAction(ctx, {
+        botTelegram: bot.telegram,
+        botOptions: bot.options,
+        helperAdminProtectedAction: helperAdminProtectedAction,
+        helperAMenuButtonsFn: helperAMenuButtons, // from botHelpers.js
+        ayaId2suraAyaFn: ayaId2suraAya, // from quranService.js
+    })
+);
+
+bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) =>
+    actionHandlers.handleReciteAction(ctx, {
+        botTelegram: bot.telegram,
+        botOptions: bot.options,
+        helperAdminConditionalAction: helperAdminConditionalAction,
+        sendAyaRecitationFn: senderSendAyaRecitation, // Use imported senderSendAyaRecitation
+        ayaId2suraAyaFn: ayaId2suraAya, // from quranService.js
+    })
+);
 
 // --- Other Event Handlers ---
 bot.on('text', async (ctx) => {
@@ -1110,10 +583,27 @@ bot.on('my_chat_member', async (ctx) => {
         case 'member':
         case 'administrator':
             // If bot is added or re-added to a group/channel, or unblocked in private.
+            // startCommandLogic now expects (ctx, botTelegram) and is in commandHandlers.js
+            // We need to pass the full ctx for it to extract chatId and other details if needed.
             if (ctx.chat.type !== 'private') {
-                await startCommandLogic(ctx.chat.id);
+                // commandHandlers.handleStartCommand is the main entry, let's see if startCommandLogic is exported
+                // from commandHandlers.js. It is not, it's an internal helper there.
+                // The original startCommandLogic took (chatId, ctx=null).
+                // The one moved to commandHandlers takes (ctx, botTelegram).
+                // The bot.start command calls commandHandlers.handleStartCommand(ctx, {telegram, options, handleTextFn})
+                // This handleStartCommand then calls the internal startCommandLogic(ctx, telegram)
+                // So, for my_chat_member, we should call commandHandlers.handleStartCommand.
+                await commandHandlers.handleStartCommand(ctx, {
+                    telegram: bot.telegram,
+                    options: bot.options,
+                    handleTextFn: handleText,
+                });
             } else {
-                await startCommandLogic(ctx.chat.id); // Also call for private if unblocked/re-added
+                await commandHandlers.handleStartCommand(ctx, {
+                    telegram: bot.telegram,
+                    options: bot.options,
+                    handleTextFn: handleText,
+                });
             }
             break;
         case 'kicked': // Bot was kicked from a group/channel

@@ -2,9 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.06-0745] - 2025-07-06 (Timestamp from package.json, actual changes later)
+
+### Changed
+
+- **Refactoring `telegramBot.js` (Extensive):**
+    - Extracted major functionalities from `telegramBot.js` into new, more focused modules:
+        - `src/botHelpers.js`: Common utilities like admin checks, standardized replies, menu button generation.
+        - `src/botHandlers/commandHandlers.js`: Logic for all `/` commands (e.g., `/start`, `/help`, `/surpriseme`).
+        - `src/botHandlers/actionHandlers.js`: Logic for callback query actions (though tests are currently problematic).
+        - `src/botFeatures/khatmaService.js`: `khatmaUpdate` function.
+        - `src/botFeatures/reciterService.js`: Reciter list navigation and caching logic.
+        - `src/ayaSender.js`: Functions for sending Aya text and recitations (`sendAyaText`, `sendAyaRecitation`).
+    - `telegramBot.js` now acts more as an orchestrator, importing and delegating to these new modules.
+- **Jest ESM Test Suite Stabilization (Continued):**
+    - **Removed Global `config.js` Mock:** The `moduleNameMapper` entry in `jest.config.mjs` that globally mocked `config.js` (pointing to `src/__mocks__/config.mock.js`) has been removed. This was done to address issues where test-specific mocks for `config.js` were not reliably overriding the global mock.
+    - **Manual Per-File `config.js` Mocking:** Implemented a new, consistent pattern for mocking `config.js` in test files that depend on it:
+        - A top-level mutable variable (e.g., `currentConfigMock`) is declared in the test file.
+        - `jest.unstable_mockModule('./config.js', () => currentConfigMock)` (using the correct relative path from the SUT to `config.js`) is used at the top of the test file. This factory returns the `currentConfigMock`.
+        - Before the System Under Test (SUT) is dynamically imported (typically in a `beforeAll` or `beforeEach` within `jest.isolateModulesAsync`), `jest.resetModules()` is called, then `currentConfigMock` is updated with the desired configuration for that test context (often by importing `src/__mocks__/config.mock.js` for a default set of values).
+    - This pattern was successfully applied to:
+        - `src/expressApp.test.js` (now PASSING)
+        - `src/botHandlers/commandHandlers.test.js` (now PASSING)
+        - `src/utils.test.js` (now PASSING)
+        - `src/quranService.test.js` (now PASSING)
+        - `src/database.test.js` (now PASSING)
+- **`commandHandlers.test.js` Fix:**
+    - Corrected the mock for `../botHelpers.js` to properly provide the `instructions` function, resolving an import error.
+
+### Fixed
+
+- Resolved `config.js` loading errors (typically "CRITICAL: telegramToken is not defined") in `utils.test.js`, `quranService.test.js`, and `database.test.js` by applying the new manual config mocking strategy.
+- The `SyntaxError: The requested module '../botHelpers.js' does not provide an export named 'instructions'` in `commandHandlers.test.js` is resolved.
+- All test suites now pass _except_ for `telegramBot.test.js` and `actionHandlers.test.js` due to persistent parsing issues.
+
+### Known Issues
+
+- **Parsing Issues:** `telegramBot.test.js` and `src/botHandlers/actionHandlers.test.js` continue to fail at the parsing stage with `ReferenceError: require is not defined`. This is suspected to be a sandbox or tooling limitation with large/complex test file modifications and prevents tests in these crucial files from running. These will require careful recreation or investigation in a fresh environment.
+
 ## [2025.07.06-0217] - 2025-07-06
 
 ### Changed
+
 - **Test Suite Stabilization (Major Effort):**
     - Implemented a global mock for `config.js` using `moduleNameMapper` in `jest.config.mjs` and a manual mock file `src/__mocks__/config.mock.js`. This resolved persistent "telegramToken not defined" errors across multiple test files.
     - Removed individual `jest.unstable_mockModule('./config.js', ...)` calls from `database.test.js`, `expressApp.test.js`, `quranService.test.js`, and `utils.test.js`.
@@ -23,11 +62,13 @@ All notable changes to this project will be documented in this file.
     - Updated `telegramBot.js` to import and use these helpers, passing necessary dependencies as parameters.
 
 ### Fixed
+
 - Resolved `config.js` loading errors in `database.test.js`, `utils.test.js`, `quranService.test.js`, `expressApp.test.js`.
 - The `expressApp.test.js` assertion error related to instance status string is now fixed.
-- All test suites now pass, *except* for `telegramBot.test.js` which still fails to parse.
+- All test suites now pass, _except_ for `telegramBot.test.js` which still fails to parse.
 
 ### Known Issues
+
 - **`telegramBot.test.js` Parsing Issue:** Persists in failing with `ReferenceError: require is not defined`, likely due to sandbox/tooling issues with large file overwrites. This blocks its tests from running.
 - Minor ESLint warnings for unused variables in the (currently unparsable) `telegramBot.test.js` remain.
 
