@@ -182,12 +182,10 @@ describe('Utils Tests', () => {
 
             // Mock native modules before importing the SUT (utils.js)
             jest.unstable_mockModule('dns', () => ({
-                __esModule: true,
-                lookup: mockDnsLookup,
+                lookup: mockDnsLookup, // Directly provide the named export
             }));
             jest.unstable_mockModule('net', () => ({
-                __esModule: true,
-                Socket: mockNetSocketConstructor,
+                Socket: mockNetSocketConstructor, // Directly provide the named export
             }));
 
             // Config is already mocked at the top level with unstable_mockModule,

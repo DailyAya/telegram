@@ -5,8 +5,8 @@
  */
 
 import axios from 'axios';
-import dns from 'dns';
-import net from 'net';
+import { lookup as dnsLookup } from 'dns'; // Use named import
+import { Socket as NetSocket } from 'net'; // Use named import
 import { URL } from 'url';
 import config from './config.js';
 
@@ -120,8 +120,8 @@ export async function checkConnectivity(url) {
         try {
             // logger.debug(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Resolving DNS for ${hostname}`);
             ipAddress = await new Promise((resolve, reject) => {
-                // dns.lookup can sometimes be slow, give it its own reasonable timeout if possible, though Node's default is OS-dependent
-                dns.lookup(hostname, (err, address) => {
+                // dnsLookup can sometimes be slow, give it its own reasonable timeout if possible, though Node's default is OS-dependent
+                dnsLookup(hostname, (err, address) => { // Changed dns.lookup to dnsLookup
                     if (err) reject(err);
                     else resolve(address);
                 });
@@ -141,7 +141,7 @@ export async function checkConnectivity(url) {
         try {
             // logger.debug(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Attempting TCP connection to ${ipAddress}:${port}`);
             await new Promise((resolve, reject) => {
-                const socket = new net.Socket();
+                const socket = new NetSocket(); // Changed net.Socket to NetSocket
                 socket.setTimeout(tcpConnectionTimeout);
                 socket.connect(port, ipAddress, () => {
                     socket.destroy(); // Clean up the socket
