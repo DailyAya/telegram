@@ -121,7 +121,8 @@ export async function checkConnectivity(url) {
             // logger.debug(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Resolving DNS for ${hostname}`);
             ipAddress = await new Promise((resolve, reject) => {
                 // dnsLookup can sometimes be slow, give it its own reasonable timeout if possible, though Node's default is OS-dependent
-                dnsLookup(hostname, (err, address) => { // Changed dns.lookup to dnsLookup
+                dnsLookup(hostname, (err, address) => {
+                    // Changed dns.lookup to dnsLookup
                     if (err) reject(err);
                     else resolve(address);
                 });
