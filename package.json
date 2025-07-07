@@ -1,11 +1,11 @@
 {
     "name": "dailyaya-telegram-chatbot",
-    "version": "2025.06.20-1554",
+    "version": "2025.7.7-1112",
     "description": "t.me/DailyAyaBot sends one random Aya from Quran everyday and when requested.",
     "type": "module",
     "main": "src/app.js",
     "scripts": {
-        "test": "jest",
+        "test": "NODE_OPTIONS=--experimental-vm-modules jest",
         "start": "node src/app.js",
         "lint": "npx eslint .",
         "format": "npx prettier --write ."
@@ -26,19 +26,22 @@
     "author": "m.Sherbeeny.com",
     "license": "ISC",
     "dependencies": {
-        "express": "^5.0.0",
         "axios": "^0.21.3",
-        "telegraf": "^4.8.1",
+        "express": "^5.0.0",
         "mongodb": "^6.0.0",
-        "rasmify.js": "^1.0.1"
+        "rasmify.js": "^1.0.1",
+        "telegraf": "^4.8.1"
     },
     "devDependencies": {
-        "prettier": "^3.0.0",
-        "jest": "^29.0.0",
-        "supertest": "^6.0.0",
-        "babel-jest": "^29.0.0",
         "@babel/core": "^7.0.0",
-        "@babel/preset-env": "^7.0.0"
+        "@babel/preset-env": "^7.0.0",
+        "babel-jest": "^29.0.0",
+        "eslint": "^9.29.0",
+        "eslint-config-prettier": "^10.1.5",
+        "eslint-plugin-prettier": "^5.5.0",
+        "jest": "^29.0.0",
+        "prettier": "^3.0.0",
+        "supertest": "^6.0.0"
     },
     "bugs": {
         "url": "https://github.com/DailyAya/telegram/issues"

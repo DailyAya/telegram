@@ -14,8 +14,9 @@ export default {
     transform: {
         '^.+\\.js$': 'babel-jest',
     },
+    moduleNameMapper: {
+        // Config.js mappings removed. Will be handled by explicit mocks in test files.
+    },
     // Support for __dirname, __filename if using ESM
     // setupFilesAfterEnv: ['./jest.setup.js'], // If needed for global mocks or setup
-    // Module name mapper for aliases, if any (none for now)
-    // moduleNameMapper: {},
 };
