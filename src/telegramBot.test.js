@@ -437,11 +437,190 @@ describe('sendAya', () => {
 });
 
 describe('surpriseAya', () => {
-    it.todo('should call sendAya with null ayaId, null reciter, and surprise trigger');
+    let mockCtx;
+
+    beforeEach(() => {
+        mockCtx = {
+            chat: { id: 'chatSurprise', type: 'private' },
+            from: { id: 'userSurprise', language_code: 'en-US' },
+            // No need for answerCbQuery or editMessageReplyMarkup for surpriseAya typically
+        };
+        // Ensure sendAya's dependencies are reset/mocked if surpriseAya calls it directly
+        // and sendAya's behavior is complex.
+        // For this test, we focus on what surpriseAya passes to sendAya's dependencies.
+        mockRandomAyaNumber.mockReturnValue(999); // Control the random Aya ID
+        mockMinimalTelegrafInstance.options.username = 'MinimalTestBot'; // Ensure username for sendAya
+    });
+
+    it('should call sendAya (via senderSendAyaText) with null ayaId, null reciter, surprise trigger, and withRecitation=false', async () => {
+        await surpriseAya(mockCtx);
+
+        expect(mockRandomAyaNumber).toHaveBeenCalled(); // sendAya calls it if ayaId is null
+        expect(mockSenderSendAyaText).toHaveBeenCalledWith(
+            expect.objectContaining({
+                botUsername: 'MinimalTestBot',
+                // other dependencies of sendAyaText
+            }),
+            'chatSurprise', // chatId
+            999, // ayaId (from mockRandomAyaNumber)
+            null, // reciter
+            'en-US', // lang
+            'surprise' // trigger
+            // withRecitation is implicitly false in sendAyaText, sendAya controls if sendAyaRecitation is called
+        );
+        // surpriseAya calls sendAya with withRecitation = false, so senderSendAyaRecitation should not be called.
+        expect(mockSenderSendAyaRecitation).not.toHaveBeenCalled();
+    });
 });
 
 describe('handleText', () => {
-    it.todo('should correctly parse Sura and Aya from text');
-    it.todo('should call sendAya for valid requests');
-    it.todo('should call helperSendUnrecognizedMessage for invalid requests');
+    let mockCtx;
+
+    beforeEach(() => {
+        mockCtx = {
+            chat: { id: 'chatHandleText', type: 'private' },
+            from: { id: 'userHandleText', language_code: 'ar' },
+            message: { text: '' }, // Will be set per test
+            startPayload: null, // Will be set per test if needed
+        };
+        mockMinimalTelegrafInstance.options.username = 'MinimalTestBot';
+        mockSuraAya2ayaId.mockClear();
+        mockSenderSendAyaText.mockClear();
+        mockHelperSendUnrecognizedMessage.mockClear();
+        // Mock rasmifize to simplify testing, actual rasmifize is complex
+        // For tests, we assume it normalizes specific inputs as needed by the SUT's logic.
+        // The current mock jest.fn((text) => text) is a passthrough.
+        // For "الكرسي", we'd need rasmifize to pass it as is, or mock its output for that specific input.
+        // Let's assume the passthrough is fine and `handleText` uses the direct string.
+    });
+
+    it('should call sendAya for valid Sura and Aya numbers (e.g., "2 255")', async () => {
+        mockCtx.message.text = '2 255';
+        mockSuraAya2ayaId.mockReturnValue(262); // Mocking that "2 255" maps to ayaId 262
+
+        await handleText(mockCtx);
+
+        expect(mockSuraAya2ayaId).toHaveBeenCalledWith({ sura: 2, aya: 255 });
+        expect(mockSenderSendAyaText).toHaveBeenCalledWith(
+            expect.anything(),
+            'chatHandleText',
+            262, // ayaId
+            null, // reciter
+            'ar', // lang
+            'request' // trigger
+        );
+        expect(mockHelperSendUnrecognizedMessage).not.toHaveBeenCalled();
+    });
+
+    it('should call sendAya for "آية الكرسي" (Ayat al-Kursi)', async () => {
+        mockCtx.message.text = 'آية الكرسي';
+        // handleText has a direct mapping for "الكرسي" to ayaId 262
+        // It uses rasmifize, so we should mock rasmifize if it changes the input significantly
+        // The mock `mockRasmifize = jest.fn((text) => text)` means "آية الكرسي" becomes "آية الكرسي"
+        // The code checks `normalizedTxt.includes(rasmifize('الكرسي'))`
+        // So, if rasmifize('الكرسي') -> 'الكرسي', this should work.
+        mockRasmifize.mockImplementation((text) => {
+            if (text === 'الكرسي') return 'الكرسي'; // Specific mock for this part
+            return text; // Default passthrough
+        });
+
+        await handleText(mockCtx);
+
+        // It doesn't call suraAya2ayaId for this specific case
+        expect(mockSuraAya2ayaId).not.toHaveBeenCalled();
+        expect(mockSenderSendAyaText).toHaveBeenCalledWith(
+            expect.anything(),
+            'chatHandleText',
+            262, // Expected ayaId for Ayat al-Kursi
+            null,
+            'ar',
+            'request'
+        );
+        expect(mockHelperSendUnrecognizedMessage).not.toHaveBeenCalled();
+    });
+
+    it('should call sendAya with withRecitation=true if startPayload contains "r"', async () => {
+        mockCtx.message.text = '3 10';
+        mockCtx.startPayload = 'somepayload-r'; // Indicates recitation
+        mockSuraAya2ayaId.mockReturnValue(349); // Mocking "3 10" mapping
+
+        await handleText(mockCtx);
+
+        expect(mockSuraAya2ayaId).toHaveBeenCalledWith({ sura: 3, aya: 10 });
+        // sendAyaText is called first
+        expect(mockSenderSendAyaText).toHaveBeenCalledWith(
+            expect.anything(),
+            'chatHandleText',
+            349,
+            null,
+            'ar',
+            'request'
+        );
+        // Then, because withRecitation would be true, sendAyaRecitation should be called
+        // This requires sendAyaText to resolve with a context
+        mockSenderSendAyaText.mockResolvedValueOnce({ chat: { id: mockCtx.chat.id }, message_id: 123 });
+        // Re-execute for this specific mock setup of senderSendAyaText
+        await handleText(mockCtx); // Call again with the new mock behavior for sendAyaText
+
+        expect(mockSenderSendAyaRecitation).toHaveBeenCalledWith(
+            expect.anything(),
+            { chat: { id: mockCtx.chat.id }, message_id: 123 }, // Ctx from senderSendAyaText
+            349, // ayaId
+            null // reciter
+        );
+        expect(mockHelperSendUnrecognizedMessage).not.toHaveBeenCalled();
+    });
+
+    it('should call helperSendUnrecognizedMessage for invalid Sura number (e.g., "115 1")', async () => {
+        mockCtx.message.text = '115 1';
+        mockSuraAya2ayaId.mockReturnValue(-1); // Sura number invalid
+
+        await handleText(mockCtx);
+
+        expect(mockSuraAya2ayaId).toHaveBeenCalledWith({ sura: 115, aya: 1 });
+        expect(mockSenderSendAyaText).not.toHaveBeenCalled();
+        expect(mockHelperSendUnrecognizedMessage).toHaveBeenCalledWith(
+            mockCtx,
+            1,
+            mockMinimalTelegrafInstance.telegram
+        );
+    });
+
+    it('should call helperSendUnrecognizedMessage for invalid Aya in Sura (e.g., "2 300")', async () => {
+        mockCtx.message.text = '2 300';
+        mockSuraAya2ayaId.mockReturnValue(0); // Aya number invalid for Sura
+
+        await handleText(mockCtx);
+
+        expect(mockSuraAya2ayaId).toHaveBeenCalledWith({ sura: 2, aya: 300 });
+        expect(mockSenderSendAyaText).not.toHaveBeenCalled();
+        expect(mockHelperSendUnrecognizedMessage).toHaveBeenCalledWith(
+            mockCtx,
+            2,
+            mockMinimalTelegrafInstance.telegram
+        );
+    });
+
+    it('should call helperSendUnrecognizedMessage for unparseable text', async () => {
+        mockCtx.message.text = 'This is not an Aya request';
+        // Assuming this text results in no numbers found, and no Arabic Sura name match.
+        // suraAya2ayaId would not be called if foundNums is empty and no ArSuraName.
+        // Or if it is called with default (e.g. 0,0), it might return -2 or similar.
+        // Let's simulate no numbers found, leading to ayaId = -2 (default)
+        mockSuraAya2ayaId.mockImplementation(() => -2); // Default or fallback if parsing fails early
+
+        await handleText(mockCtx);
+        // Depending on parsing logic, suraAya2ayaId might be called with (NaN, NaN) or not at all.
+        // If no numbers are found, it will use ayaId = -2
+        expect(mockSenderSendAyaText).not.toHaveBeenCalled();
+        expect(mockHelperSendUnrecognizedMessage).toHaveBeenCalledWith(
+            mockCtx,
+            3,
+            mockMinimalTelegrafInstance.telegram
+        );
+    });
+
+    // TODO: Add tests for Arabic Sura name parsing if time permits.
+    // This requires more complex mocking of rasmifize and normalizedSurasArNames,
+    // or relying on the actual implementation details of handleText's loop.
 });
