@@ -60,8 +60,8 @@ import { randomAyaNumber, numArabicToEnglish } from './utils.js';
  * The main Telegraf bot instance.
  * @type {import('telegraf').Telegraf}
  */
-const agent = new https.Agent({ timeout: 30000 }); // 30 seconds timeout
-bootstrapLogger('Telegraf HTTPS agent configured with 30-second timeout.');
+const agent = new https.Agent({ timeout: 60000 }); // 60 seconds timeout
+bootstrapLogger('Telegraf HTTPS agent configured with 60-second timeout.');
 
 const bot = new Telegraf(config.telegramToken, {
     telegram: { agent },
@@ -85,21 +85,21 @@ bot.telegram
         }
     })
     .catch((err) => {
+        // Improved error logging
+        const errorDetails = {
+            message: err.message,
+            code: err.code,
+            description: err.description, // Telegraf specific
+            response: err.response, // Telegraf specific
+            stack: err.stack,
+        };
         console.error(
-            'CRITICAL: bot.telegram.getMe() failed. Raw error object:',
-            JSON.stringify(
-                err,
-                Object.getOwnPropertyNames(
-                    Object.getPrototypeOf(err)
-                        ? Object.getOwnPropertyNames(Object.getPrototypeOf(err))
-                        : Object.keys(err)
-                ),
-                2
-            )
+            'CRITICAL: bot.telegram.getMe() failed. Detailed error object:',
+            JSON.stringify(errorDetails, null, 2)
         );
-        bootstrapLogger('Failed to get bot info (processed by bootstrapLogger):', err); // Message updated for clarity
+        bootstrapLogger('Failed to get bot info. Error details logged above. Error message:', err.message);
         if (botUsernamePromiseResolve) {
-            botUsernamePromiseResolve(null); // Resolve with null if getMe() failed
+            botUsernamePromiseResolve(null); // Resolve with null if getMe() failed, allowing startup to continue further
         }
     });
 

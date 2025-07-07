@@ -27,7 +27,9 @@ let currentConfigMock = {
     },
 };
 jest.unstable_mockModule('../config.js', () => {
-    console.log(`****** ACTION_HANDLERS_TEST: unstable_mockModule for ../config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`);
+    console.log(
+        `****** ACTION_HANDLERS_TEST: unstable_mockModule for ../config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
+    );
     return currentConfigMock;
 });
 
@@ -45,12 +47,17 @@ const mockHelperAdminProtectedAction = jest.fn(async (ctx, botTelegram, actionFn
     if (isAdmin) {
         try {
             await actionFn(ctx);
-            if (ctx.answerCbQuery && !ctx.answerCbQuery.mock.calls.some(call => call[0] !== undefined && call[0] !== '')) {
-                 await ctx.answerCbQuery().catch(() => {});
+            if (
+                ctx.answerCbQuery &&
+                !ctx.answerCbQuery.mock.calls.some((call) => call[0] !== undefined && call[0] !== '')
+            ) {
+                await ctx.answerCbQuery().catch(() => {});
             }
-        } catch (e) {
+        } catch {
+            // Removed unused _e
+            // Prefix with _ to indicate unused
             if (ctx.answerCbQuery) {
-                 await ctx.answerCbQuery('An error occurred in action.', { show_alert: true }).catch(() => {});
+                await ctx.answerCbQuery('An error occurred in action.', { show_alert: true }).catch(() => {});
             }
         }
     } else {
@@ -97,9 +104,15 @@ jest.unstable_mockModule('telegraf', () => ({
 }));
 
 // --- Declare module-scoped variables for actionHandlers.js exports ---
-let initializeActionHandlers, handleGroupKhatmaAction, handleRecitersNavPageAction,
-    handleInstructionsAction, handleSurpriseAyaAction, handleCurrAyaAction,
-    handleAMenuAction, handleReciteAction, handleSetReciterAction;
+let initializeActionHandlers,
+    handleGroupKhatmaAction,
+    handleRecitersNavPageAction,
+    handleInstructionsAction,
+    handleSurpriseAyaAction,
+    handleCurrAyaAction,
+    handleAMenuAction,
+    handleReciteAction,
+    handleSetReciterAction;
 
 // --- Mocks for functions passed as dependencies to handlers ---
 let mockKhatmaUpdateFn;
@@ -132,7 +145,9 @@ beforeEach(() => {
     mockHelperAdminProtectedAction.mockClear();
     mockHelperInstructions.mockClear();
 
-    mockRecitersNavPageFnDependency = jest.fn().mockReturnValue([[{ text: 'Default Page Reciter', callback_data: 'r_default' }]]);
+    mockRecitersNavPageFnDependency = jest
+        .fn()
+        .mockReturnValue([[{ text: 'Default Page Reciter', callback_data: 'r_default' }]]);
     mockBotTelegramDependency = { getChatMember: jest.fn() };
 
     mockDbSetFavReciter.mockClear();
@@ -141,13 +156,12 @@ beforeEach(() => {
     mockTelegrafMarkupInlineKeyboard.mockClear();
 
     mockGetQuranDataFn.mockReturnValue({
-        arReciters: [{ identifier: 'ar.alafasy', name: 'العفاسي', englishName: 'Al Afasy' }]
+        arReciters: [{ identifier: 'ar.alafasy', name: 'العفاسي', englishName: 'Al Afasy' }],
     });
     mockDbSetFavReciter.mockResolvedValue({ success: true, reciter: 'ar.alafasy' });
 });
 
 describe('Bot Action Handlers', () => {
-
     describe('handleGroupKhatmaAction', () => {
         let mockCtx;
         beforeEach(() => {
@@ -159,8 +173,8 @@ describe('Bot Action Handlers', () => {
                         message: {
                             text: 'Khatma\n\nUserOld ➔ 2 💪',
                             entities: [],
-                            reply_markup: { inline_keyboard: [[{text: 'btn'}]] },
-                            message_id: 100
+                            reply_markup: { inline_keyboard: [[{ text: 'btn' }]] },
+                            message_id: 100,
                         },
                     },
                 },
@@ -174,16 +188,23 @@ describe('Bot Action Handlers', () => {
         it('should successfully update khatma and reply', async () => {
             await handleGroupKhatmaAction(mockCtx, { khatmaUpdateFn: mockKhatmaUpdateFn });
             expect(mockKhatmaUpdateFn).toHaveBeenCalledWith({
-                userId: 'user123', firstName: 'TestUser', currentText: 'Khatma\n\nUserOld ➔ 2 💪', currentEntities: [], juz: 5,
+                userId: 'user123',
+                firstName: 'TestUser',
+                currentText: 'Khatma\n\nUserOld ➔ 2 💪',
+                currentEntities: [],
+                juz: 5,
             });
             expect(mockCtx.editMessageText).toHaveBeenCalledWith('New Khatma Text', {
-                parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{text: 'btn'}]] },
+                parse_mode: 'HTML',
+                reply_markup: { inline_keyboard: [[{ text: 'btn' }]] },
             });
-            expect(mockCtx.replyWithHTML).toHaveBeenCalledWith(
-                '<a href="tg://user?id=user123">TestUser</a> ➔ 5 💪',
-                { disable_notification: true, reply_to_message_id: 100 }
-            );
-            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith(expect.stringContaining('Updated!'), { show_alert: true });
+            expect(mockCtx.replyWithHTML).toHaveBeenCalledWith('<a href="tg://user?id=user123">TestUser</a> ➔ 5 💪', {
+                disable_notification: true,
+                reply_to_message_id: 100,
+            });
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith(expect.stringContaining('Updated!'), {
+                show_alert: true,
+            });
         });
         it('should handle invalid Juz number', async () => {
             mockCtx.update.callback_query.data = JSON.stringify({ groupkhatma: 31 });
@@ -200,19 +221,27 @@ describe('Bot Action Handlers', () => {
         it('should handle no change in Khatma selection', async () => {
             mockKhatmaUpdateFn.mockReturnValue(false);
             await handleGroupKhatmaAction(mockCtx, { khatmaUpdateFn: mockKhatmaUpdateFn });
-            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith(expect.stringContaining('already your current selection'), { show_alert: true });
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith(
+                expect.stringContaining('already your current selection'),
+                { show_alert: true }
+            );
             expect(mockCtx.editMessageText).not.toHaveBeenCalled();
         });
         it('should use default first_name if ctx.from.first_name is null', async () => {
             mockCtx.from.first_name = null;
             await handleGroupKhatmaAction(mockCtx, { khatmaUpdateFn: mockKhatmaUpdateFn });
             expect(mockKhatmaUpdateFn).toHaveBeenCalledWith(expect.objectContaining({ firstName: 'Useruser123' }));
-            expect(mockCtx.replyWithHTML).toHaveBeenCalledWith('<a href="tg://user?id=user123">Useruser123</a> ➔ 5 💪', expect.any(Object));
+            expect(mockCtx.replyWithHTML).toHaveBeenCalledWith(
+                '<a href="tg://user?id=user123">Useruser123</a> ➔ 5 💪',
+                expect.any(Object)
+            );
         });
         it('should handle error during ctx.editMessageText or ctx.replyWithHTML', async () => {
             mockCtx.editMessageText.mockRejectedValueOnce(new Error('Edit failed'));
             await handleGroupKhatmaAction(mockCtx, { khatmaUpdateFn: mockKhatmaUpdateFn });
-            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith(expect.stringContaining('Summary might be full'),{ show_alert: true });
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith(expect.stringContaining('Summary might be full'), {
+                show_alert: true,
+            });
         });
     });
 
@@ -223,7 +252,10 @@ describe('Bot Action Handlers', () => {
                 from: { id: 'adminUser', first_name: 'Admin' },
                 chat: { id: 'chat123', type: 'group' },
                 update: {
-                    callback_query: { data: JSON.stringify({ recitersNavPage: 2 }), message: { reply_markup: { inline_keyboard: [] } } }
+                    callback_query: {
+                        data: JSON.stringify({ recitersNavPage: 2 }),
+                        message: { reply_markup: { inline_keyboard: [] } },
+                    },
                 },
                 answerCbQuery: jest.fn().mockResolvedValue(true),
                 editMessageReplyMarkup: jest.fn().mockResolvedValue(true),
@@ -236,18 +268,26 @@ describe('Bot Action Handlers', () => {
             await handleRecitersNavPageAction(mockCtx, {
                 botTelegram: mockBotTelegramDependency,
                 recitersNavPageFn: mockRecitersNavPageFnDependency,
-                helperAdminProtectedAction: mockHelperAdminProtectedAction
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
             });
             expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
             expect(mockAdminChecker).toHaveBeenCalledWith(mockCtx, mockBotTelegramDependency);
             expect(mockRecitersNavPageFnDependency).toHaveBeenCalledWith(2);
-            expect(mockCtx.editMessageReplyMarkup).toHaveBeenCalledWith({ inline_keyboard: [[{ text: 'Page 2 Reciter', callback_data: 'r2' }]] });
-            expect(mockCtx.answerCbQuery.mock.calls.some(call => call.length === 0 || call[0] === undefined || call[0] === '')).toBe(true);
+            expect(mockCtx.editMessageReplyMarkup).toHaveBeenCalledWith({
+                inline_keyboard: [[{ text: 'Page 2 Reciter', callback_data: 'r2' }]],
+            });
+            expect(
+                mockCtx.answerCbQuery.mock.calls.some(
+                    (call) => call.length === 0 || call[0] === undefined || call[0] === ''
+                )
+            ).toBe(true);
         });
         it('should not proceed if user is not admin', async () => {
             mockAdminChecker.mockResolvedValue(false);
             await handleRecitersNavPageAction(mockCtx, {
-                botTelegram: mockBotTelegramDependency, recitersNavPageFn: mockRecitersNavPageFnDependency, helperAdminProtectedAction: mockHelperAdminProtectedAction
+                botTelegram: mockBotTelegramDependency,
+                recitersNavPageFn: mockRecitersNavPageFnDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
             });
             expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
             expect(mockAdminChecker).toHaveBeenCalledWith(mockCtx, mockBotTelegramDependency);
@@ -258,27 +298,42 @@ describe('Bot Action Handlers', () => {
         it('should handle JSON parse error for callback_data', async () => {
             mockCtx.update.callback_query.data = 'invalid-json';
             await handleRecitersNavPageAction(mockCtx, {
-                botTelegram: mockBotTelegramDependency, recitersNavPageFn: mockRecitersNavPageFnDependency, helperAdminProtectedAction: mockHelperAdminProtectedAction
+                botTelegram: mockBotTelegramDependency,
+                recitersNavPageFn: mockRecitersNavPageFnDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
             });
-            expect(mockLoggerLog).toHaveBeenCalledWith('recitersNavPage (action): Failed to parse callback_data', expect.any(Error));
+            expect(mockLoggerLog).toHaveBeenCalledWith(
+                'recitersNavPage (action): Failed to parse callback_data',
+                expect.any(Error)
+            );
             expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('Error processing request.');
             expect(mockRecitersNavPageFnDependency).not.toHaveBeenCalled();
         });
         it('should handle invalid page number type in callback_data', async () => {
             mockCtx.update.callback_query.data = JSON.stringify({ recitersNavPage: 'not-a-number' });
             await handleRecitersNavPageAction(mockCtx, {
-                botTelegram: mockBotTelegramDependency, recitersNavPageFn: mockRecitersNavPageFnDependency, helperAdminProtectedAction: mockHelperAdminProtectedAction
+                botTelegram: mockBotTelegramDependency,
+                recitersNavPageFn: mockRecitersNavPageFnDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
             });
-            expect(mockLoggerLog).toHaveBeenCalledWith('recitersNavPage (action): requestedRecitersNavPage is not a number.', expect.any(Error));
+            expect(mockLoggerLog).toHaveBeenCalledWith(
+                'recitersNavPage (action): requestedRecitersNavPage is not a number.',
+                expect.any(Error)
+            );
             expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('Error: Invalid page number.');
             expect(mockRecitersNavPageFnDependency).not.toHaveBeenCalled();
         });
         it('should handle error during editMessageReplyMarkup', async () => {
             mockCtx.editMessageReplyMarkup.mockRejectedValueOnce(new Error('Edit failed'));
             await handleRecitersNavPageAction(mockCtx, {
-                botTelegram: mockBotTelegramDependency, recitersNavPageFn: mockRecitersNavPageFnDependency, helperAdminProtectedAction: mockHelperAdminProtectedAction
+                botTelegram: mockBotTelegramDependency,
+                recitersNavPageFn: mockRecitersNavPageFnDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
             });
-            expect(mockLoggerLog).toHaveBeenCalledWith('recitersNavPage (action): Error editing message reply markup', expect.any(Error));
+            expect(mockLoggerLog).toHaveBeenCalledWith(
+                'recitersNavPage (action): Error editing message reply markup',
+                expect.any(Error)
+            );
             expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('Error updating list.');
         });
     });
@@ -293,7 +348,7 @@ describe('Bot Action Handlers', () => {
                 from: { id: 'adminUser', first_name: 'Admin' },
                 chat: { id: 'chat123', type: 'group' },
                 update: {
-                    callback_query: { data: JSON.stringify({ setReciter: 'ar.alafasy', a: 123 }) }
+                    callback_query: { data: JSON.stringify({ setReciter: 'ar.alafasy', a: 123 }) },
                 },
                 answerCbQuery: jest.fn().mockResolvedValue(true),
                 reply: jest.fn().mockResolvedValue(true),
@@ -303,16 +358,27 @@ describe('Bot Action Handlers', () => {
 
         it('should set favorite reciter and reply with confirmation for an admin', async () => {
             await handleSetReciterAction(mockCtx, {
-                botTelegram: mockBotTelegramDependency, helperAdminProtectedAction: mockHelperAdminProtectedAction, dbSetFavReciter: mockDbSetFavReciter, getQuranDataFn: mockGetQuranDataFn, TelegrafMarkup
+                botTelegram: mockBotTelegramDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
+                dbSetFavReciter: mockDbSetFavReciter,
+                getQuranDataFn: mockGetQuranDataFn,
+                TelegrafMarkup,
             });
             expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
             expect(mockAdminChecker).toHaveBeenCalledWith(mockCtx, mockBotTelegramDependency);
             expect(mockDbSetFavReciter).toHaveBeenCalledWith('chat123', 'ar.alafasy');
             expect(mockCtx.reply).toHaveBeenCalledWith(
                 'القارئ المفضل الحالي: العفاسي\n\nCurrent Favorit Reciter: Al Afasy',
-                expect.objectContaining({ inline_keyboard: [[{ text: '🎁', callback_data: JSON.stringify({ surpriseAyaAction: true, a: 123 }) }]] })
+                expect.objectContaining({
+                    inline_keyboard: [
+                        [{ text: '🎁', callback_data: JSON.stringify({ surpriseAyaAction: true, a: 123 }) }],
+                    ],
+                })
             );
-            expect(mockTelegrafMarkupButtonCb).toHaveBeenCalledWith('🎁', JSON.stringify({ surpriseAyaAction: true, a: 123 }));
+            expect(mockTelegrafMarkupButtonCb).toHaveBeenCalledWith(
+                '🎁',
+                JSON.stringify({ surpriseAyaAction: true, a: 123 })
+            );
             expect(mockTelegrafMarkupInlineKeyboard).toHaveBeenCalledWith(expect.any(Array));
         });
 
@@ -320,19 +386,29 @@ describe('Bot Action Handlers', () => {
             mockCtx.update.callback_query.data = JSON.stringify({ setReciter: 'surprise' });
             mockDbSetFavReciter.mockResolvedValueOnce({ success: true, reciter: 'surprise' });
             await handleSetReciterAction(mockCtx, {
-                botTelegram: mockBotTelegramDependency, helperAdminProtectedAction: mockHelperAdminProtectedAction, dbSetFavReciter: mockDbSetFavReciter, getQuranDataFn: mockGetQuranDataFn, TelegrafMarkup
+                botTelegram: mockBotTelegramDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
+                dbSetFavReciter: mockDbSetFavReciter,
+                getQuranDataFn: mockGetQuranDataFn,
+                TelegrafMarkup,
             });
             expect(mockDbSetFavReciter).toHaveBeenCalledWith('chat123', 'surprise');
             expect(mockCtx.reply).toHaveBeenCalledWith(
                 'سيتم تغيير القارئ مع كل آية مفاجئة.\n\nReciter will be changed with each surprise Aya.',
-                expect.objectContaining({ inline_keyboard: [[{ text: '🎁', callback_data: JSON.stringify({ surpriseAyaAction: true}) }]] })
+                expect.objectContaining({
+                    inline_keyboard: [[{ text: '🎁', callback_data: JSON.stringify({ surpriseAyaAction: true }) }]],
+                })
             );
         });
 
         it('should not proceed and alert if user is not admin', async () => {
             mockAdminChecker.mockResolvedValue(false);
             await handleSetReciterAction(mockCtx, {
-                botTelegram: mockBotTelegramDependency, helperAdminProtectedAction: mockHelperAdminProtectedAction, dbSetFavReciter: mockDbSetFavReciter, getQuranDataFn: mockGetQuranDataFn, TelegrafMarkup
+                botTelegram: mockBotTelegramDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
+                dbSetFavReciter: mockDbSetFavReciter,
+                getQuranDataFn: mockGetQuranDataFn,
+                TelegrafMarkup,
             });
             expect(mockDbSetFavReciter).not.toHaveBeenCalled();
             expect(mockCtx.reply).not.toHaveBeenCalled();
@@ -342,24 +418,29 @@ describe('Bot Action Handlers', () => {
         it('should reply with error message if dbSetFavReciter fails', async () => {
             mockDbSetFavReciter.mockResolvedValueOnce({ success: false, error: new Error('DB fail') });
             await handleSetReciterAction(mockCtx, {
-                botTelegram: mockBotTelegramDependency, helperAdminProtectedAction: mockHelperAdminProtectedAction, dbSetFavReciter: mockDbSetFavReciter, getQuranDataFn: mockGetQuranDataFn, TelegrafMarkup
+                botTelegram: mockBotTelegramDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
+                dbSetFavReciter: mockDbSetFavReciter,
+                getQuranDataFn: mockGetQuranDataFn,
+                TelegrafMarkup,
             });
             expect(mockCtx.reply).toHaveBeenCalledWith(
-                expect.stringContaining('Sorry.. There\'s an issue while setting favorite reciters'),
+                expect.stringContaining("Sorry.. There's an issue while setting favorite reciters"),
                 expect.any(Object)
             );
         });
 
-         it('should correctly use reciter name if reciterData found, otherwise use identifier', async () => {
+        it('should correctly use reciter name if reciterData found, otherwise use identifier', async () => {
             mockCtx.update.callback_query.data = JSON.stringify({ setReciter: 'unknown.reciter' });
             mockDbSetFavReciter.mockResolvedValueOnce({ success: true, reciter: 'unknown.reciter' });
             await handleSetReciterAction(mockCtx, {
-                botTelegram: mockBotTelegramDependency, helperAdminProtectedAction: mockHelperAdminProtectedAction, dbSetFavReciter: mockDbSetFavReciter, getQuranDataFn: mockGetQuranDataFn, TelegrafMarkup
+                botTelegram: mockBotTelegramDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
+                dbSetFavReciter: mockDbSetFavReciter,
+                getQuranDataFn: mockGetQuranDataFn,
+                TelegrafMarkup,
             });
-            expect(mockCtx.reply).toHaveBeenCalledWith(
-                'Favorite reciter set to: unknown.reciter',
-                expect.any(Object)
-            );
+            expect(mockCtx.reply).toHaveBeenCalledWith('Favorite reciter set to: unknown.reciter', expect.any(Object));
         });
     });
 

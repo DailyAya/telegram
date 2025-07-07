@@ -28,10 +28,11 @@ let currentConfigMock = {
     },
 };
 jest.unstable_mockModule('../config.js', () => {
-    console.log(`****** unstable_mockModule for ../config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`);
+    console.log(
+        `****** unstable_mockModule for ../config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
+    );
     return currentConfigMock;
 });
-
 
 // --- Mocking Other Dependencies of commandHandlers.js ---
 

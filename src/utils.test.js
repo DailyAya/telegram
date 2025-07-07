@@ -4,7 +4,8 @@ import { jest } from '@jest/globals'; // Explicit import for clarity
 // config.js is imported by utils.js as './config.js'
 let currentConfigMock = {
     __esModule: true,
-    default: { // Minimal valid config to prevent errors during utils.js import
+    default: {
+        // Minimal valid config to prevent errors during utils.js import
         telegramToken: 'UTILS_TEST_INITIAL_TOKEN',
         devChatId: 'UTILS_TEST_INITIAL_DEV_CHAT_ID',
         mongoDbCredentials: 'test-user:test-pass', // Required by config.js checks
@@ -30,11 +31,13 @@ let currentConfigMock = {
         maxBotLaunchRetries: 1,
     },
 };
-jest.unstable_mockModule('./config.js', () => { // Path relative to utils.test.js
-    console.log(`****** unstable_mockModule for ./config.js (utils.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`);
+jest.unstable_mockModule('./config.js', () => {
+    // Path relative to utils.test.js
+    console.log(
+        `****** unstable_mockModule for ./config.js (utils.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
+    );
     return currentConfigMock;
 });
-
 
 // Declare variables for the functions to be tested
 let toBoolean, randomAyaNumber, numArabicToEnglish;

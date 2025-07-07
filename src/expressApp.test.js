@@ -17,8 +17,8 @@ jest.unstable_mockModule('./logger.js', () => ({
 // Variable to hold the current config mock, changeable per test
 let currentConfigMock = {
     __esModule: true,
-    default: { /* initial minimal valid config */
-        telegramToken: 'INITIAL_MOCK_TOKEN',
+    default: {
+        /* initial minimal valid config */ telegramToken: 'INITIAL_MOCK_TOKEN',
         devChatId: 'INITIAL_MOCK_DEV_CHAT_ID',
         mongoDbCredentials: 'initial-user:initial-pass',
         mongoSubdomain: 'initial-cluster.mongodb.net',
@@ -43,7 +43,9 @@ let currentConfigMock = {
 
 // unstable_mockModule's factory will return the content of currentConfigMock
 jest.unstable_mockModule('./config.js', () => {
-    console.log(`****** unstable_mockModule for ./config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`);
+    console.log(
+        `****** unstable_mockModule for ./config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
+    );
     return currentConfigMock;
 });
 

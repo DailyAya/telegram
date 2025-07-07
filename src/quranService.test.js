@@ -4,7 +4,8 @@ import { jest } from '@jest/globals'; // Explicitly import jest
 // config.js is imported by quranService.js as './config.js'
 let currentConfigMock = {
     __esModule: true,
-    default: { // Minimal valid config to prevent errors
+    default: {
+        // Minimal valid config to prevent errors
         telegramToken: 'QURAN_TEST_INITIAL_TOKEN',
         devChatId: 'QURAN_TEST_INITIAL_DEV_CHAT_ID',
         mongoDbCredentials: 'test-user:test-pass',
@@ -27,8 +28,11 @@ let currentConfigMock = {
         maxBotLaunchRetries: 1,
     },
 };
-jest.unstable_mockModule('./config.js', () => { // Path relative to quranService.test.js
-    console.log(`****** unstable_mockModule for ./config.js (quranService.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`);
+jest.unstable_mockModule('./config.js', () => {
+    // Path relative to quranService.test.js
+    console.log(
+        `****** unstable_mockModule for ./config.js (quranService.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
+    );
     return currentConfigMock;
 });
 

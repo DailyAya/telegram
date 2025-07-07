@@ -9,23 +9,39 @@ let currentConfigMock = {
         mongoDbCredentials: 'test-user:test-pass',
         mongoSubdomain: 'test-cluster.mongodb.net',
         mongoURI: 'mongodb+srv://test-user:test-pass@test-cluster.mongodb.net/?retryWrites=true&w=majority',
-        branch: 'test-branch', inst: 'test-inst', host: 'test-host', totalInst: '1',
-        debugging: false, codeVer: 'test-v0.0.0', instActiveUntil: '2000-01-01', port: 3007,
-        timerCheckMinutes: 60, timerSendHours: 24,
-        pingTargetGeneral: 'http://test.example.com', pingTargetAlternative: 'http://test.example.org',
+        branch: 'test-branch',
+        inst: 'test-inst',
+        host: 'test-host',
+        totalInst: '1',
+        debugging: false,
+        codeVer: 'test-v0.0.0',
+        instActiveUntil: '2000-01-01',
+        port: 3007,
+        timerCheckMinutes: 60,
+        timerSendHours: 24,
+        pingTargetGeneral: 'http://test.example.com',
+        pingTargetAlternative: 'http://test.example.org',
         pingTargetTelegramApiBase: 'http://test.api.telegram.org',
-        botLaunchRetryDelay: 1000, maxBotLaunchRetries: 1,
+        botLaunchRetryDelay: 1000,
+        maxBotLaunchRetries: 1,
     },
 };
 jest.unstable_mockModule('./config.js', () => {
-    console.log(`****** TELEGRAMBOT_TEST: unstable_mockModule for ./config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`);
+    console.log(
+        `****** TELEGRAMBOT_TEST: unstable_mockModule for ./config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
+    );
     return currentConfigMock;
 });
 
 // --- Mock Telegraf ---
 const mockMinimalTelegrafInstance = {
-    start: jest.fn(), help: jest.fn(), command: jest.fn(), on: jest.fn(),
-    action: jest.fn(), launch: jest.fn(), catch: jest.fn(),
+    start: jest.fn(),
+    help: jest.fn(),
+    command: jest.fn(),
+    on: jest.fn(),
+    action: jest.fn(),
+    launch: jest.fn(),
+    catch: jest.fn(),
     telegram: {
         getMe: jest.fn().mockResolvedValue({ id: 98765, is_bot: true, username: 'MinimalTestBot' }),
         sendMessage: jest.fn().mockResolvedValue({}),
@@ -33,14 +49,16 @@ const mockMinimalTelegrafInstance = {
     },
     options: { username: undefined },
 };
-const MinimalMockTelegrafConstructor = jest.fn((token, options) => {
+const MinimalMockTelegrafConstructor = jest.fn((token, _options) => {
+    // options prefixed with _
     console.log('****** TELEGRAMBOT_TEST: MinimalMockTelegrafConstructor WAS CALLED with token:', token);
     return mockMinimalTelegrafInstance;
 });
 jest.unstable_mockModule('telegraf', () => {
     console.log('****** TELEGRAMBOT_TEST: MINIMAL unstable_mockModule for telegraf CALLED ******');
     return {
-        __esModule: true, Telegraf: MinimalMockTelegrafConstructor,
+        __esModule: true,
+        Telegraf: MinimalMockTelegrafConstructor,
         Markup: {
             inlineKeyboard: jest.fn((buttons) => ({ inline_keyboard: buttons })),
             button: {
@@ -56,7 +74,10 @@ const mockLogger = jest.fn();
 const mockSetBotInstance = jest.fn();
 const mockBootstrapLogger = jest.fn();
 jest.unstable_mockModule('./logger.js', () => ({
-    __esModule: true, logger: mockLogger, setBotInstance: mockSetBotInstance, bootstrapLogger: mockBootstrapLogger,
+    __esModule: true,
+    logger: mockLogger,
+    setBotInstance: mockSetBotInstance,
+    bootstrapLogger: mockBootstrapLogger,
 }));
 
 // --- Mock other direct module dependencies ---
@@ -66,7 +87,10 @@ const mockDbLastAyaTime = jest.fn();
 const mockDbSetFavReciter = jest.fn();
 const mockDbGetFavReciter = jest.fn();
 jest.unstable_mockModule('./database.js', () => ({
-    __esModule: true, lastAyaTime: mockDbLastAyaTime, setFavReciter: mockDbSetFavReciter, getFavReciter: mockDbGetFavReciter,
+    __esModule: true,
+    lastAyaTime: mockDbLastAyaTime,
+    setFavReciter: mockDbSetFavReciter,
+    getFavReciter: mockDbGetFavReciter,
 }));
 
 // botHelpers.js
@@ -80,24 +104,40 @@ const mockHelperSendUnrecognizedMessage = jest.fn();
 const mockHelperInstructions = jest.fn();
 jest.unstable_mockModule('./botHelpers.js', () => ({
     __esModule: true,
-    adminChecker: mockHelperAdminChecker, successSend: mockHelperSuccessSend, sendSorry: mockHelperSendSorry,
-    aMenuButtons: mockHelperAMenuButtons, helperAdminProtectedAction: mockHelperAdminProtectedAction,
-    helperAdminConditionalAction: mockHelperAdminConditionalAction, sendUnrecognizedMessage: mockHelperSendUnrecognizedMessage,
+    adminChecker: mockHelperAdminChecker,
+    successSend: mockHelperSuccessSend,
+    sendSorry: mockHelperSendSorry,
+    aMenuButtons: mockHelperAMenuButtons,
+    helperAdminProtectedAction: mockHelperAdminProtectedAction,
+    helperAdminConditionalAction: mockHelperAdminConditionalAction,
+    sendUnrecognizedMessage: mockHelperSendUnrecognizedMessage,
     instructions: mockHelperInstructions,
 }));
 
 // commandHandlers.js
 jest.unstable_mockModule('./botHandlers/commandHandlers.js', () => ({
-    __esModule: true, handleStartCommand: jest.fn(), handleHelpCommand: jest.fn(), handleSurpriseMeCommand: jest.fn(),
-    handleSupportCommand: jest.fn(), handleRecitersCommand: jest.fn(), handleChannelCommand: jest.fn(),
-    handleKhatmaCommand: jest.fn(), handleCommandsCommand: jest.fn(),
+    __esModule: true,
+    handleStartCommand: jest.fn(),
+    handleHelpCommand: jest.fn(),
+    handleSurpriseMeCommand: jest.fn(),
+    handleSupportCommand: jest.fn(),
+    handleRecitersCommand: jest.fn(),
+    handleChannelCommand: jest.fn(),
+    handleKhatmaCommand: jest.fn(),
+    handleCommandsCommand: jest.fn(),
 }));
 
 // actionHandlers.js
 jest.unstable_mockModule('./botHandlers/actionHandlers.js', () => ({
-    __esModule: true, handleGroupKhatmaAction: jest.fn(), handleRecitersNavPageAction: jest.fn(),
-    handleSetReciterAction: jest.fn(), handleInstructionsAction: jest.fn(), handleSurpriseAyaAction: jest.fn(),
-    handleCurrAyaAction: jest.fn(), handleAMenuAction: jest.fn(), handleReciteAction: jest.fn(),
+    __esModule: true,
+    handleGroupKhatmaAction: jest.fn(),
+    handleRecitersNavPageAction: jest.fn(),
+    handleSetReciterAction: jest.fn(),
+    handleInstructionsAction: jest.fn(),
+    handleSurpriseAyaAction: jest.fn(),
+    handleCurrAyaAction: jest.fn(),
+    handleAMenuAction: jest.fn(),
+    handleReciteAction: jest.fn(),
 }));
 
 // khatmaService.js
@@ -107,7 +147,9 @@ jest.unstable_mockModule('./botFeatures/khatmaService.js', () => ({ __esModule: 
 const mockSenderSendAyaText = jest.fn();
 const mockSenderSendAyaRecitation = jest.fn();
 jest.unstable_mockModule('./ayaSender.js', () => ({
-    __esModule: true, sendAyaText: mockSenderSendAyaText, sendAyaRecitation: mockSenderSendAyaRecitation,
+    __esModule: true,
+    sendAyaText: mockSenderSendAyaText,
+    sendAyaRecitation: mockSenderSendAyaRecitation,
 }));
 
 // quranService.js
@@ -118,26 +160,38 @@ const mockGetRandomReciterIdentifier = jest.fn();
 const mockNextAya = jest.fn();
 const mockAyaId2suraAya = jest.fn();
 const mockSuraAya2ayaId = jest.fn();
-const mockRasmifize = jest.fn(text => text);
+const mockRasmifize = jest.fn((text) => text);
 const mockGetQuranData = jest.fn(() => ({ arReciters: [] }));
 const mockCheckSource = jest.fn();
 jest.unstable_mockModule('./quranService.js', () => ({
-    __esModule: true, prepareAya: mockPrepareAya, getRecitation: mockGetRecitation, isValidReciter: mockIsValidReciter,
-    getRandomReciterIdentifier: mockGetRandomReciterIdentifier, nextAya: mockNextAya, ayaId2suraAya: mockAyaId2suraAya,
-    suraAya2ayaId: mockSuraAya2ayaId, normalizedSurasArNames: [], rasmifize: mockRasmifize,
-    getQuranData: mockGetQuranData, checkSource: mockCheckSource,
+    __esModule: true,
+    prepareAya: mockPrepareAya,
+    getRecitation: mockGetRecitation,
+    isValidReciter: mockIsValidReciter,
+    getRandomReciterIdentifier: mockGetRandomReciterIdentifier,
+    nextAya: mockNextAya,
+    ayaId2suraAya: mockAyaId2suraAya,
+    suraAya2ayaId: mockSuraAya2ayaId,
+    normalizedSurasArNames: [],
+    rasmifize: mockRasmifize,
+    getQuranData: mockGetQuranData,
+    checkSource: mockCheckSource,
 }));
 
 // reciterService.js
 jest.unstable_mockModule('./botFeatures/reciterService.js', () => ({
-    __esModule: true, populateRecitersButtons: jest.fn(), recitersNavPage: jest.fn(),
+    __esModule: true,
+    populateRecitersButtons: jest.fn(),
+    recitersNavPage: jest.fn(),
 }));
 
 // utils.js
 const mockRandomAyaNumber = jest.fn();
-const mockNumArabicToEnglish = jest.fn(text => text);
+const mockNumArabicToEnglish = jest.fn((text) => text);
 jest.unstable_mockModule('./utils.js', () => ({
-    __esModule: true, randomAyaNumber: mockRandomAyaNumber, numArabicToEnglish: mockNumArabicToEnglish,
+    __esModule: true,
+    randomAyaNumber: mockRandomAyaNumber,
+    numArabicToEnglish: mockNumArabicToEnglish,
 }));
 
 // --- Declare SUT variables ---
@@ -158,7 +212,10 @@ beforeAll(async () => {
     botUsernameReady = telegramBotModule.botUsernameReady;
 
     console.log('****** TELEGRAMBOT_TEST: Asserting Telegraf constructor call immediately after import ******');
-    expect(MinimalMockTelegrafConstructor).toHaveBeenCalledWith(currentConfigMock.default.telegramToken, expect.any(Object));
+    expect(MinimalMockTelegrafConstructor).toHaveBeenCalledWith(
+        currentConfigMock.default.telegramToken,
+        expect.any(Object)
+    );
     expect(mockSetBotInstance).toHaveBeenCalledWith(bot);
     expect(bot).toBe(mockMinimalTelegrafInstance);
 
@@ -171,13 +228,16 @@ beforeAll(async () => {
     expect(mockMinimalTelegrafInstance.start).toHaveBeenCalled();
     expect(mockMinimalTelegrafInstance.help).toHaveBeenCalled();
     const expectedCommands = ['surpriseme', 'support', 'reciters', 'channel', 'khatma', 'commands'];
-    expectedCommands.forEach(commandName => {
+    expectedCommands.forEach((commandName) => {
         expect(mockMinimalTelegrafInstance.command).toHaveBeenCalledWith(commandName, expect.any(Function));
     });
     expect(mockMinimalTelegrafInstance.on).toHaveBeenCalledWith('text', expect.any(Function));
     expect(mockMinimalTelegrafInstance.on).toHaveBeenCalledWith('my_chat_member', expect.any(Function));
     expect(mockMinimalTelegrafInstance.action).toHaveBeenCalled();
-    expect(mockMinimalTelegrafInstance.action).toHaveBeenCalledWith(JSON.stringify({ instructionsAction: true }), expect.any(Function));
+    expect(mockMinimalTelegrafInstance.action).toHaveBeenCalledWith(
+        JSON.stringify({ instructionsAction: true }),
+        expect.any(Function)
+    );
     expect(mockMinimalTelegrafInstance.action).toHaveBeenCalledWith(expect.any(RegExp), expect.any(Function));
     expect(mockMinimalTelegrafInstance.telegram.setMyCommands).toHaveBeenCalled();
 });
@@ -195,14 +255,16 @@ beforeEach(() => {
     mockMinimalTelegrafInstance.action.mockClear();
     mockMinimalTelegrafInstance.launch.mockClear();
     mockMinimalTelegrafInstance.catch.mockClear();
-    mockMinimalTelegrafInstance.telegram.getMe.mockClear().mockResolvedValue({ id: 98765, is_bot: true, username: 'MinimalTestBot' });
+    mockMinimalTelegrafInstance.telegram.getMe
+        .mockClear()
+        .mockResolvedValue({ id: 98765, is_bot: true, username: 'MinimalTestBot' });
     mockMinimalTelegrafInstance.telegram.sendMessage.mockClear().mockResolvedValue({});
     mockMinimalTelegrafInstance.telegram.setMyCommands.mockClear().mockResolvedValue(true);
     mockMinimalTelegrafInstance.options.username = undefined;
 
     // Clear SUT direct dependency mocks
     mockDbLastAyaTime.mockClear();
-    mockSenderSendAyaText.mockClear().mockResolvedValue({ chat: { id: 123 }, message_id: 456, from: {id: 'botid'} });
+    mockSenderSendAyaText.mockClear().mockResolvedValue({ chat: { id: 123 }, message_id: 456, from: { id: 'botid' } });
     mockSenderSendAyaRecitation.mockClear().mockResolvedValue({});
     mockRandomAyaNumber.mockClear().mockReturnValue(123);
 
@@ -257,16 +319,22 @@ describe('launchBot', () => {
         await launchBot();
         expect(mockMinimalTelegrafInstance.launch).toHaveBeenCalled();
         expect(mockMinimalTelegrafInstance.telegram.sendMessage).not.toHaveBeenCalledWith(
-            expect.anything(), expect.stringContaining('DailyAyaTelegram')
+            expect.anything(),
+            expect.stringContaining('DailyAyaTelegram')
         );
         currentConfigMock.default.devChatId = originalDevChatId;
     });
 
     it('should handle bot.launch() failure', async () => {
         mockMinimalTelegrafInstance.options.username = 'MinimalTestBot'; // Ensure username is set for pre-launch steps
-        mockMinimalTelegrafInstance.launch.mockImplementationOnce(() => { throw new Error('Launch Failed'); });
+        mockMinimalTelegrafInstance.launch.mockImplementationOnce(() => {
+            throw new Error('Launch Failed');
+        });
         await expect(launchBot()).rejects.toThrow('Launch Failed');
-        expect(mockBootstrapLogger).toHaveBeenCalledWith('Failed to complete critical launchBot setup steps. Error:', expect.any(Error));
+        expect(mockBootstrapLogger).toHaveBeenCalledWith(
+            'Failed to complete critical launchBot setup steps. Error:',
+            expect.any(Error)
+        );
     });
 
     it('should not call checkSource if debugging is true', async () => {
@@ -307,19 +375,27 @@ describe('sendAya', () => {
     it('should call senderSendAyaText and not recitation by default', async () => {
         await sendAya(mockChatId, 10, 'ar.alafasy', 'en', 'test'); // withRecitation defaults to false
         expect(mockSenderSendAyaText).toHaveBeenCalledWith(
-            expect.objectContaining(mockSenderDepsBase), mockChatId, 10, 'ar.alafasy', 'en', 'test'
+            expect.objectContaining(mockSenderDepsBase),
+            mockChatId,
+            10,
+            'ar.alafasy',
+            'en',
+            'test'
         );
         expect(mockSenderSendAyaRecitation).not.toHaveBeenCalled();
     });
 
     it('should call senderSendAyaRecitation if withRecitation is true and sendAyaText succeeds', async () => {
-        const mockCtxFromSendText = { chat: { id: mockChatId }, message_id: 789, from: {id: 'botid'} };
+        const mockCtxFromSendText = { chat: { id: mockChatId }, message_id: 789, from: { id: 'botid' } };
         mockSenderSendAyaText.mockResolvedValue(mockCtxFromSendText);
 
         await sendAya(mockChatId, 10, 'ar.alafasy', 'en', 'test', true);
         expect(mockSenderSendAyaText).toHaveBeenCalledTimes(1);
         expect(mockSenderSendAyaRecitation).toHaveBeenCalledWith(
-            expect.objectContaining(mockSenderDepsBase), mockCtxFromSendText, 10, 'ar.alafasy'
+            expect.objectContaining(mockSenderDepsBase),
+            mockCtxFromSendText,
+            10,
+            'ar.alafasy'
         );
     });
 
@@ -328,13 +404,18 @@ describe('sendAya', () => {
         await sendAya(mockChatId, null, 'ar.alafasy', 'en', 'surprise');
         expect(mockRandomAyaNumber).toHaveBeenCalled();
         expect(mockSenderSendAyaText).toHaveBeenCalledWith(
-            expect.anything(), mockChatId, 77, 'ar.alafasy', 'en', 'surprise'
+            expect.anything(),
+            mockChatId,
+            77,
+            'ar.alafasy',
+            'en',
+            'surprise'
         );
     });
 
     it('should call lastAyaTime with "blocked" on specific Telegram block errors', async () => {
-        const blockError = new Error("Blocked by user");
-        blockError.response = { description: "Forbidden: bot was blocked by the user" };
+        const blockError = new Error('Blocked by user');
+        blockError.response = { description: 'Forbidden: bot was blocked by the user' };
         mockSenderSendAyaText.mockRejectedValue(blockError);
 
         await sendAya(mockChatId, 10, 'ar.alafasy', 'en', 'test');
@@ -342,14 +423,14 @@ describe('sendAya', () => {
     });
 
     it('should not call lastAyaTime with "blocked" for generic errors from sendAyaText', async () => {
-        mockSenderSendAyaText.mockRejectedValue(new Error("Generic network error"));
+        mockSenderSendAyaText.mockRejectedValue(new Error('Generic network error'));
         await sendAya(mockChatId, 10, 'ar.alafasy', 'en', 'test');
         // lastAyaTime might be called by successSend if that's part of a finally, but not with 'blocked'
-        const blockCall = mockDbLastAyaTime.mock.calls.find(call => call[1] === 'blocked');
+        const blockCall = mockDbLastAyaTime.mock.calls.find((call) => call[1] === 'blocked');
         expect(blockCall).toBeUndefined();
     });
-     it('should not call recitation if sendAyaText fails', async () => {
-        mockSenderSendAyaText.mockRejectedValue(new Error("Failed to send text"));
+    it('should not call recitation if sendAyaText fails', async () => {
+        mockSenderSendAyaText.mockRejectedValue(new Error('Failed to send text'));
         await sendAya(mockChatId, 10, 'ar.alafasy', 'en', 'test', true);
         expect(mockSenderSendAyaRecitation).not.toHaveBeenCalled();
     });
