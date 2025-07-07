@@ -198,3 +198,30 @@
 **Next Steps:**
 -   Perform the pre-commit routine.
 -   Submit the new tests for `actionHandlers.js`.
+
+---
+## Session Summary: Jules - 2025-07-07 (Final)
+
+**Goal:** Fix skipped/failing `checkConnectivity` tests in `src/utils.test.js` and ensure all tests pass.
+
+**Work Done & Key Changes:**
+1.  **Added Detailed Logging**: Inserted extensive `console.log` statements into `src/utils.js#checkConnectivity` and the corresponding test setup in `src/utils.test.js` to diagnose mock interactions and execution flow.
+2.  **Analyzed Logs & Refined Mocking Strategy**:
+    *   Identified that the primary issue was related to how native Node.js modules (`dns`, `net`) were being imported in `utils.js` (`import dns from 'dns'`) versus how Jest's ESM mocking (`jest.unstable_mockModule`) expects to provide these mocks (typically as named exports).
+    *   The "no default export" error was a key indicator.
+3.  **Implemented Fixes**:
+    *   **Modified `src/utils.js`**: Changed imports of `dns` and `net` to use named imports: `import { lookup as dnsLookup } from 'dns';` and `import { Socket as NetSocket } from 'net';`. Updated the function body to use `dnsLookup` and `new NetSocket()`.
+    *   **Adjusted `src/utils.test.js` Mocks**: Modified the factories for `jest.unstable_mockModule('dns', ...)` and `jest.unstable_mockModule('net', ...)` to return objects with properties `lookup` and `Socket` respectively, aligning with the SUT's new import style.
+    *   Ensured `jest.resetModules()` was used before the `jest.unstable_mockModule` calls and the subsequent dynamic `import('./utils.js')` within the `describe('checkConnectivity', ...)` block's `beforeAll` hook.
+    *   Refined mock implementations within specific test cases for TCP error and timeout scenarios to correctly prevent default success paths and trigger failure conditions.
+4.  **Ran All Tests**: After iterations and fixes, all tests, including all previously failing/skipped `checkConnectivity` tests, now pass.
+5.  **Removed Temporary Logging**: Cleaned up all diagnostic `console.log` statements from `src/utils.js` and `src/utils.test.js`.
+
+**Current Status:**
+-   All tests in the project are now passing.
+-   The `checkConnectivity` utility in `src/utils.js` is now effectively unit-tested, including its retry and error handling logic for DNS and TCP failures.
+-   The mocking strategy for native Node.js modules in the Jest ESM environment for this specific case has been successfully resolved.
+
+**Next Steps:**
+-   Perform the final pre-commit routine for these fixes.
+-   Submit the changes.

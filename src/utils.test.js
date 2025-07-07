@@ -14,9 +14,6 @@ let currentConfigMock = {
         mongoDbCredentials: 'test-user:test-pass', // Required by config.js checks
         mongoSubdomain: 'test-cluster.mongodb.net', // Required by config.js checks
         mongoURI: 'mongodb+srv://test-user:test-pass@test-cluster.mongodb.net/?retryWrites=true&w=majority',
-        // Add other fields utils.js might directly or indirectly access if any
-        // For now, focusing on what config.js itself requires.
-        // Other fields will use their defaults from the mock if not specified here.
         branch: 'test-branch',
         inst: 'test-inst',
         host: 'test-host',
@@ -24,7 +21,7 @@ let currentConfigMock = {
         debugging: false,
         codeVer: 'test-v0.0.0',
         instActiveUntil: '2000-01-01',
-        port: 3003, // Different from other test files to avoid potential conflicts if tests run in parallel in future
+        port: 3003,
         timerCheckMinutes: 60,
         timerSendHours: 24,
         pingTargetGeneral: 'http://test.example.com',
@@ -35,44 +32,28 @@ let currentConfigMock = {
     },
 };
 jest.unstable_mockModule('./config.js', () => {
-    // Path relative to utils.test.js
-    console.log(
-        `****** unstable_mockModule for ./config.js (utils.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
-    );
     return currentConfigMock;
 });
 
 // Declare variables for the functions to be tested
 let toBoolean, randomAyaNumber, numArabicToEnglish;
-let checkConnectivity; // To be assigned in its own describe block's beforeAll
+let checkConnectivity;
 // sendEmergencyNotification is also exported but tested implicitly or needs specific setup
 
 beforeAll(async () => {
-    // This beforeAll is now primarily for functions NOT requiring complex native module mocks
     jest.resetModules();
-
-    // Set config mock for utils.js import (needed by all functions if config is top-level in utils.js)
     const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
     currentConfigMock = { __esModule: true, default: globalMockDefault };
-    console.log('****** Set currentConfigMock to GLOBAL MOCK values for utils.test.js (top-level beforeAll) ******');
 
-    // Import utils for functions not needing dns/net mocks
     const utilsModule = await import('./utils.js');
     toBoolean = utilsModule.toBoolean;
     randomAyaNumber = utilsModule.randomAyaNumber;
     numArabicToEnglish = utilsModule.numArabicToEnglish;
 });
 
-// All net and dns mocks are now at the top using jest.doMock.
-// The redundant declarations and unstable_mockModule calls below were removed.
-
 describe('Utils Tests', () => {
-    // This beforeEach is now for tests OTHER than checkConnectivity,
-    // or for mocks that are truly global to all util tests if any.
     beforeEach(() => {
-        // mockDnsLookup and net mocks are handled by the checkConnectivity describe block's beforeEach
-        // If config is modified by toBoolean etc., it should be reset here.
-        // For now, assuming toBoolean, randomAyaNumber, numArabicToEnglish don't modify shared mocks.
+        // For tests not in checkConnectivity describe block
     });
 
     describe('toBoolean', () => {
@@ -81,7 +62,7 @@ describe('Utils Tests', () => {
             expect(toBoolean('yes')).toBe(true);
             expect(toBoolean('1')).toBe(true);
             expect(toBoolean('on')).toBe(true);
-            expect(toBoolean('anyrandomstring')).toBe(true); // Non-empty strings are truthy
+            expect(toBoolean('anyrandomstring')).toBe(true);
         });
 
         it('should convert falsy strings to false', () => {
@@ -95,12 +76,12 @@ describe('Utils Tests', () => {
         it('should convert numbers correctly', () => {
             expect(toBoolean(1)).toBe(true);
             expect(toBoolean(0)).toBe(false);
-            expect(toBoolean(-1)).toBe(true); // Non-zero numbers are truthy
+            expect(toBoolean(-1)).toBe(true);
         });
 
         it('should convert objects correctly', () => {
-            expect(toBoolean({})).toBe(false); // Empty object
-            expect(toBoolean({ a: 1 })).toBe(true); // Non-empty object
+            expect(toBoolean({})).toBe(false);
+            expect(toBoolean({ a: 1 })).toBe(true);
         });
 
         it('should handle null and undefined', () => {
@@ -117,7 +98,6 @@ describe('Utils Tests', () => {
     describe('randomAyaNumber', () => {
         it('should return a number between 1 and 6236', () => {
             for (let i = 0; i < 100; i++) {
-                // Test multiple times for randomness
                 const num = randomAyaNumber();
                 expect(num).toBeGreaterThanOrEqual(1);
                 expect(num).toBeLessThanOrEqual(6236);
@@ -153,16 +133,14 @@ describe('Utils Tests', () => {
     });
 
     describe('checkConnectivity', () => {
-        // Skipping this entire describe block for now
         const testUrl = 'https://www.example.com';
         let mockDnsLookup;
         let mockNetSocketInstance;
         let mockNetSocketConstructor;
 
         beforeAll(async () => {
-            jest.resetModules(); // Ensure a clean slate for module imports
+            jest.resetModules();
 
-            // Define mocks here, before they are used by jest.unstable_mockModule
             mockDnsLookup = jest.fn();
             mockNetSocketInstance = {
                 connect: jest.fn(),
@@ -180,33 +158,37 @@ describe('Utils Tests', () => {
             };
             mockNetSocketConstructor = jest.fn(() => mockNetSocketInstance);
 
-            // Mock native modules before importing the SUT (utils.js)
-            jest.unstable_mockModule('dns', () => ({
-                lookup: mockDnsLookup, // Directly provide the named export
-            }));
-            jest.unstable_mockModule('net', () => ({
-                Socket: mockNetSocketConstructor, // Directly provide the named export
-            }));
+            jest.unstable_mockModule('dns', () => {
+                return { lookup: mockDnsLookup };
+            });
+            jest.unstable_mockModule('net', () => {
+                return { Socket: mockNetSocketConstructor };
+            });
 
-            // Config is already mocked at the top level with unstable_mockModule,
-            // and jest.resetModules() should not clear it if it's correctly handled by Jest for ESM.
-            // If config needs to be re-asserted for this scope:
+            // Re-mock config specifically for this scope if needed, though top-level should be fine
             // jest.unstable_mockModule('./config.js', () => ({ __esModule: true, default: currentConfigMock.default }));
 
             const utilsModule = await import('./utils.js');
             checkConnectivity = utilsModule.checkConnectivity;
         });
 
-        // The existing beforeEach inside "Utils Tests" resets these mocks.
-        // This is fine as they are re-defined in the beforeAll of this inner describe block.
-        // Or, move the mock reset logic into a beforeEach specific to this describe block if preferred.
         beforeEach(() => {
-            // Reset mocks defined in the outer scope if they were used by other tests,
-            // or ensure mocks specific to this block are reset.
             mockDnsLookup.mockReset();
             mockNetSocketConstructor.mockClear();
-            mockNetSocketInstance.connect.mockReset();
-            mockNetSocketInstance.on.mockReset();
+
+            mockNetSocketInstance.connect.mockReset().mockImplementation((port, ip, cb) => {
+                if (cb && typeof cb === 'function') {
+                    cb();
+                }
+            });
+            mockNetSocketInstance.on.mockReset().mockImplementation(function (event, handler) {
+                if (event === 'error') {
+                    this._errorCb = handler;
+                } else if (event === 'timeout') {
+                    this._timeoutCb = handler;
+                }
+                return this;
+            });
             mockNetSocketInstance.setTimeout.mockReset();
             mockNetSocketInstance.destroy.mockReset();
             mockNetSocketInstance._connectCb = null;
@@ -215,16 +197,8 @@ describe('Utils Tests', () => {
         });
 
         it('should return true if DNS lookup and TCP connection are successful on first attempt', async () => {
-            mockDnsLookup.mockImplementation((hostname, callback) => callback(null, '1.2.3.4'));
-            mockNetSocketInstance.connect.mockImplementation((port, ip, cb) => {
-                cb(); // Simulate immediate successful connection for the connect callback
-            });
-            // Simulate the 'connect' event being emitted by the socket
-            mockNetSocketInstance.on.mockImplementation((event, cb) => {
-                if (event === 'connect') {
-                    setImmediate(() => cb()); // Call the connect handler
-                }
-                return mockNetSocketInstance;
+            mockDnsLookup.mockImplementation((hostname, callback) => {
+                callback(null, '1.2.3.4');
             });
 
             const result = await checkConnectivity(testUrl);
@@ -239,34 +213,51 @@ describe('Utils Tests', () => {
 
             const result = await checkConnectivity(testUrl);
             expect(result).toBe(false);
-            expect(mockDnsLookup).toHaveBeenCalledTimes(3); // Default 3 attempts
+            expect(mockDnsLookup).toHaveBeenCalledTimes(3);
             expect(mockNetSocketInstance.connect).not.toHaveBeenCalled();
         });
 
         it('should return false if TCP connection fails (error) on all attempts', async () => {
-            mockDnsLookup.mockImplementation((hostname, callback) => callback(null, '1.2.3.4'));
-            mockNetSocketInstance.on.mockImplementation((event, cb) => {
+            mockDnsLookup.mockImplementation((hostname, callback) => {
+                callback(null, '1.2.3.4');
+            });
+
+            mockNetSocketInstance.connect.mockImplementation((port, ip, connectCb) => {
+                // Do NOT call connectCb()
+            });
+
+            mockNetSocketInstance.on.mockImplementation(function (event, handler) {
                 if (event === 'error') {
-                    // Simulate error event being emitted for each connection attempt
-                    setImmediate(() => cb(new Error('TCP Connection Error')));
+                    setImmediate(() => handler(new Error('TCP Connection Error')));
+                } else if (event === 'timeout') {
+                    this._timeoutCb = () => {};
                 }
-                return mockNetSocketInstance;
+                return this;
             });
 
             const result = await checkConnectivity(testUrl);
             expect(result).toBe(false);
-            expect(mockDnsLookup).toHaveBeenCalledTimes(3); // DNS might be tried per outer loop attempt
+            expect(mockDnsLookup).toHaveBeenCalledTimes(3);
             expect(mockNetSocketInstance.connect).toHaveBeenCalledTimes(3);
             expect(mockNetSocketInstance.destroy).toHaveBeenCalledTimes(3);
         });
 
         it('should return false if TCP connection times out on all attempts', async () => {
-            mockDnsLookup.mockImplementation((hostname, callback) => callback(null, '1.2.3.4'));
-            mockNetSocketInstance.on.mockImplementation((event, cb) => {
+            mockDnsLookup.mockImplementation((hostname, callback) => {
+                callback(null, '1.2.3.4');
+            });
+
+            mockNetSocketInstance.connect.mockImplementation((port, ip, connectCb) => {
+                // Do NOT call connectCb()
+            });
+
+            mockNetSocketInstance.on.mockImplementation(function (event, handler) {
                 if (event === 'timeout') {
-                    setImmediate(() => cb()); // Simulate timeout event
+                    setImmediate(() => handler());
+                } else if (event === 'error') {
+                    this._errorCb = () => {};
                 }
-                return mockNetSocketInstance;
+                return this;
             });
 
             const result = await checkConnectivity(testUrl);
@@ -281,7 +272,9 @@ describe('Utils Tests', () => {
                 .mockImplementationOnce((hostname, callback) => callback(new Error('DNS Failed Attempt 1')))
                 .mockImplementationOnce((hostname, callback) => callback(null, '1.2.3.4'));
 
+            // Default connect mock from beforeEach should work for success
             mockNetSocketInstance.on.mockImplementation((event, cb) => {
+                // Simplified .on for success
                 if (event === 'connect') {
                     setImmediate(() => cb());
                 }
