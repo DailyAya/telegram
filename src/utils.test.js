@@ -152,7 +152,7 @@ describe('Utils Tests', () => {
         });
     });
 
-    describe.skip('checkConnectivity', () => {
+    describe('checkConnectivity', () => {
         // Skipping this entire describe block for now
         const testUrl = 'https://www.example.com';
         let mockDnsLookup;
