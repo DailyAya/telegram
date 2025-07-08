@@ -7,6 +7,20 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Added detailed diagnostic logging within `src/botHandlers/actionHandlers.js#handleReciteAction` (specifically in the admin execution path) to inspect the `adminCtx` object immediately before `sendAyaRecitationFn` is called. This is to help diagnose an issue where `sendAyaRecitation` might be receiving an empty context object.
 
+## [2025.07.09-0129] - 2025-07-09
+
+### Fixed
+- **Benign Error Logging**: Modified `src/logger.js` to identify specific benign `TelegramError` instances (e.g., code 403/400 for "user is deactivated", "bot was blocked by the user", "chat not found"). These errors are now logged only to the console (if debugging is enabled) and are NOT sent to the `devChatId`, reducing noise from expected operational occurrences.
+- **Recitation `chatId` Extraction**: Refactored `chatId` extraction in `src/ayaSender.js#sendAyaRecitation` to be more robust for different types of context objects (Telegraf `Context` vs. direct `Message` object). This aims to prevent failures in determining `chatId` when sending recitations.
+- Improved diagnostic logging in `src/ayaSender.js#sendAyaRecitation` to provide more details about the received context if `chatId` still cannot be determined.
+
+### Added
+- `src/logger.test.js`: Added a new test suite for `src/logger.js`, providing comprehensive coverage for the new benign error handling logic, standard logging paths, and `bootstrapLogger`.
+
+### Changed
+- Updated tests in `src/telegramBot.test.js` (for `sendAya` function) and `src/ayaSender.test.js` (for `sendAyaRecitation`) to align with the new logging behaviors and `chatId` extraction logic, ensuring tests accurately reflect the intended functionality.
+
+
 ## [2025.07.09-0038] - 2025-07-09
 
 ### Fixed
