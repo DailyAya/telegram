@@ -117,7 +117,10 @@ export async function sendAyaRecitation(dependencies, ctx, ayaId, reciterIdentif
 
     const chatId = ctx.chat?.id || ctx.update?.callback_query?.message?.chat?.id;
     if (!chatId) {
-        logger('sendAyaRecitation: Could not determine chatId from context.', ctx);
+        logger(
+            'sendAyaRecitation: Could not determine chatId from context. Update object:',
+            ctx.update ? JSON.stringify(ctx.update, null, 2) : 'ctx.update is undefined'
+        );
         return;
     }
 

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.09-0016] - 2025-07-09
+
+### Fixed
+- Modified `adminChecker` in `src/botHelpers.js` to gracefully handle `CHAT_ADMIN_REQUIRED` errors from Telegram. It now logs an informational message and returns `false` instead of letting the error propagate disruptively.
+- Corrected logging in `sendAyaRecitation` in `src/ayaSender.js` to dump the `ctx.update` object (stringified) when `chatId` cannot be determined, aiding diagnostics for callback query issues.
+
+### Added
+- Unit test in `botHelpers.test.js` for `adminChecker` to verify correct handling of `CHAT_ADMIN_REQUIRED` errors.
+- Unit tests in `ayaSender.test.js` for `sendAyaRecitation` to verify improved logging when `chatId` is missing from context.
+
+---
+
 ## [2025.07.08-1924] - 2025-07-08
 
 ### Fixed

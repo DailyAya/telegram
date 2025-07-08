@@ -91,10 +91,26 @@ describe('adminChecker', () => {
         const isAdmin = await adminChecker(mockCtx, mockBotTelegram);
         expect(isAdmin).toBe(false);
         expect(mockLoggerLog).toHaveBeenCalledWith(
-            'Error in adminChecker while calling getChatMember: ',
+            `Error in adminChecker while calling getChatMember for chat ${mockCtx.chat.id}, user ${mockCtx.from.id}:`,
             expect.any(Error)
         );
     });
+
+    it('should return false and log specific message for CHAT_ADMIN_REQUIRED error', async () => {
+        mockCtx.chat.type = 'group';
+        const chatAdminRequiredError = new Error('Forbidden: CHAT_ADMIN_REQUIRED');
+        // Simulate Telegraf's error structure
+        chatAdminRequiredError.response = { description: 'Forbidden: CHAT_ADMIN_REQUIRED' };
+        chatAdminRequiredError.code = 403; // Or 400, depending on how Telegram sends it
+
+        mockBotTelegram.getChatMember.mockRejectedValue(chatAdminRequiredError);
+        const isAdmin = await adminChecker(mockCtx, mockBotTelegram);
+        expect(isAdmin).toBe(false);
+        expect(mockLoggerLog).toHaveBeenCalledWith(
+            `adminChecker: Bot lacks admin rights in chat ${mockCtx.chat.id} to check member status for user ${mockCtx.from.id}. Assuming user is not admin for this check.`
+        );
+    });
+
     it('should return false if context is invalid', async () => {
         expect(await adminChecker(null, mockBotTelegram)).toBe(false);
         expect(await adminChecker({}, mockBotTelegram)).toBe(false);
