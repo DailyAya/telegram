@@ -533,22 +533,38 @@ describe('sendAya', () => {
         );
     });
 
-    it('should call lastAyaTime with "blocked" on specific Telegram block errors', async () => {
-        const blockError = new Error('Blocked by user');
-        blockError.response = { description: 'Forbidden: bot was blocked by the user' };
+    it('should call logger and lastAyaTime with "blocked" on specific Telegram block errors', async () => {
+        const blockError = new Error('User is deactivated'); // Message for Error object
+        blockError.response = { error_code: 403, description: 'Forbidden: user is deactivated' }; // Telegram-like error details
         mockSenderSendAyaText.mockRejectedValue(blockError);
 
-        await sendAya(mockChatId, 10, 'ar.alafasy', 'en', 'test');
+        await sendAya(mockChatId, 10, 'ar.alafasy', 'en', 'timer_test');
+
+        // sendAya calls logger first with the error
+        expect(mockLogger).toHaveBeenCalledWith(
+            `sendAya: Error caught while sending Aya 10 to chat ${mockChatId}. Trigger: timer_test`,
+            blockError
+        );
+        // Then it calls lastAyaTime with "blocked"
         expect(mockDbLastAyaTime).toHaveBeenCalledWith(mockChatId, 'blocked');
+        // We rely on logger.test.js to ensure this specific error isn't sent to dev chat by logger itself
     });
 
-    it('should not call lastAyaTime with "blocked" for generic errors from sendAyaText', async () => {
-        mockSenderSendAyaText.mockRejectedValue(new Error('Generic network error'));
-        await sendAya(mockChatId, 10, 'ar.alafasy', 'en', 'test');
-        // lastAyaTime might be called by successSend if that's part of a finally, but not with 'blocked'
+    it('should call logger and not lastAyaTime with "blocked" for generic errors from sendAyaText', async () => {
+        const genericError = new Error('Generic network error');
+        mockSenderSendAyaText.mockRejectedValue(genericError);
+        await sendAya(mockChatId, 10, 'ar.alafasy', 'en', 'test_generic_error');
+
+        expect(mockLogger).toHaveBeenCalledWith(
+            `sendAya: Error caught while sending Aya 10 to chat ${mockChatId}. Trigger: test_generic_error`,
+            genericError
+        );
+        // lastAyaTime should not be called with 'blocked' for generic errors
         const blockCall = mockDbLastAyaTime.mock.calls.find((call) => call[1] === 'blocked');
         expect(blockCall).toBeUndefined();
+        // We rely on logger.test.js to ensure this generic error *is* sent to dev chat by logger
     });
+
     it('should not call recitation if sendAyaText fails', async () => {
         mockSenderSendAyaText.mockRejectedValue(new Error('Failed to send text'));
         await sendAya(mockChatId, 10, 'ar.alafasy', 'en', 'test', true);

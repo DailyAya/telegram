@@ -263,7 +263,55 @@ export async function handleReciteAction(
         ctx,
         botTelegram,
         async (adminCtx) => {
-            logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite} in chat ${adminCtx.chat.id}`);
+            // --- BEGIN DIAGNOSTIC LOGGING for handleReciteAction ---
+            let adminCtxDetails = 'N/A';
+            const adminCtxType = typeof adminCtx;
+            const adminCtxKeys = adminCtx ? Object.keys(adminCtx).join(', ') : 'N/A';
+            const adminCtxUpdateExists = !!adminCtx?.update;
+            const adminCtxChatId = adminCtx?.chat?.id;
+            const adminCtxCbQueryChatId = adminCtx?.callbackQuery?.message?.chat?.id;
+
+            try {
+                // Avoid stringifying full ctx if it's a complex Telegraf object with circular refs
+                // Instead, log key properties or a shallow representation.
+                if (adminCtx && typeof adminCtx === 'object') {
+                    const tempCtx = { ...adminCtx }; // Shallow clone
+                    delete tempCtx.telegram; // Often causes circular issues
+                    delete tempCtx.botInfo; // Can be large
+                    // delete tempCtx.update; // update itself can be large, already logging its existence
+                    adminCtxDetails = JSON.stringify(tempCtx, null, 2);
+                    if (adminCtxDetails.length > 1000) {
+                        // Keep it somewhat brief
+                        adminCtxDetails = adminCtxDetails.substring(0, 1000) + '... (truncated)';
+                    }
+                } else {
+                    adminCtxDetails = String(adminCtx);
+                }
+            } catch (stringifyError) {
+                adminCtxDetails = `Could not stringify adminCtx in handleReciteAction. Error: ${stringifyError.message}`;
+                logger(`DEBUG: handleReciteAction - JSON.stringify failed for adminCtx:`, stringifyError);
+            }
+
+            logger(
+                `DEBUG: handleReciteAction - adminFn - Before calling sendAyaRecitationFn.
+                Callback Data: ${JSON.stringify(callbackData)}
+                adminCtx Type: ${adminCtxType}
+                adminCtx Keys: ${adminCtxKeys}
+                adminCtx?.update (exists): ${adminCtxUpdateExists}
+                adminCtx?.chat?.id (accessor): ${adminCtxChatId}
+                adminCtx?.callbackQuery?.message?.chat?.id (direct): ${adminCtxCbQueryChatId}
+                adminCtx Shallow Details: ${adminCtxDetails}`
+            );
+            // --- END DIAGNOSTIC LOGGING ---
+
+            // Original logger call, which might fail if adminCtx.chat.id is not available
+            // logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite} in chat ${adminCtx.chat.id}`);
+            // Defensively log chat ID before using it:
+            if (adminCtx && adminCtx.chat && adminCtx.chat.id) {
+                logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite} in chat ${adminCtx.chat.id}`);
+            } else {
+                logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite}. adminCtx.chat.id MISSING.`);
+            }
             await sendAyaRecitationFn(adminCtx, callbackData.recite, callbackData.r);
         },
         async (_nonAdminCtx) => {
