@@ -305,3 +305,65 @@
 **Next Steps:**
 -   Perform the pre-commit routine.
 -   Submit the new tests for `telegramBot.js`.
+
+---
+## Session Summary: Jules - 2025-07-09 (Current Session Start)
+
+**Goal:** Await new task from the user.
+
+**Work Done & Key Changes:**
+1.  **Context Refresh & Status Confirmation**:
+    *   Re-read `AGENTS.MD` to ensure full awareness of directives.
+    *   Reviewed `AGENT_PROGRESS.md` to understand the outcome of the last session. The last active work involved improving test coverage for `src/telegramBot.js`, and all tests were passing. The indicated next step was to perform the pre-commit routine and submit those changes. It appears this commit may not have happened or was not logged if it did.
+    *   Ran `npm test`: All 9 test suites (210 tests) passed.
+    *   Ran `npm run lint -- --fix`: No linting errors were found.
+2.  **Current Understanding**:
+    *   The project is in a stable state with all tests passing and code linted.
+    *   The extensive refactoring and test improvements from previous sessions appear to be holding up.
+    *   The bot launch issues (409 conflict) were resolved in a prior session.
+    *   The `jules_refactor` branch should be up-to-date with these improvements.
+
+**Current Status:**
+-   Project is stable, tests pass, code is linted.
+-   Ready for a new development task or to finalize any uncommitted work from the previous session if necessary.
+
+**Next Steps:**
+-   Await user instruction for the next task.
+-   If the previous work on `telegramBot.js` test coverage was not committed, that would be the immediate next step before new tasks. However, based on current clean state, assuming prior commits were successful.
+
+*(Self-correction: The previous `AGENT_PROGRESS.md` entries are a bit confusing with dates. The "Current Session" on 07-08 seems to be chronologically after the 07-07 "Ongoing" and "Final" sessions. The latest actual work logged was "Improve test coverage for `src/telegramBot.js`" which concluded with all tests passing and next step being pre-commit. My current check confirms all tests are passing, so the codebase is likely in that state, possibly uncommitted.)*
+
+---
+## Session Summary: Jules - 2025-07-09 (Current Session - In Progress)
+
+**Goal:** Address logging of benign errors and recitation `chatId` issue.
+
+**Work Done & Key Changes:**
+
+1.  **Addressed "User Deactivated" Error Logging (Issue 1)**:
+    *   Modified `src/logger.js` to identify specific benign `TelegramError` instances (e.g., user deactivated, bot blocked by user, chat not found) based on error code (403, 400) and description keywords.
+    *   Ensured these benign errors are logged to `console.log` (if `config.debugging` is true) or silently ignored, instead of being sent to the `devChatId` as critical errors.
+    *   Created `src/logger.test.js` with comprehensive tests for this new benign error handling logic, as well as for standard informational and error logging paths, and `bootstrapLogger`.
+    *   Updated tests in `src/telegramBot.test.js` for the `sendAya` function to correctly assert that `logger` is called, relying on `logger.test.js` for the specifics of benign error handling.
+
+2.  **Addressed Recitation `chatId` Issue (Issue 2)**:
+    *   Refactored `chatId` extraction logic in `src/ayaSender.js#sendAyaRecitation`. The new logic more explicitly checks if the passed `ctx` is a full Telegraf Context (by checking `ctx.update`) or a direct `Message` object.
+    *   Improved diagnostic logging in `sendAyaRecitation` to provide more details about the received context if `chatId` cannot be determined.
+    *   Updated tests in `src/ayaSender.test.js` to cover various `ctx` scenarios for `sendAyaRecitation`, including:
+        *   `ctx` as a Telegraf Context from a callback query.
+        *   `ctx` as a `Message` object.
+        *   Cases where `chatId` cannot be derived, verifying the new detailed logging.
+
+**Current Status:**
+-   Code changes for both issues are complete.
+-   New tests for `logger.js` are added.
+-   Existing tests for `ayaSender.js` and `telegramBot.js` are updated to reflect changes.
+-   Ready to proceed with remaining pre-commit steps (CHANGELOG, versioning, final tests, linting).
+
+**Next Steps (within Pre-commit Routine):**
+-   Update `CHANGELOG.md`.
+-   Generate version timestamp.
+-   Update `package.json`.
+-   Run `npm install`.
+-   Run all tests (`npm test`) and linters (`npm run lint -- --fix`).
+-   Prepare commit message and submit.

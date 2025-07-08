@@ -256,29 +256,36 @@ describe('sendAyaRecitation', () => {
         mockBotTelegram.sendAudio.mockRejectedValueOnce(apiError);
 
         await sendAyaRecitation(mockDependencies, mockCtx, ayaId, initialReciter);
-        expect(mockLastAyaTimeDbFn).not.toHaveBeenCalledWith(mockCtx.chat.id, 'blocked');
-        expect(mockHelperSendSorryFn).toHaveBeenCalledWith(mockBotTelegram, mockCtx.chat.id, 'audio');
+        // Assuming mockCtx.chat.id is primary if available, or from callback_query
+        const expectedChatId = mockCtx.chat?.id || mockCtx.update?.callback_query?.message?.chat?.id;
+        expect(mockLastAyaTimeDbFn).not.toHaveBeenCalledWith(expectedChatId, 'blocked');
+        expect(mockHelperSendSorryFn).toHaveBeenCalledWith(mockBotTelegram, expectedChatId, 'audio');
     });
 
     it('should attempt to edit/delete messages correctly when original messageId is from ctx.message', async () => {
-        // Simulating sentAudioCtx.message_id is originalMessageId + 1
+        const localMockCtx = {
+            // Use a local mock to ensure no side effects from other tests' mockCtx
+            chat: { id: 'chatMsgOriginal' },
+            message: { message_id: 200, chat: { id: 'chatMsgOriginal' } }, // Ensure message has chat.id
+            // No 'update' field, simulating a Message object or a simple context
+        };
         mockBotTelegram.sendAudio.mockResolvedValue({
-            chat: { id: mockCtx.chat.id },
-            message_id: mockCtx.message.message_id + 1,
+            chat: { id: localMockCtx.chat.id },
+            message_id: localMockCtx.message.message_id + 1,
         });
-        await sendAyaRecitation(mockDependencies, mockCtx, ayaId, initialReciter);
+        await sendAyaRecitation(mockDependencies, localMockCtx, ayaId, initialReciter);
 
         expect(mockBotTelegram.editMessageReplyMarkup).toHaveBeenNthCalledWith(
             1,
-            mockCtx.chat.id,
-            mockCtx.message.message_id,
+            localMockCtx.chat.id,
+            localMockCtx.message.message_id,
             undefined,
             undefined
         );
         expect(mockBotTelegram.editMessageReplyMarkup).toHaveBeenNthCalledWith(
             2,
-            mockCtx.chat.id,
-            mockCtx.message.message_id + 1,
+            localMockCtx.chat.id,
+            localMockCtx.message.message_id + 1,
             undefined,
             expect.any(Object)
         );
@@ -286,32 +293,37 @@ describe('sendAyaRecitation', () => {
     });
 
     it('should attempt to reply and delete if sentAudio message_id is not sequential (ctx.message)', async () => {
-        // Simulating sentAudioCtx.message_id is NOT originalMessageId + 1
-        mockBotTelegram.sendAudio.mockResolvedValueOnce({ chat: { id: mockCtx.chat.id }, message_id: 999 }); // Initial sendAudio
-        mockBotTelegram.sendAudio.mockResolvedValueOnce({ chat: { id: mockCtx.chat.id }, message_id: 1000 }); // Second sendAudio (reply)
+        const localMockCtx = {
+            chat: { id: 'chatMsgReply' },
+            message: { message_id: 200, chat: { id: 'chatMsgReply' } },
+        };
+        mockBotTelegram.sendAudio.mockResolvedValueOnce({ chat: { id: localMockCtx.chat.id }, message_id: 999 }); // Initial sendAudio
+        mockBotTelegram.sendAudio.mockResolvedValueOnce({ chat: { id: localMockCtx.chat.id }, message_id: 1000 }); // Second sendAudio (reply)
 
-        await sendAyaRecitation(mockDependencies, mockCtx, ayaId, initialReciter);
+        await sendAyaRecitation(mockDependencies, localMockCtx, ayaId, initialReciter);
 
-        expect(mockBotTelegram.deleteMessage).toHaveBeenCalledWith(mockCtx.chat.id, 999);
+        expect(mockBotTelegram.deleteMessage).toHaveBeenCalledWith(localMockCtx.chat.id, 999);
         expect(mockBotTelegram.sendAudio).toHaveBeenLastCalledWith(
-            mockCtx.chat.id,
+            localMockCtx.chat.id,
             'http://example.com/audio.mp3',
             expect.objectContaining({
-                reply_to_message_id: mockCtx.message.message_id, // from ctx.message
+                reply_to_message_id: localMockCtx.message.message_id,
                 reply_markup: expect.any(Object),
             })
         );
         expect(mockBotTelegram.editMessageReplyMarkup).toHaveBeenCalledWith(
-            mockCtx.chat.id,
-            mockCtx.message.message_id,
+            localMockCtx.chat.id,
+            localMockCtx.message.message_id,
             undefined,
             undefined
         );
     });
 
     it('should attempt to edit/delete messages correctly when original messageId is from callback_query', async () => {
-        const cbCtx = { update: { callback_query: { message: { chat: { id: 'chatAudioCb' }, message_id: 100 } } } };
-        // Simulating sentAudioCtx.message_id is originalMessageId + 1
+        const cbCtx = {
+            update: { callback_query: { message: { chat: { id: 'chatAudioCb' }, message_id: 100 } } },
+            chat: { id: 'chatAudioCb' }, // Telegraf context usually populates ctx.chat
+        };
         mockBotTelegram.sendAudio.mockResolvedValue({ chat: { id: 'chatAudioCb' }, message_id: 101 });
         await sendAyaRecitation(mockDependencies, cbCtx, ayaId, initialReciter);
 
@@ -332,23 +344,83 @@ describe('sendAyaRecitation', () => {
         expect(mockBotTelegram.deleteMessage).not.toHaveBeenCalled();
     });
 
-    it('should log and return if chatId cannot be determined, logging ctx.update', async () => {
-        const emptyCtx = { update: { update_id: 999, some_other_field: 'test' } }; // No chat.id or callback_query.message.chat.id
-        await sendAyaRecitation(mockDependencies, emptyCtx, ayaId, initialReciter);
-        expect(mockLogger).toHaveBeenCalledWith(
-            'sendAyaRecitation: Could not determine chatId from context. Update object:',
-            JSON.stringify(emptyCtx.update, null, 2)
-        );
-        expect(mockGetRecitationFn).not.toHaveBeenCalled();
-    });
+    describe('chatId determination in sendAyaRecitation', () => {
+        it('should extract chatId from Telegraf Context (callback_query)', async () => {
+            const ctxFromCb = {
+                update: { callback_query: { message: { chat: { id: 'cbChat123' } } } },
+                chat: { id: 'cbChat123' }, // Telegraf often populates this
+            };
+            await sendAyaRecitation(mockDependencies, ctxFromCb, ayaId, initialReciter);
+            expect(mockGetRecitationFn).toHaveBeenCalledWith(ayaId, initialReciter); // Check if it proceeded
+            expect(mockBotTelegram.sendAudio).toHaveBeenCalledWith('cbChat123', expect.anything(), expect.anything());
+        });
 
-    it('should log "ctx.update is undefined" if ctx.update is missing when chatId cannot be determined', async () => {
-        const ctxWithoutUpdate = {}; // No chat.id and no ctx.update
-        await sendAyaRecitation(mockDependencies, ctxWithoutUpdate, ayaId, initialReciter);
-        expect(mockLogger).toHaveBeenCalledWith(
-            'sendAyaRecitation: Could not determine chatId from context. Update object:',
-            'ctx.update is undefined'
-        );
-        expect(mockGetRecitationFn).not.toHaveBeenCalled();
+        it('should extract chatId from a Message object (simulating sentTextCtx)', async () => {
+            const messageCtx = {
+                chat: { id: 'messageChat456' },
+                message_id: 789, // other properties of a Message object
+            };
+            await sendAyaRecitation(mockDependencies, messageCtx, ayaId, initialReciter);
+            expect(mockGetRecitationFn).toHaveBeenCalledWith(ayaId, initialReciter);
+            expect(mockBotTelegram.sendAudio).toHaveBeenCalledWith(
+                'messageChat456',
+                expect.anything(),
+                expect.anything()
+            );
+        });
+
+        it('should log detailed error and return if chatId cannot be determined (Telegraf Context type)', async () => {
+            // Context that has `update` but `chat.id` and `callback_query.message.chat.id` are missing
+            const faultyTelegrafCtx = {
+                update: { update_id: 1, callback_query: { message: { chat: {} } } }, // chat object exists but no id
+                chat: null, // or chat: { id: null }
+            };
+            await sendAyaRecitation(mockDependencies, faultyTelegrafCtx, ayaId, initialReciter);
+            expect(mockLogger).toHaveBeenCalledWith(
+                expect.stringContaining(
+                    'sendAyaRecitation: Could not determine chatId. Context type detected: Telegraf Context.'
+                ),
+                expect.objectContaining({
+                    hasChatIdAccess: false,
+                    callbackQueryMessageChatId: undefined,
+                })
+            );
+            expect(mockGetRecitationFn).not.toHaveBeenCalled();
+        });
+
+        it('should log detailed error and return if chatId cannot be determined (Message object type)', async () => {
+            const faultyMessageCtx = {
+                message_id: 123,
+                chat: null, // 'chat' property exists but is null, so chat.id is undefined
+                date: 1678886400, // Add 'date' to fit the heuristic for Message object type
+                from: { id: 'userTest123' } // Optional, but good for full context logging
+            };
+            await sendAyaRecitation(mockDependencies, faultyMessageCtx, ayaId, initialReciter);
+            expect(mockLogger).toHaveBeenCalledWith(
+                expect.stringContaining('sendAyaRecitation: Could not determine chatId. Context type detected: Telegram Message Object.'),
+                expect.objectContaining({
+                    message_id: 123,
+                    hasChatProperty: true, // because 'chat' key exists
+                    chatObjectValue: null, // the value of ctx.chat
+                    directChatIdIfPresent: undefined, // because faultyMessageCtx.chat.id is undefined
+                    from_id: 'userTest123'
+                })
+            );
+            expect(mockGetRecitationFn).not.toHaveBeenCalled();
+        });
+
+        it('should log detailed error and return if chatId cannot be determined (Unknown context type)', async () => {
+            const unknownCtx = { someRandomField: 'value' }; // Neither .update nor .chat.id
+            await sendAyaRecitation(mockDependencies, unknownCtx, ayaId, initialReciter);
+            expect(mockLogger).toHaveBeenCalledWith(
+                expect.stringContaining(
+                    'sendAyaRecitation: Could not determine chatId. Context type detected: Unknown or malformed.'
+                ),
+                expect.objectContaining({
+                    ctxKeys: ['someRandomField'],
+                })
+            );
+            expect(mockGetRecitationFn).not.toHaveBeenCalled();
+        });
     });
 });
