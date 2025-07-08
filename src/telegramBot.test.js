@@ -230,10 +230,10 @@ beforeAll(async () => {
     // console.log('****** TELEGRAMBOT_TEST: Asserting Telegraf constructor call immediately after import ******');
     // If custom agent is commented out in SUT, Telegraf constructor is called with 1 arg.
     // If custom agent is active, it's called with 2 args.
-    // Current SUT state (for this experiment) is 1 arg.
+    // Custom agent has been reinstated in SUT.
     expect(MinimalMockTelegrafConstructor).toHaveBeenCalledWith(
-        currentConfigMock.default.telegramToken
-        // expect.any(Object) // This was for the options when custom agent was passed
+        currentConfigMock.default.telegramToken,
+        expect.objectContaining({ telegram: expect.objectContaining({ agent: expect.any(Object) }) })
     );
     expect(mockSetBotInstance).toHaveBeenCalledWith(bot);
     expect(bot).toBe(mockMinimalTelegrafInstance);
