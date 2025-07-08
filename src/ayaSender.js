@@ -115,13 +115,60 @@ export async function sendAyaRecitation(dependencies, ctx, ayaId, reciterIdentif
         lastAyaTimeDbFn,
     } = dependencies;
 
-    const chatId = ctx.chat?.id || ctx.update?.callback_query?.message?.chat?.id;
+    let chatId;
+    // Determine chatId based on the type of ctx received
+    if (ctx.update && ctx.chat?.id) {
+        // If ctx.update exists, it's a full Telegraf Context object.
+        // ctx.chat.id is the preferred Telegraf way to get chat_id from various update types.
+        chatId = ctx.chat.id;
+    } else if (ctx.update && ctx.callbackQuery?.message?.chat?.id) {
+        // Fallback specifically for callback query contexts if ctx.chat.id wasn't populated
+        chatId = ctx.callbackQuery.message.chat.id;
+    } else if (ctx.chat?.id) {
+        // If ctx.update is not present, ctx is likely a Message object (e.g., from a sendMessage response).
+        // In this case, ctx.chat.id is the direct path.
+        chatId = ctx.chat.id;
+    }
+    // It's also possible ctx is a Message object from ctx.message, check ctx.message.chat.id
+    // This should ideally be handled by the caller passing the right context or chatId directly.
+    // The original `ctx.message?.chat?.id` was removed from the one-liner, let's consider if it's needed
+    // if ctx is a full Context object and ctx.chat.id somehow fails.
+    // The current structure: Telegraf Context -> ctx.chat.id should work. Message Object -> ctx.chat.id should work.
+
     if (!chatId) {
+        let contextType = 'Unknown';
+        let relevantContextParts = {};
+
+        if (ctx.update) {
+            contextType = 'Telegraf Context';
+            relevantContextParts = {
+                updateType: ctx.updateType,
+                hasChatIdAccess: !!ctx.chat?.id, // Access via Telegraf's smart ctx.chat accessor
+                callbackQueryMessageChatId: ctx.callbackQuery?.message?.chat?.id, // More direct access
+            };
+        } else if (typeof ctx.message_id === 'number' && ctx.hasOwnProperty('chat') && typeof ctx.date === 'number') {
+            // Heuristic: if it has message_id, a 'chat' property (even if null/empty), and 'date', it's likely a Message object.
+            contextType = 'Telegram Message Object';
+            relevantContextParts = {
+                message_id: ctx.message_id,
+                hasChatProperty: ctx.hasOwnProperty('chat'),
+                chatObjectValue: ctx.chat, // Log the actual chat object
+                directChatIdIfPresent: ctx.chat?.id,
+                from_id: ctx.from?.id,
+            };
+        } else {
+            // Log a snippet of the context if it's not too large
+            contextType = 'Unknown or malformed'; // More specific "Unknown"
+            relevantContextParts = {
+                ctxKeys: Object.keys(ctx),
+                // Avoid logging full ctx if it might be sensitive or huge
+            };
+        }
         logger(
-            'sendAyaRecitation: Could not determine chatId from context. Update object:',
-            ctx.update ? JSON.stringify(ctx.update, null, 2) : 'ctx.update is undefined'
+            `sendAyaRecitation: Could not determine chatId. Context type detected: ${contextType}. Details:`,
+            relevantContextParts
         );
-        return;
+        return; // Stop further processing
     }
 
     let finalReciter = reciterIdentifier;
