@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.09-0038] - 2025-07-09
+
+### Fixed
+- Corrected logging of Axios errors in `directGetMeCheck` (`src/telegramBot.js`) to prevent `TypeError: Converting circular structure to JSON` by logging specific, safe error properties instead of the full error or request objects.
+- Addressed test failures in `src/telegramBot.test.js` related to Telegraf constructor mock expectations after reinstating the custom HTTPS agent.
+
+### Changed
+- Reinstated the custom `https.Agent` with a 60-second timeout for the Telegraf instance in `src/telegramBot.js`. This is to explore if it provides more resilience against network timeouts compared to Telegraf's default agent, based on recent log observations.
+
+---
+
+## [2025.07.09-0016] - 2025-07-09
+
+### Fixed
+- Modified `adminChecker` in `src/botHelpers.js` to gracefully handle `CHAT_ADMIN_REQUIRED` errors from Telegram. It now logs an informational message and returns `false` instead of letting the error propagate disruptively.
+- Corrected logging in `sendAyaRecitation` in `src/ayaSender.js` to dump the `ctx.update` object (stringified) when `chatId` cannot be determined, aiding diagnostics for callback query issues.
+
+### Added
+- Unit test in `botHelpers.test.js` for `adminChecker` to verify correct handling of `CHAT_ADMIN_REQUIRED` errors.
+- Unit tests in `ayaSender.test.js` for `sendAyaRecitation` to verify improved logging when `chatId` is missing from context.
+
+---
+
 ## [2025.07.08-1924] - 2025-07-08
 
 ### Fixed
@@ -187,7 +210,7 @@ and this project adheres to a timestamp-based versioning scheme (`YYYY.MM.DD-HHM
 ### Skipped (Technical Debt)
 
 - `telegramBot.test.js`: Entire test suite skipped (`describe.skip`) due to a persistent Babel/Jest parsing error (`SyntaxError: Unexpected reserved word 'await'`). This prevents its ~50 tests from running.
-- `quranService.test.js`: One specific test (`getRecitation › should reject if API call fails...`) was skipped (`it.skip`) due to difficulties in reliably ensuring the mocked API call rejected as expected, even after refactoring the `apiClient` mocking.
+- `quranService.test.js`: One specific test (`getRecitation › should reject if API call fails...`) remains skipped (`it.skip`) due to difficulties in reliably ensuring the mocked API call rejected as expected, even after refactoring the `apiClient` mocking.
 - `expressApp.test.js`: While the test suite passes, a `JestAssertionError` is logged to the console _after_ suite completion related to a debug configuration test. This indicates a potential subtle issue in how test state or async operations are handled for that specific test.
 - ESLint `varsIgnorePattern: '^_'` in `eslint.config.js` did not appear to correctly handle all underscore-prefixed unused variables, necessitating `eslint-disable-next-line` comments. This configuration may need review.
 

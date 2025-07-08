@@ -40,9 +40,26 @@ export async function adminChecker(ctx, botTelegram) {
     try {
         const member = await botTelegram.getChatMember(ctx.chat.id, ctx.from.id);
         return ['creator', 'administrator'].includes(member.status);
-    } catch (e) {
-        logger('Error in adminChecker while calling getChatMember: ', e);
-        return false;
+    } catch (error) {
+        // Renamed e to error for clarity
+        // Check if it's a Telegraf-style error with response and description
+        if (
+            error.response &&
+            typeof error.response.description === 'string' &&
+            error.response.description.includes('CHAT_ADMIN_REQUIRED')
+        ) {
+            // Log informatively, not necessarily as a full error that gets sent to dev chat unless debugging is on
+            logger(
+                `adminChecker: Bot lacks admin rights in chat ${ctx.chat.id} to check member status for user ${ctx.from.id}. Assuming user is not admin for this check.`
+            );
+        } else {
+            // Log other errors more verbosely as they might be unexpected
+            logger(
+                `Error in adminChecker while calling getChatMember for chat ${ctx.chat.id}, user ${ctx.from.id}:`,
+                error
+            );
+        }
+        return false; // Default to false on any error, including CHAT_ADMIN_REQUIRED
     }
 }
 

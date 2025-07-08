@@ -1,5 +1,5 @@
 import axios from 'axios'; // Added for direct getMe check
-// import https from 'https'; // No longer needed as custom agent is commented out for experiment
+import https from 'https'; // REINSTATED for custom agent
 import { Telegraf, Markup } from 'telegraf';
 import config from './config.js'; // config is already imported, ensure it's used by directGetMeCheck
 import { logger, setBotInstance, bootstrapLogger } from './logger.js';
@@ -61,11 +61,10 @@ import { randomAyaNumber, numArabicToEnglish, maskTokenInUrl } from './utils.js'
  * The main Telegraf bot instance.
  * @type {import('telegraf').Telegraf}
  */
-// const agent = new https.Agent({ timeout: 60000 }); // 60 seconds timeout
-// bootstrapLogger('Telegraf HTTPS agent configured with 60-second timeout.');
-bootstrapLogger('Telegraf is being initialized WITH ITS DEFAULT HTTPS agent.');
+const agent = new https.Agent({ timeout: 60000 }); // 60 seconds timeout
+bootstrapLogger('Telegraf HTTPS agent configured with 60-second timeout (REINSTATED).');
 
-const bot = new Telegraf(config.telegramToken /*, { telegram: { agent } } */); // Custom agent removed for this experiment
+const bot = new Telegraf(config.telegramToken, { telegram: { agent } }); // Custom agent REINSTATED
 setBotInstance(bot); // Enable Telegram logging via logger.js
 
 // Promise for ensuring bot username is available
@@ -100,11 +99,24 @@ async function directGetMeCheck() {
                 `directGetMeCheck: Error Response Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`
             );
         } else if (error.request) {
-            bootstrapLogger(`directGetMeCheck: Error - No response received. Request details:`, error.request);
+            // Log specific, safe fields from error.request and error.config instead of the whole objects
+            let requestSummary = 'Axios request made but no response received.';
+            if (error.config) {
+                requestSummary += ` Method: ${error.config.method}, URL: ${maskTokenInUrl(error.config.url)}, Timeout: ${error.config.timeout}.`;
+            }
+            if (error.code) {
+                requestSummary += ` Code: ${error.code}.`;
+            }
+            bootstrapLogger(`directGetMeCheck: ${requestSummary}`, error.message); // Log primary message and error.message
         } else {
+            // For errors during request setup
             bootstrapLogger(`directGetMeCheck: Error during request setup: ${error.message}`);
         }
-        bootstrapLogger(`directGetMeCheck: Full error object:`, error);
+        // Log key parts of the error, avoiding full object stringification if it might be circular
+        bootstrapLogger(`directGetMeCheck: Error summary - Message: ${error.message}, Code: ${error.code || 'N/A'}`);
+        if (error.stack) {
+            bootstrapLogger(`directGetMeCheck: Stack: ${error.stack.substring(0, 500)}...`); // Log a portion of the stack
+        }
     }
 }
 

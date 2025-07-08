@@ -332,12 +332,22 @@ describe('sendAyaRecitation', () => {
         expect(mockBotTelegram.deleteMessage).not.toHaveBeenCalled();
     });
 
-    it('should log and return if chatId cannot be determined', async () => {
-        const emptyCtx = {};
+    it('should log and return if chatId cannot be determined, logging ctx.update', async () => {
+        const emptyCtx = { update: { update_id: 999, some_other_field: 'test' } }; // No chat.id or callback_query.message.chat.id
         await sendAyaRecitation(mockDependencies, emptyCtx, ayaId, initialReciter);
         expect(mockLogger).toHaveBeenCalledWith(
-            'sendAyaRecitation: Could not determine chatId from context.',
-            emptyCtx
+            'sendAyaRecitation: Could not determine chatId from context. Update object:',
+            JSON.stringify(emptyCtx.update, null, 2)
+        );
+        expect(mockGetRecitationFn).not.toHaveBeenCalled();
+    });
+
+    it('should log "ctx.update is undefined" if ctx.update is missing when chatId cannot be determined', async () => {
+        const ctxWithoutUpdate = {}; // No chat.id and no ctx.update
+        await sendAyaRecitation(mockDependencies, ctxWithoutUpdate, ayaId, initialReciter);
+        expect(mockLogger).toHaveBeenCalledWith(
+            'sendAyaRecitation: Could not determine chatId from context. Update object:',
+            'ctx.update is undefined'
         );
         expect(mockGetRecitationFn).not.toHaveBeenCalled();
     });
