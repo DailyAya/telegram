@@ -695,7 +695,7 @@ export async function launchBot() {
 
         if (config.devChatId && bot.options.username) {
             const instStateMsg = `DailyAyaTelegram ${config.branch} instance ${config.inst}@${config.host} (of total ${config.totalInst}) is active in ${config.debugging ? 'debugging' : 'normal'} mode of version ${config.codeVer} until ${config.instActiveUntil}.\nMemory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB\nUptime: ${+(process.uptime() / 3600).toFixed(2)} hours`;
-            bootstrapLogger('launchBot: Attempting to send startup state message to devChatId:', config.devChatId);
+            bootstrapLogger(`launchBot: Attempting to send startup state message to devChatId: ${config.devChatId}`);
             try {
                 await bot.telegram.sendMessage(config.devChatId, instStateMsg);
                 bootstrapLogger('launchBot: Startup state message successfully sent to dev group.');
