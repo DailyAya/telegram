@@ -4,7 +4,7 @@ import { logger, bootstrapLogger } from './logger.js';
 import { connectDB, getDB } from './database.js';
 import { startExpressServer } from './expressApp.js';
 import { launchBot, bot, sendAya as sendAyaFromBot } from './telegramBot.js';
-import { checkConnectivity } from './utils.js'; // Added import
+import { checkConnectivity, maskTokenInUrl } from './utils.js'; // Added maskTokenInUrl
 
 /**
  * @module app
@@ -356,16 +356,19 @@ async function startApp() {
 
         // 4. Specific check for getMe endpoint connectivity (added for deeper diagnosis)
         const fullGetMeUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken}/getMe`;
-        const logSafeFullGetMeUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken ? config.telegramToken.substring(0, 10) + '...' : '[TOKEN_NOT_SET]'}/getMe`;
+        // Use the new maskTokenInUrl utility for logging this URL
+        const maskedFullGetMeUrlForLog = maskTokenInUrl(fullGetMeUrl);
         bootstrapLogger(
-            `Checking specific getMe endpoint connectivity at: ${logSafeFullGetMeUrl} using utils.checkConnectivity...`
+            `Checking specific getMe endpoint connectivity at: ${maskedFullGetMeUrlForLog} using utils.checkConnectivity...`
         );
-        const getMeEndpointReachable = await checkConnectivity(fullGetMeUrl);
+        const getMeEndpointReachable = await checkConnectivity(fullGetMeUrl); // Actual check uses the real URL
         if (getMeEndpointReachable) {
-            bootstrapLogger(`Specific getMe endpoint (${logSafeFullGetMeUrl}) is reachable via checkConnectivity.`);
+            bootstrapLogger(
+                `Specific getMe endpoint (${maskedFullGetMeUrlForLog}) is reachable via checkConnectivity.`
+            );
         } else {
             bootstrapLogger(
-                `CRITICAL_OBSERVATION: Specific getMe endpoint (${logSafeFullGetMeUrl}) is NOT reachable via checkConnectivity. This might be the root cause.`
+                `CRITICAL_OBSERVATION: Specific getMe endpoint (${maskedFullGetMeUrlForLog}) is NOT reachable via checkConnectivity. This might be the root cause.`
             );
             // Note: We are proceeding to attempt bot launch anyway to gather Telegraf's own error,
             // but this log is a strong indicator if it fails.

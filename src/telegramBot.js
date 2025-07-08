@@ -36,7 +36,7 @@ import {
     populateRecitersButtons as servicePopulateRecitersButtons,
     recitersNavPage as serviceRecitersNavPage,
 } from './botFeatures/reciterService.js';
-import { randomAyaNumber, numArabicToEnglish } from './utils.js';
+import { randomAyaNumber, numArabicToEnglish, maskTokenInUrl } from './utils.js'; // Added maskTokenInUrl
 
 /**
  * @module telegramBot
@@ -85,7 +85,8 @@ async function directGetMeCheck() {
     const maskedToken = config.telegramToken
         ? `${config.telegramToken.substring(0, 6)}...${config.telegramToken.substring(config.telegramToken.length - 4)}`
         : 'NOT_SET';
-    bootstrapLogger(`directGetMeCheck: Attempting with token (masked) ${maskedToken} to URL: ${url}`);
+    // Use maskTokenInUrl for logging the URL
+    bootstrapLogger(`directGetMeCheck: Attempting with token (masked) ${maskedToken} to URL: ${maskTokenInUrl(url)}`);
 
     try {
         const response = await axios.get(url, { timeout: 10000 }); // 10-second timeout, similar to sendEmergencyNotification

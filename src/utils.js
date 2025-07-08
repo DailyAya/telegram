@@ -179,7 +179,8 @@ export async function sendEmergencyNotification(messageText) {
     }
 
     const url = `https://api.telegram.org/bot${config.telegramToken}/sendMessage`;
-    console.log(`Emergency Notifier: Posting to URL: ${url}`);
+    // Use maskTokenInUrl for logging the URL
+    console.log(`Emergency Notifier: Posting to URL: ${maskTokenInUrl(url)}`);
     const payload = {
         chat_id: config.devChatId,
         text: messageText,
@@ -209,4 +210,30 @@ export async function sendEmergencyNotification(messageText) {
         }
         // Do not re-throw, as this is a last-effort notification
     }
+}
+
+/**
+ * Masks a bot token within a URL string.
+ * Example: "https://api.telegram.org/bot12345:ABCDEF/getMe" becomes "https://api.telegram.org/bot12345:...CDEF/getMe"
+ * If no token is found, or the token is too short, it might return a generic mask or the original URL.
+ * @param {string} url The URL string to process.
+ * @returns {string} The URL with the token masked, or the original URL if no token pattern is matched.
+ */
+export function maskTokenInUrl(url) {
+    if (typeof url !== 'string') {
+        return url;
+    }
+    // Regex to find "bot" followed by digits (the ID part), a colon, and then the token string until the next slash.
+    // It captures the "bot<ID>:" part and the actual token separately.
+    const regex = /(bot\d+:)([^\s/]+)/g;
+    return url.replace(regex, (match, botIdPart, tokenPart) => {
+        if (tokenPart.length > 10) {
+            // Ensure token is long enough to mask meaningfully
+            const firstPart = tokenPart.substring(0, 6);
+            const lastPart = tokenPart.substring(tokenPart.length - 4);
+            return `${botIdPart}${firstPart}...${lastPart}`;
+        }
+        // If token is short or for any other reason, use a generic mask for the token part
+        return `${botIdPart}<TOKEN_MASKED>`;
+    });
 }

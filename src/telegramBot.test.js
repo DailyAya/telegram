@@ -199,10 +199,12 @@ jest.unstable_mockModule('./botFeatures/reciterService.js', () => ({
 // utils.js
 const mockRandomAyaNumber = jest.fn();
 const mockNumArabicToEnglish = jest.fn((text) => text);
+const mockMaskTokenInUrl = jest.fn((url) => url); // Passthrough for testing
 jest.unstable_mockModule('./utils.js', () => ({
     __esModule: true,
     randomAyaNumber: mockRandomAyaNumber,
     numArabicToEnglish: mockNumArabicToEnglish,
+    maskTokenInUrl: mockMaskTokenInUrl,
 }));
 
 // --- Declare SUT variables and handler stores ---
@@ -359,7 +361,7 @@ describe('launchBot', () => {
         // Ensure bot.options.username is set as it would be after getMe success
         bot.options.username = 'MinimalTestBot'; // Simulate successful getMe before launchBot
         await launchBot();
-        expect(mockMinimalTelegrafInstance.launch).toHaveBeenCalled();
+        expect(mockMinimalTelegrafInstance.launch).toHaveBeenCalledTimes(1); // Verify it's called exactly once
         expect(mockMinimalTelegrafInstance.telegram.sendMessage).toHaveBeenCalledWith(
             currentConfigMock.default.devChatId,
             expect.stringContaining(`DailyAyaTelegram ${currentConfigMock.default.branch} instance`)
@@ -373,7 +375,7 @@ describe('launchBot', () => {
         bot.options.username = 'MinimalTestBot';
 
         await launchBot();
-        expect(mockMinimalTelegrafInstance.launch).toHaveBeenCalled();
+        expect(mockMinimalTelegrafInstance.launch).toHaveBeenCalledTimes(1); // Verify it's called exactly once
         expect(mockMinimalTelegrafInstance.telegram.sendMessage).not.toHaveBeenCalledWith(
             expect.anything(), // If called, would be with null devChatId
             expect.stringContaining('DailyAyaTelegram')
@@ -442,6 +444,7 @@ describe('launchBot', () => {
         currentConfigMock.default.debugging = true;
         bot.options.username = 'MinimalTestBot';
         await launchBot();
+        expect(mockMinimalTelegrafInstance.launch).toHaveBeenCalledTimes(1); // Verify it's called exactly once
         expect(mockCheckSource).not.toHaveBeenCalled();
         currentConfigMock.default.debugging = originalDebugging;
     });
@@ -451,6 +454,7 @@ describe('launchBot', () => {
         currentConfigMock.default.debugging = false;
 
         await launchBot();
+        expect(mockMinimalTelegrafInstance.launch).toHaveBeenCalledTimes(1); // Verify it's called exactly once
 
         expect(mockCheckSource).toHaveBeenCalled();
         const checkSourceCallback = mockCheckSource.mock.calls[0][0];
