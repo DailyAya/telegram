@@ -113,7 +113,7 @@ This file (`AGENTS.md`) is the primary source of development directives and guid
 8.  **Synchronize `package-lock.json` (MANDATORY):** Run `npm install` again. This step is **crucial and mandatory** even if step 5 was performed (or if only the version in `package.json` changed). It ensures that `package-lock.json` is fully synchronized with `package.json`, particularly reflecting the new version in its internal `name` and `version` fields. **This step MUST follow step 7 directly.**
 9.  **Run Linters/Tests (if configured):** Execute any project-defined linters (e.g., ESLint) and automated tests (e.g., Jest). Address any issues identified. The DailyAya project currently uses `npm run lint -- --fix` and `npm test`.
 10. **Prepare Commit Message:** Draft a descriptive commit message. The first line should be a concise summary (max 50 chars). Include the new version string (e.g., "Version: yyyy.mm.dd-HHMM") in the commit message body.
-11. **Submit Changes:** Commit all modified files, which typically include any changed source code files, `README.md` (if updated), `AGENT_PROGRESS.md` (if updated), `CHANGELOG.md` (if updated), `package.json`, and `package-lock.json`. All commits must be to the `jules_refactor` branch unless explicitly instructed otherwise.
+11. **Submit Changes:** Commit all modified files, which typically include any changed source code files, `README.md` (if updated), `AGENT_PROGRESS.md` (if updated), `CHANGELOG.md` (if updated), `package.json`, and `package-lock.json`. All commits must be to a branch named `by_ai` unless explicitly instructed otherwise for the current session/task.
 
 ## Code Quality and Style:
 - **Clarity and Maintainability**: Write clear, well-commented, and maintainable JavaScript code.
