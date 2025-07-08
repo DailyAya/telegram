@@ -5,8 +5,8 @@
  */
 
 import axios from 'axios';
-import dns from 'dns';
-import net from 'net';
+import { lookup as dnsLookup } from 'dns'; // Use named import
+import { Socket as NetSocket } from 'net'; // Use named import
 import { URL } from 'url';
 import config from './config.js';
 
@@ -77,8 +77,6 @@ export function numArabicToEnglish(string) {
 }
 
 /**
- * Checks network connectivity to a given URL using a GET request.
-/**
  * Checks network connectivity to a given URL by performing a DNS lookup
  * on the hostname and then attempting a TCP socket connection to the resolved IP address.
  * It retries the entire process (DNS + TCP) up to 3 times if failures occur.
@@ -89,93 +87,73 @@ export function numArabicToEnglish(string) {
  */
 export async function checkConnectivity(url) {
     const maxAttempts = 3;
-    const delayBetweenAttempts = 2000; // 2 seconds
-    const tcpConnectionTimeout = 7000; // 7 seconds for each TCP connection attempt (increased from 5s)
-
-    // let lastError = null; // To store the last error message for logging, if needed (removed as unused)
+    const delayBetweenAttempts = 2000;
+    const tcpConnectionTimeout = 7000;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         let hostname, port;
         try {
             const parsedUrl = new URL(url);
             hostname = parsedUrl.hostname;
-            // Ensure port is an integer; default to 443 for https, 80 for http
             port = parseInt(parsedUrl.port || (parsedUrl.protocol === 'https:' ? '443' : '80'), 10);
             if (!hostname) {
-                // Basic validation for hostname
                 throw new Error('Hostname could not be derived from URL.');
             }
-            // eslint-disable-next-line no-unused-vars
-        } catch (_parseError) {
-            // lastError = `URL parsing error: _parseError.message`;
-            // In a real scenario, log this: logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Invalid URL "${url}". Error: ${_parseError.message}`);
+        } catch {
             if (attempt < maxAttempts) {
                 await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
-                continue; // Move to the next attempt
+                continue;
             }
-            return false; // All attempts failed due to URL parse error
+            return false;
         }
 
         let ipAddress;
         try {
-            // logger.debug(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Resolving DNS for ${hostname}`);
             ipAddress = await new Promise((resolve, reject) => {
-                // dns.lookup can sometimes be slow, give it its own reasonable timeout if possible, though Node's default is OS-dependent
-                dns.lookup(hostname, (err, address) => {
-                    if (err) reject(err);
-                    else resolve(address);
+                dnsLookup(hostname, (err, address) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(address);
+                    }
                 });
             });
-            // logger.debug(`Connectivity Check Attempt ${attempt}/${maxAttempts}: DNS for ${hostname} resolved to ${ipAddress}`);
-            // eslint-disable-next-line no-unused-vars
-        } catch (_dnsError) {
-            // lastError = `DNS lookup for ${hostname} failed: _dnsError.message`;
-            // logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: DNS lookup for ${hostname} failed: ${_dnsError.message}`);
+        } catch {
             if (attempt < maxAttempts) {
                 await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
-                continue; // Move to the next attempt
+                continue;
             }
-            return false; // All attempts failed due to DNS error
+            return false;
         }
 
         try {
-            // logger.debug(`Connectivity Check Attempt ${attempt}/${maxAttempts}: Attempting TCP connection to ${ipAddress}:${port}`);
             await new Promise((resolve, reject) => {
-                const socket = new net.Socket();
+                const socket = new NetSocket();
                 socket.setTimeout(tcpConnectionTimeout);
                 socket.connect(port, ipAddress, () => {
-                    socket.destroy(); // Clean up the socket
-                    resolve(true); // TCP connection successful
+                    socket.destroy();
+                    resolve(true);
                 });
                 socket.on('timeout', () => {
-                    socket.destroy(); // Clean up the socket
+                    socket.destroy();
                     reject(
                         new Error(`TCP connection to ${ipAddress}:${port} timed out after ${tcpConnectionTimeout}ms`)
                     );
                 });
                 socket.on('error', (err) => {
-                    socket.destroy(); // Clean up the socket
-                    reject(err); // TCP connection error
+                    socket.destroy();
+                    reject(err);
                 });
             });
-            // logger.info(`Connectivity Check Attempt ${attempt}/${maxAttempts}: TCP connection to ${ipAddress}:${port} for URL "${url}" successful.`);
-            return true; // Successfully connected
-            // eslint-disable-next-line no-unused-vars
-        } catch (_tcpError) {
-            // lastError = `TCP connection to ${ipAddress}:${port} (for ${hostname}) failed: _tcpError.message`;
-            // logger.warn(`Connectivity Check Attempt ${attempt}/${maxAttempts}: TCP connection to ${ipAddress}:${port} (for ${hostname}) failed: ${_tcpError.message}`);
+            return true;
+        } catch {
             if (attempt < maxAttempts) {
                 await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
-                // Continue to the next attempt (handled by the loop)
             } else {
-                // All TCP attempts failed for this DNS resolution
-                // logger.error(`Connectivity Check: All ${maxAttempts} TCP attempts to connect to "${url}" (IP: ${ipAddress}) failed. Last error: ${tcpError.message}`);
-                return false; // All attempts for this cycle failed
+                return false;
             }
         }
     }
-    // If loop finishes, all attempts failed for different reasons or last one failed.
-    // logger.error(`Connectivity Check: All ${maxAttempts} attempts to connect to "${url}" failed. Last error: Unknown error after loop completion or last specific error.`);
     return false;
 }
 
@@ -187,12 +165,22 @@ export async function checkConnectivity(url) {
  * @param {string} messageText - The text of the message to send.
  */
 export async function sendEmergencyNotification(messageText) {
+    // Mask parts of the token for security in logs
+    const maskedToken = config.telegramToken
+        ? `${config.telegramToken.substring(0, 6)}...${config.telegramToken.substring(config.telegramToken.length - 4)}`
+        : 'NOT_SET';
+    console.log(
+        `Emergency Notifier: Attempting to send message. Token (masked): ${maskedToken}, Target devChatId: ${config.devChatId || 'NOT_SET'}`
+    );
+
     if (!config.telegramToken || !config.devChatId) {
         console.error('Emergency Notifier: telegramToken or devChatId is missing in config. Cannot send notification.');
         return;
     }
 
     const url = `https://api.telegram.org/bot${config.telegramToken}/sendMessage`;
+    // Use maskTokenInUrl for logging the URL
+    console.log(`Emergency Notifier: Posting to URL: ${maskTokenInUrl(url)}`);
     const payload = {
         chat_id: config.devChatId,
         text: messageText,
@@ -200,10 +188,52 @@ export async function sendEmergencyNotification(messageText) {
     };
 
     try {
-        await axios.post(url, payload, { timeout: 10000 }); // 10-second timeout
-        // console.log('Emergency notification sent successfully.'); // Optional: Can be noisy
+        console.log('Emergency Notifier: Payload:', JSON.stringify(payload));
+        const response = await axios.post(url, payload, { timeout: 10000 }); // 10-second timeout
+        console.log(
+            `Emergency Notifier: Notification sent successfully. Response status: ${response.status}, Data: ${JSON.stringify(response.data)}`
+        );
     } catch (error) {
-        console.error('Failed to send emergency notification:', error.message);
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.error(
+                `Failed to send emergency notification. Server responded with status ${error.response.status}:`,
+                JSON.stringify(error.response.data)
+            );
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error('Failed to send emergency notification. No response received from server:', error.request);
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error('Failed to send emergency notification. Error during request setup:', error.message);
+        }
         // Do not re-throw, as this is a last-effort notification
     }
+}
+
+/**
+ * Masks a bot token within a URL string.
+ * Example: "https://api.telegram.org/bot12345:ABCDEF/getMe" becomes "https://api.telegram.org/bot12345:...CDEF/getMe"
+ * If no token is found, or the token is too short, it might return a generic mask or the original URL.
+ * @param {string} url The URL string to process.
+ * @returns {string} The URL with the token masked, or the original URL if no token pattern is matched.
+ */
+export function maskTokenInUrl(url) {
+    if (typeof url !== 'string') {
+        return url;
+    }
+    // Regex to find "bot" followed by digits (the ID part), a colon, and then the token string until the next slash.
+    // It captures the "bot<ID>:" part and the actual token separately.
+    const regex = /(bot\d+:)([^\s/]+)/g;
+    return url.replace(regex, (match, botIdPart, tokenPart) => {
+        if (tokenPart.length > 10) {
+            // Ensure token is long enough to mask meaningfully
+            const firstPart = tokenPart.substring(0, 6);
+            const lastPart = tokenPart.substring(tokenPart.length - 4);
+            return `${botIdPart}${firstPart}...${lastPart}`;
+        }
+        // If token is short or for any other reason, use a generic mask for the token part
+        return `${botIdPart}<TOKEN_MASKED>`;
+    });
 }

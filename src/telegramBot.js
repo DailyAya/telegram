@@ -1,6 +1,7 @@
-import https from 'https';
+import axios from 'axios'; // Added for direct getMe check
+// import https from 'https'; // No longer needed as custom agent is commented out for experiment
 import { Telegraf, Markup } from 'telegraf';
-import config from './config.js';
+import config from './config.js'; // config is already imported, ensure it's used by directGetMeCheck
 import { logger, setBotInstance, bootstrapLogger } from './logger.js';
 import { lastAyaTime, setFavReciter, getFavReciter } from './database.js'; // Removed getDB
 import {
@@ -35,7 +36,7 @@ import {
     populateRecitersButtons as servicePopulateRecitersButtons,
     recitersNavPage as serviceRecitersNavPage,
 } from './botFeatures/reciterService.js';
-import { randomAyaNumber, numArabicToEnglish } from './utils.js';
+import { randomAyaNumber, numArabicToEnglish, maskTokenInUrl } from './utils.js'; // Added maskTokenInUrl
 
 /**
  * @module telegramBot
@@ -60,12 +61,11 @@ import { randomAyaNumber, numArabicToEnglish } from './utils.js';
  * The main Telegraf bot instance.
  * @type {import('telegraf').Telegraf}
  */
-const agent = new https.Agent({ timeout: 60000 }); // 60 seconds timeout
-bootstrapLogger('Telegraf HTTPS agent configured with 60-second timeout.');
+// const agent = new https.Agent({ timeout: 60000 }); // 60 seconds timeout
+// bootstrapLogger('Telegraf HTTPS agent configured with 60-second timeout.');
+bootstrapLogger('Telegraf is being initialized WITH ITS DEFAULT HTTPS agent.');
 
-const bot = new Telegraf(config.telegramToken, {
-    telegram: { agent },
-});
+const bot = new Telegraf(config.telegramToken /*, { telegram: { agent } } */); // Custom agent removed for this experiment
 setBotInstance(bot); // Enable Telegram logging via logger.js
 
 // Promise for ensuring bot username is available
@@ -75,33 +75,84 @@ export const botUsernameReady = new Promise((resolve) => {
 });
 
 // Store bot username after getMe()
-bot.telegram
-    .getMe()
-    .then((botInfo) => {
-        bot.options.username = botInfo.username;
-        bootstrapLogger(`Bot username set to: ${bot.options.username}`);
-        if (botUsernamePromiseResolve) {
-            botUsernamePromiseResolve(botInfo.username); // Resolve with username
-        }
-    })
-    .catch((err) => {
-        // Improved error logging
-        const errorDetails = {
-            message: err.message,
-            code: err.code,
-            description: err.description, // Telegraf specific
-            response: err.response, // Telegraf specific
-            stack: err.stack,
-        };
-        console.error(
-            'CRITICAL: bot.telegram.getMe() failed. Detailed error object:',
-            JSON.stringify(errorDetails, null, 2)
+
+/**
+ * Performs a direct check of the Telegram getMe endpoint using Axios.
+ * Logs the result using bootstrapLogger.
+ */
+async function directGetMeCheck() {
+    const url = `https://api.telegram.org/bot${config.telegramToken}/getMe`;
+    const maskedToken = config.telegramToken
+        ? `${config.telegramToken.substring(0, 6)}...${config.telegramToken.substring(config.telegramToken.length - 4)}`
+        : 'NOT_SET';
+    // Use maskTokenInUrl for logging the URL
+    bootstrapLogger(`directGetMeCheck: Attempting with token (masked) ${maskedToken} to URL: ${maskTokenInUrl(url)}`);
+
+    try {
+        const response = await axios.get(url, { timeout: 10000 }); // 10-second timeout, similar to sendEmergencyNotification
+        bootstrapLogger(
+            `directGetMeCheck: Success! Response Status: ${response.status}, Data: ${JSON.stringify(response.data)}`
         );
-        bootstrapLogger('Failed to get bot info. Error details logged above. Error message:', err.message);
-        if (botUsernamePromiseResolve) {
-            botUsernamePromiseResolve(null); // Resolve with null if getMe() failed, allowing startup to continue further
+    } catch (error) {
+        bootstrapLogger(`directGetMeCheck: Failed!`);
+        if (error.response) {
+            bootstrapLogger(
+                `directGetMeCheck: Error Response Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`
+            );
+        } else if (error.request) {
+            bootstrapLogger(`directGetMeCheck: Error - No response received. Request details:`, error.request);
+        } else {
+            bootstrapLogger(`directGetMeCheck: Error during request setup: ${error.message}`);
         }
-    });
+        bootstrapLogger(`directGetMeCheck: Full error object:`, error);
+    }
+}
+
+// Call the direct check before Telegraf's getMe
+// Using an IIFE to await it, as this top-level code is synchronous.
+// This will log its result before Telegraf's attempt.
+(async () => {
+    await directGetMeCheck();
+
+    // Now proceed with Telegraf's getMe
+    bot.telegram
+        .getMe()
+        .then((botInfo) => {
+            if (botInfo && botInfo.username) {
+                bot.options.username = botInfo.username;
+                bootstrapLogger(
+                    `launchBot: bot.telegram.getMe() successful. Bot username set to: ${bot.options.username}`
+                );
+                if (botUsernamePromiseResolve) {
+                    botUsernamePromiseResolve(botInfo.username); // Resolve with username
+                }
+            } else {
+                bootstrapLogger(
+                    'launchBot: bot.telegram.getMe() did not return expected botInfo or username.',
+                    botInfo || 'botInfo is null/undefined'
+                );
+                if (botUsernamePromiseResolve) {
+                    botUsernamePromiseResolve(null); // Resolve with null
+                }
+            }
+        })
+        .catch((err) => {
+            bootstrapLogger('launchBot: CRITICAL - bot.telegram.getMe() failed. Error:', err);
+            // Log detailed error information if available
+            if (err.response && err.response.description) {
+                bootstrapLogger(
+                    `launchBot: getMe() failure details - Code: ${err.code}, Description: ${err.response.description}, Parameters: ${JSON.stringify(err.response.parameters)}`
+                );
+            }
+            // Additionally, log err.response.data if it exists, as it might contain more info
+            if (err.response && err.response.data) {
+                bootstrapLogger(`launchBot: getMe() failure - err.response.data: ${JSON.stringify(err.response.data)}`);
+            }
+            if (botUsernamePromiseResolve) {
+                botUsernamePromiseResolve(null); // Resolve with null if getMe() failed
+            }
+        });
+})(); // Close and invoke the IIFE
 
 /**
  * Helper to get Quran data once.
@@ -637,22 +688,36 @@ export async function launchBot() {
         }
         // bootstrapLogger for username set is already in getMe().then()
 
-        bootstrapLogger('launchBot: Attempting to start Telegraf polling via bot.launch()...');
-        bot.launch();
-        bootstrapLogger('launchBot: Telegraf polling initiated in background.');
+        // The following three lines were the first (erroneous) bot.launch() call and its logging. They are removed.
+        // bootstrapLogger('launchBot: Attempting to start Telegraf polling via bot.launch()...');
+        // bot.launch();
+        // bootstrapLogger('launchBot: Telegraf polling initiated in background.');
 
         if (config.devChatId && bot.options.username) {
             const instStateMsg = `DailyAyaTelegram ${config.branch} instance ${config.inst}@${config.host} (of total ${config.totalInst}) is active in ${config.debugging ? 'debugging' : 'normal'} mode of version ${config.codeVer} until ${config.instActiveUntil}.\nMemory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB\nUptime: ${+(process.uptime() / 3600).toFixed(2)} hours`;
+            bootstrapLogger(`launchBot: Attempting to send startup state message to devChatId: ${config.devChatId}`);
             try {
                 await bot.telegram.sendMessage(config.devChatId, instStateMsg);
-                bootstrapLogger('Startup state message sent to dev group.');
+                bootstrapLogger('launchBot: Startup state message successfully sent to dev group.');
             } catch (e) {
-                bootstrapLogger('Error sending startup state message to dev group (proceeding):', e);
+                bootstrapLogger('launchBot: Error sending startup state message to dev group (proceeding):', e);
             }
         } else if (config.devChatId && !bot.options.username) {
             bootstrapLogger(
                 'launchBot: Cannot send startup state message to dev group - bot username not available or devChatId not set.'
             );
+        }
+
+        // Wrap bot.launch() in try-catch
+        try {
+            bootstrapLogger('launchBot: Attempting to call bot.launch() to start polling...');
+            bot.launch(); // This call is non-blocking and starts polling in the background.
+            bootstrapLogger('launchBot: bot.launch() called successfully. Polling should be active.');
+        } catch (launchError) {
+            bootstrapLogger('launchBot: CRITICAL - Error occurred directly during bot.launch() call:', launchError);
+            // Depending on the error, this might be a critical failure preventing the bot from starting.
+            // The main try-catch for launchBot will also catch this if it's re-thrown or if launchBot itself throws.
+            throw launchError; // Re-throw to be caught by the outer try-catch if necessary for retry logic in app.js
         }
 
         if (!config.debugging) {
@@ -661,9 +726,9 @@ export async function launchBot() {
                 .catch((e) => logger('Error during initial Quran source check:', e));
         }
 
-        bootstrapLogger('launchBot: Core setup complete, polling initiated.');
+        bootstrapLogger('launchBot: Core setup complete, polling should be initiated.');
     } catch (e) {
-        bootstrapLogger('Failed to complete critical launchBot setup steps. Error:', e);
+        bootstrapLogger('launchBot: Failed to complete critical launchBot setup steps. Error:', e);
         throw e;
     }
 
