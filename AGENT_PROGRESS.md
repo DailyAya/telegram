@@ -200,6 +200,56 @@
 -   Submit the new tests for `actionHandlers.js`.
 
 ---
+## Session Summary: Jules - 2025-07-08 (Current Session)
+
+**Goal:** Diagnose and resolve issues preventing the Telegram bot from sending messages, and improve logging & test robustness.
+
+**Work Done & Key Changes:**
+
+1.  **Initial Diagnosis & Enhanced Logging (Iterative Process):**
+    *   Investigated "Telegram bot not sending messages" issue.
+    *   Added detailed `bootstrapLogger` calls to critical startup phases in `app.js`, `telegramBot.js`, and `utils.js` to trace execution flow and API interactions. This included:
+        *   Logging for `sendEmergencyNotification` in `utils.js` (token, chat ID, URL, payload, Axios outcomes).
+        *   Logging for `bot.telegram.getMe()` success/failure in `telegramBot.js`.
+        *   Logging for the startup message to dev chat and `bot.launch()` execution in `telegramBot.js`.
+        *   Ensured consistent `bootstrapLogger` usage in `app.js` startup error paths.
+    *   Added a direct Axios `getMe` call in `telegramBot.js` for comparison with Telegraf's internal call.
+    *   Experimented by temporarily disabling the custom `https.Agent` for Telegraf to use its default.
+    *   Added an explicit `checkConnectivity` call for the full `/getMe` URL in `app.js`.
+
+2.  **Identified and Fixed Critical Bug (409 Conflict):**
+    *   Analysis of the enhanced logs (provided by user) revealed that `getMe()` calls were succeeding, but a `409 Conflict: terminated by other getUpdates request` error occurred after `bot.launch()`.
+    *   Further investigation, prompted by user feedback, identified a **duplicate `bot.launch()` call** in `src/telegramBot.js` that was inadvertently introduced in previous refactoring. This was the root cause of the 409 conflict.
+    *   **Fix**: Removed the redundant `bot.launch()` call, ensuring only one polling instance is initiated.
+
+3.  **Test Improvements:**
+    *   Updated tests in `src/telegramBot.test.js` to correctly assert new log messages introduced by diagnostic logging.
+    *   Fixed a `no-useless-escape` linting error in a test description string in `src/telegramBot.test.js`.
+    *   Corrected test mock for `MinimalMockTelegrafConstructor` to expect one argument when the custom agent is disabled.
+    *   Added `toHaveBeenCalledTimes(1)` assertion for `mockMinimalTelegrafInstance.launch` in relevant `launchBot` tests in `src/telegramBot.test.js` to prevent future duplicate call regressions.
+    *   Added `maskTokenInUrl` to the Jest mock for `./utils.js` in `src/telegramBot.test.js`.
+
+4.  **Logging Security Enhancement:**
+    *   Created a new utility function `maskTokenInUrl(url)` in `src/utils.js` to mask bot tokens within URLs before logging.
+    *   Applied this utility to log outputs in `sendEmergencyNotification` (`utils.js`), `directGetMeCheck` (`telegramBot.js`), and the specific `getMe` connectivity check log in `app.js`.
+    *   Reviewed `utils.checkConnectivity` and confirmed its internal error logging does not expose full URLs with tokens.
+
+5.  **Corrected `bootstrapLogger` Usage:**
+    *   Fixed an improper call to `bootstrapLogger` in `src/telegramBot.js` (related to logging the attempt to send a startup message) to ensure it's treated as an informational log and doesn't trigger an unnecessary emergency notification.
+
+**Current Status:**
+-   The primary issue (`409 Conflict` preventing message processing) has been resolved by fixing the duplicate `bot.launch()` call.
+-   Logging has been made more secure by masking tokens in URLs.
+-   Tests have been improved to be more robust against certain types of errors.
+-   All linters and tests are passing.
+-   The bot should now be starting up correctly and be operational.
+
+**Next Steps (Post-Commit / New Session):**
+-   Monitor the bot in its deployment environment to confirm all message sending functionalities are working as expected.
+-   Address any further issues that may arise.
+-   Consider reverting the Telegraf agent experiment (re-enabling the custom agent) if the default agent was only for diagnosis, and confirm stability.
+
+---
 ## Session Summary: Jules - 2025-07-07 (Final)
 
 **Goal:** Fix skipped/failing `checkConnectivity` tests in `src/utils.test.js` and ensure all tests pass.
