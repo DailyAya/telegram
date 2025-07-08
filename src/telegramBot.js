@@ -687,9 +687,10 @@ export async function launchBot() {
         }
         // bootstrapLogger for username set is already in getMe().then()
 
-        bootstrapLogger('launchBot: Attempting to start Telegraf polling via bot.launch()...');
-        bot.launch();
-        bootstrapLogger('launchBot: Telegraf polling initiated in background.');
+        // The following three lines were the first (erroneous) bot.launch() call and its logging. They are removed.
+        // bootstrapLogger('launchBot: Attempting to start Telegraf polling via bot.launch()...');
+        // bot.launch();
+        // bootstrapLogger('launchBot: Telegraf polling initiated in background.');
 
         if (config.devChatId && bot.options.username) {
             const instStateMsg = `DailyAyaTelegram ${config.branch} instance ${config.inst}@${config.host} (of total ${config.totalInst}) is active in ${config.debugging ? 'debugging' : 'normal'} mode of version ${config.codeVer} until ${config.instActiveUntil}.\nMemory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB\nUptime: ${+(process.uptime() / 3600).toFixed(2)} hours`;
