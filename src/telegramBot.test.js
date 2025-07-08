@@ -240,7 +240,9 @@ beforeAll(async () => {
     // So, to test it here, we need to ensure that promise chain has resolved.
     // Awaiting botUsernameReady effectively does this.
     expect(bot.options.username).toBe('MinimalTestBot');
-    expect(mockBootstrapLogger).toHaveBeenCalledWith('Bot username set to: MinimalTestBot');
+    expect(mockBootstrapLogger).toHaveBeenCalledWith(
+        `launchBot: bot.telegram.getMe() successful. Bot username set to: MinimalTestBot`
+    );
 
     // Verify that Telegraf event registration methods were called
     expect(mockMinimalTelegrafInstance.start).toHaveBeenCalledWith(expect.any(Function));
@@ -376,7 +378,7 @@ describe('launchBot', () => {
         currentConfigMock.default.devChatId = originalDevChatId; // Restore
     });
 
-    it('should log \"Cannot send\" if devChatId is set but bot username is not', async () => {
+    it('should log "Cannot send" if devChatId is set but bot username is not', async () => {
         // This scenario is tricky because launchBot throws if username from botUsernameReady is null.
         // To test this specific log, we'd need botUsernameReady to resolve to a truthy value (so it doesn't throw early)
         // but bot.options.username to *subsequently* be null when the dev message is attempted.
@@ -425,8 +427,9 @@ describe('launchBot', () => {
             throw new Error('Launch Failed');
         });
         await expect(launchBot()).rejects.toThrow('Launch Failed');
-        expect(mockBootstrapLogger).toHaveBeenCalledWith(
-            'Failed to complete critical launchBot setup steps. Error:',
+        // This is the log from the outer catch block in launchBot
+        expect(mockBootstrapLogger).toHaveBeenLastCalledWith(
+            'launchBot: Failed to complete critical launchBot setup steps. Error:',
             expect.any(Error)
         );
     });

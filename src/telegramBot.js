@@ -78,28 +78,32 @@ export const botUsernameReady = new Promise((resolve) => {
 bot.telegram
     .getMe()
     .then((botInfo) => {
-        bot.options.username = botInfo.username;
-        bootstrapLogger(`Bot username set to: ${bot.options.username}`);
-        if (botUsernamePromiseResolve) {
-            botUsernamePromiseResolve(botInfo.username); // Resolve with username
+        if (botInfo && botInfo.username) {
+            bot.options.username = botInfo.username;
+            bootstrapLogger(`launchBot: bot.telegram.getMe() successful. Bot username set to: ${bot.options.username}`);
+            if (botUsernamePromiseResolve) {
+                botUsernamePromiseResolve(botInfo.username); // Resolve with username
+            }
+        } else {
+            bootstrapLogger(
+                'launchBot: bot.telegram.getMe() did not return expected botInfo or username.',
+                botInfo || 'botInfo is null/undefined'
+            );
+            if (botUsernamePromiseResolve) {
+                botUsernamePromiseResolve(null); // Resolve with null
+            }
         }
     })
     .catch((err) => {
-        // Improved error logging
-        const errorDetails = {
-            message: err.message,
-            code: err.code,
-            description: err.description, // Telegraf specific
-            response: err.response, // Telegraf specific
-            stack: err.stack,
-        };
-        console.error(
-            'CRITICAL: bot.telegram.getMe() failed. Detailed error object:',
-            JSON.stringify(errorDetails, null, 2)
-        );
-        bootstrapLogger('Failed to get bot info. Error details logged above. Error message:', err.message);
+        bootstrapLogger('launchBot: CRITICAL - bot.telegram.getMe() failed. Error:', err);
+        // Log detailed error information if available
+        if (err.response && err.response.description) {
+            bootstrapLogger(
+                `launchBot: getMe() failure details - Code: ${err.code}, Description: ${err.response.description}, Parameters: ${JSON.stringify(err.response.parameters)}`
+            );
+        }
         if (botUsernamePromiseResolve) {
-            botUsernamePromiseResolve(null); // Resolve with null if getMe() failed, allowing startup to continue further
+            botUsernamePromiseResolve(null); // Resolve with null if getMe() failed
         }
     });
 
@@ -643,16 +647,29 @@ export async function launchBot() {
 
         if (config.devChatId && bot.options.username) {
             const instStateMsg = `DailyAyaTelegram ${config.branch} instance ${config.inst}@${config.host} (of total ${config.totalInst}) is active in ${config.debugging ? 'debugging' : 'normal'} mode of version ${config.codeVer} until ${config.instActiveUntil}.\nMemory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB\nUptime: ${+(process.uptime() / 3600).toFixed(2)} hours`;
+            bootstrapLogger('launchBot: Attempting to send startup state message to devChatId:', config.devChatId);
             try {
                 await bot.telegram.sendMessage(config.devChatId, instStateMsg);
-                bootstrapLogger('Startup state message sent to dev group.');
+                bootstrapLogger('launchBot: Startup state message successfully sent to dev group.');
             } catch (e) {
-                bootstrapLogger('Error sending startup state message to dev group (proceeding):', e);
+                bootstrapLogger('launchBot: Error sending startup state message to dev group (proceeding):', e);
             }
         } else if (config.devChatId && !bot.options.username) {
             bootstrapLogger(
                 'launchBot: Cannot send startup state message to dev group - bot username not available or devChatId not set.'
             );
+        }
+
+        // Wrap bot.launch() in try-catch
+        try {
+            bootstrapLogger('launchBot: Attempting to call bot.launch() to start polling...');
+            bot.launch(); // This call is non-blocking and starts polling in the background.
+            bootstrapLogger('launchBot: bot.launch() called successfully. Polling should be active.');
+        } catch (launchError) {
+            bootstrapLogger('launchBot: CRITICAL - Error occurred directly during bot.launch() call:', launchError);
+            // Depending on the error, this might be a critical failure preventing the bot from starting.
+            // The main try-catch for launchBot will also catch this if it's re-thrown or if launchBot itself throws.
+            throw launchError; // Re-throw to be caught by the outer try-catch if necessary for retry logic in app.js
         }
 
         if (!config.debugging) {
@@ -661,9 +678,9 @@ export async function launchBot() {
                 .catch((e) => logger('Error during initial Quran source check:', e));
         }
 
-        bootstrapLogger('launchBot: Core setup complete, polling initiated.');
+        bootstrapLogger('launchBot: Core setup complete, polling should be initiated.');
     } catch (e) {
-        bootstrapLogger('Failed to complete critical launchBot setup steps. Error:', e);
+        bootstrapLogger('launchBot: Failed to complete critical launchBot setup steps. Error:', e);
         throw e;
     }
 

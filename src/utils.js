@@ -165,12 +165,21 @@ export async function checkConnectivity(url) {
  * @param {string} messageText - The text of the message to send.
  */
 export async function sendEmergencyNotification(messageText) {
+    // Mask parts of the token for security in logs
+    const maskedToken = config.telegramToken
+        ? `${config.telegramToken.substring(0, 6)}...${config.telegramToken.substring(config.telegramToken.length - 4)}`
+        : 'NOT_SET';
+    console.log(
+        `Emergency Notifier: Attempting to send message. Token (masked): ${maskedToken}, Target devChatId: ${config.devChatId || 'NOT_SET'}`
+    );
+
     if (!config.telegramToken || !config.devChatId) {
         console.error('Emergency Notifier: telegramToken or devChatId is missing in config. Cannot send notification.');
         return;
     }
 
     const url = `https://api.telegram.org/bot${config.telegramToken}/sendMessage`;
+    console.log(`Emergency Notifier: Posting to URL: ${url}`);
     const payload = {
         chat_id: config.devChatId,
         text: messageText,
@@ -178,10 +187,26 @@ export async function sendEmergencyNotification(messageText) {
     };
 
     try {
-        await axios.post(url, payload, { timeout: 10000 }); // 10-second timeout
-        // console.log('Emergency notification sent successfully.'); // Optional: Can be noisy
+        console.log('Emergency Notifier: Payload:', JSON.stringify(payload));
+        const response = await axios.post(url, payload, { timeout: 10000 }); // 10-second timeout
+        console.log(
+            `Emergency Notifier: Notification sent successfully. Response status: ${response.status}, Data: ${JSON.stringify(response.data)}`
+        );
     } catch (error) {
-        console.error('Failed to send emergency notification:', error.message);
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.error(
+                `Failed to send emergency notification. Server responded with status ${error.response.status}:`,
+                JSON.stringify(error.response.data)
+            );
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error('Failed to send emergency notification. No response received from server:', error.request);
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error('Failed to send emergency notification. Error during request setup:', error.message);
+        }
         // Do not re-throw, as this is a last-effort notification
     }
 }

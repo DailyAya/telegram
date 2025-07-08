@@ -172,7 +172,8 @@ async function attemptBotLaunchWithRetriesAndInitializeTimer() {
             if (getDB()) {
                 bootstrapLogger('Calling initial runTimerSend() after successful bot launch (retries).');
                 runTimerSend().catch((e) => {
-                    logger('Error during post-retry initial runTimerSend():', e);
+                    // Using bootstrapLogger here as well, as full bot logger might still be iffy if launch was problematic
+                    bootstrapLogger('Error during post-retry initial runTimerSend():', e);
                 });
             } else {
                 bootstrapLogger('DB not available after launchBot() (retries), cannot run initial timer send.');
@@ -180,7 +181,8 @@ async function attemptBotLaunchWithRetriesAndInitializeTimer() {
             initializeTimer();
             return; // Success, exit function
         } catch (error) {
-            logger(`Bot launch attempt ${attempt} failed. Reason: ${error.message}.`); // Log only error message for brevity in retries
+            // Use bootstrapLogger here as the main logger (which relies on botInstance) might not be available if launchBot failed
+            bootstrapLogger(`Bot launch attempt ${attempt} failed. Reason: ${error.message}. Full Error:`, error);
 
             if (attempt >= maxAttempts) {
                 bootstrapLogger(`Max bot launch retries (${maxAttempts}) reached. Giving up on automatic launch.`);
