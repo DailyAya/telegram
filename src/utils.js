@@ -99,7 +99,7 @@ export async function checkConnectivity(url) {
             if (!hostname) {
                 throw new Error('Hostname could not be derived from URL.');
             }
-        } catch (parseError) {
+        } catch {
             if (attempt < maxAttempts) {
                 await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
                 continue;
@@ -118,7 +118,7 @@ export async function checkConnectivity(url) {
                     }
                 });
             });
-        } catch (dnsError) {
+        } catch {
             if (attempt < maxAttempts) {
                 await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
                 continue;
@@ -146,7 +146,7 @@ export async function checkConnectivity(url) {
                 });
             });
             return true;
-        } catch (tcpError) {
+        } catch {
             if (attempt < maxAttempts) {
                 await new Promise((resolve) => setTimeout(resolve, delayBetweenAttempts));
             } else {

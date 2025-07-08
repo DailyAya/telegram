@@ -176,7 +176,7 @@ describe('Utils Tests', () => {
             mockDnsLookup.mockReset();
             mockNetSocketConstructor.mockClear();
 
-            mockNetSocketInstance.connect.mockReset().mockImplementation((port, ip, cb) => {
+            mockNetSocketInstance.connect.mockReset().mockImplementation((_port, _ip, cb) => {
                 if (cb && typeof cb === 'function') {
                     cb();
                 }
@@ -197,7 +197,7 @@ describe('Utils Tests', () => {
         });
 
         it('should return true if DNS lookup and TCP connection are successful on first attempt', async () => {
-            mockDnsLookup.mockImplementation((hostname, callback) => {
+            mockDnsLookup.mockImplementation((_hostname, callback) => {
                 callback(null, '1.2.3.4');
             });
 
@@ -209,7 +209,7 @@ describe('Utils Tests', () => {
         });
 
         it('should return false if DNS lookup fails on all attempts', async () => {
-            mockDnsLookup.mockImplementation((hostname, callback) => callback(new Error('DNS Failed')));
+            mockDnsLookup.mockImplementation((_hostname, callback) => callback(new Error('DNS Failed')));
 
             const result = await checkConnectivity(testUrl);
             expect(result).toBe(false);
@@ -218,11 +218,11 @@ describe('Utils Tests', () => {
         });
 
         it('should return false if TCP connection fails (error) on all attempts', async () => {
-            mockDnsLookup.mockImplementation((hostname, callback) => {
+            mockDnsLookup.mockImplementation((_hostname, callback) => {
                 callback(null, '1.2.3.4');
             });
 
-            mockNetSocketInstance.connect.mockImplementation((port, ip, connectCb) => {
+            mockNetSocketInstance.connect.mockImplementation((_port, _ip, _connectCb) => {
                 // Do NOT call connectCb()
             });
 
@@ -243,11 +243,11 @@ describe('Utils Tests', () => {
         });
 
         it('should return false if TCP connection times out on all attempts', async () => {
-            mockDnsLookup.mockImplementation((hostname, callback) => {
+            mockDnsLookup.mockImplementation((_hostname, callback) => {
                 callback(null, '1.2.3.4');
             });
 
-            mockNetSocketInstance.connect.mockImplementation((port, ip, connectCb) => {
+            mockNetSocketInstance.connect.mockImplementation((_port, _ip, _connectCb) => {
                 // Do NOT call connectCb()
             });
 
@@ -269,8 +269,8 @@ describe('Utils Tests', () => {
 
         it('should return true if DNS fails then succeeds, and TCP succeeds', async () => {
             mockDnsLookup
-                .mockImplementationOnce((hostname, callback) => callback(new Error('DNS Failed Attempt 1')))
-                .mockImplementationOnce((hostname, callback) => callback(null, '1.2.3.4'));
+                .mockImplementationOnce((_hostname, callback) => callback(new Error('DNS Failed Attempt 1')))
+                .mockImplementationOnce((_hostname, callback) => callback(null, '1.2.3.4'));
 
             // Default connect mock from beforeEach should work for success
             mockNetSocketInstance.on.mockImplementation((event, cb) => {
