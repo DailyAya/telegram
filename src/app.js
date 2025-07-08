@@ -354,10 +354,29 @@ async function startApp() {
             }
         }
 
-        // All critical prerequisites are met. Now, attempt to launch the bot.
+        // 4. Specific check for getMe endpoint connectivity (added for deeper diagnosis)
+        const fullGetMeUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken}/getMe`;
+        const logSafeFullGetMeUrl = `${config.pingTargetTelegramApiBase}/bot${config.telegramToken ? config.telegramToken.substring(0, 10) + '...' : '[TOKEN_NOT_SET]'}/getMe`;
+        bootstrapLogger(
+            `Checking specific getMe endpoint connectivity at: ${logSafeFullGetMeUrl} using utils.checkConnectivity...`
+        );
+        const getMeEndpointReachable = await checkConnectivity(fullGetMeUrl);
+        if (getMeEndpointReachable) {
+            bootstrapLogger(`Specific getMe endpoint (${logSafeFullGetMeUrl}) is reachable via checkConnectivity.`);
+        } else {
+            bootstrapLogger(
+                `CRITICAL_OBSERVATION: Specific getMe endpoint (${logSafeFullGetMeUrl}) is NOT reachable via checkConnectivity. This might be the root cause.`
+            );
+            // Note: We are proceeding to attempt bot launch anyway to gather Telegraf's own error,
+            // but this log is a strong indicator if it fails.
+        }
+
+        // All critical prerequisites are met (or specific checks logged). Now, attempt to launch the bot.
         // launchBot() itself will throw an error if username retrieval fails,
         // which will be caught by attemptBotLaunchWithRetriesAndInitializeTimer.
-        bootstrapLogger('All critical prerequisites met. Proceeding to bot launch sequence...');
+        bootstrapLogger(
+            'All critical prerequisites met (or specific checks logged). Proceeding to bot launch sequence...'
+        );
         attemptBotLaunchWithRetriesAndInitializeTimer(); // This function contains its own retry logic for launchBot and initializes the timer.
 
         bootstrapLogger('Main startup sequence complete. Express server is running. Bot launch process initiated.');

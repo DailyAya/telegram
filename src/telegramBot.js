@@ -1,6 +1,7 @@
-import https from 'https';
+import axios from 'axios'; // Added for direct getMe check
+// import https from 'https'; // No longer needed as custom agent is commented out for experiment
 import { Telegraf, Markup } from 'telegraf';
-import config from './config.js';
+import config from './config.js'; // config is already imported, ensure it's used by directGetMeCheck
 import { logger, setBotInstance, bootstrapLogger } from './logger.js';
 import { lastAyaTime, setFavReciter, getFavReciter } from './database.js'; // Removed getDB
 import {
@@ -60,12 +61,11 @@ import { randomAyaNumber, numArabicToEnglish } from './utils.js';
  * The main Telegraf bot instance.
  * @type {import('telegraf').Telegraf}
  */
-const agent = new https.Agent({ timeout: 60000 }); // 60 seconds timeout
-bootstrapLogger('Telegraf HTTPS agent configured with 60-second timeout.');
+// const agent = new https.Agent({ timeout: 60000 }); // 60 seconds timeout
+// bootstrapLogger('Telegraf HTTPS agent configured with 60-second timeout.');
+bootstrapLogger('Telegraf is being initialized WITH ITS DEFAULT HTTPS agent.');
 
-const bot = new Telegraf(config.telegramToken, {
-    telegram: { agent },
-});
+const bot = new Telegraf(config.telegramToken /*, { telegram: { agent } } */); // Custom agent removed for this experiment
 setBotInstance(bot); // Enable Telegram logging via logger.js
 
 // Promise for ensuring bot username is available
@@ -75,37 +75,83 @@ export const botUsernameReady = new Promise((resolve) => {
 });
 
 // Store bot username after getMe()
-bot.telegram
-    .getMe()
-    .then((botInfo) => {
-        if (botInfo && botInfo.username) {
-            bot.options.username = botInfo.username;
-            bootstrapLogger(`launchBot: bot.telegram.getMe() successful. Bot username set to: ${bot.options.username}`);
-            if (botUsernamePromiseResolve) {
-                botUsernamePromiseResolve(botInfo.username); // Resolve with username
-            }
+
+/**
+ * Performs a direct check of the Telegram getMe endpoint using Axios.
+ * Logs the result using bootstrapLogger.
+ */
+async function directGetMeCheck() {
+    const url = `https://api.telegram.org/bot${config.telegramToken}/getMe`;
+    const maskedToken = config.telegramToken
+        ? `${config.telegramToken.substring(0, 6)}...${config.telegramToken.substring(config.telegramToken.length - 4)}`
+        : 'NOT_SET';
+    bootstrapLogger(`directGetMeCheck: Attempting with token (masked) ${maskedToken} to URL: ${url}`);
+
+    try {
+        const response = await axios.get(url, { timeout: 10000 }); // 10-second timeout, similar to sendEmergencyNotification
+        bootstrapLogger(
+            `directGetMeCheck: Success! Response Status: ${response.status}, Data: ${JSON.stringify(response.data)}`
+        );
+    } catch (error) {
+        bootstrapLogger(`directGetMeCheck: Failed!`);
+        if (error.response) {
+            bootstrapLogger(
+                `directGetMeCheck: Error Response Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)}`
+            );
+        } else if (error.request) {
+            bootstrapLogger(`directGetMeCheck: Error - No response received. Request details:`, error.request);
         } else {
-            bootstrapLogger(
-                'launchBot: bot.telegram.getMe() did not return expected botInfo or username.',
-                botInfo || 'botInfo is null/undefined'
-            );
-            if (botUsernamePromiseResolve) {
-                botUsernamePromiseResolve(null); // Resolve with null
+            bootstrapLogger(`directGetMeCheck: Error during request setup: ${error.message}`);
+        }
+        bootstrapLogger(`directGetMeCheck: Full error object:`, error);
+    }
+}
+
+// Call the direct check before Telegraf's getMe
+// Using an IIFE to await it, as this top-level code is synchronous.
+// This will log its result before Telegraf's attempt.
+(async () => {
+    await directGetMeCheck();
+
+    // Now proceed with Telegraf's getMe
+    bot.telegram
+        .getMe()
+        .then((botInfo) => {
+            if (botInfo && botInfo.username) {
+                bot.options.username = botInfo.username;
+                bootstrapLogger(
+                    `launchBot: bot.telegram.getMe() successful. Bot username set to: ${bot.options.username}`
+                );
+                if (botUsernamePromiseResolve) {
+                    botUsernamePromiseResolve(botInfo.username); // Resolve with username
+                }
+            } else {
+                bootstrapLogger(
+                    'launchBot: bot.telegram.getMe() did not return expected botInfo or username.',
+                    botInfo || 'botInfo is null/undefined'
+                );
+                if (botUsernamePromiseResolve) {
+                    botUsernamePromiseResolve(null); // Resolve with null
+                }
             }
-        }
-    })
-    .catch((err) => {
-        bootstrapLogger('launchBot: CRITICAL - bot.telegram.getMe() failed. Error:', err);
-        // Log detailed error information if available
-        if (err.response && err.response.description) {
-            bootstrapLogger(
-                `launchBot: getMe() failure details - Code: ${err.code}, Description: ${err.response.description}, Parameters: ${JSON.stringify(err.response.parameters)}`
-            );
-        }
-        if (botUsernamePromiseResolve) {
-            botUsernamePromiseResolve(null); // Resolve with null if getMe() failed
-        }
-    });
+        })
+        .catch((err) => {
+            bootstrapLogger('launchBot: CRITICAL - bot.telegram.getMe() failed. Error:', err);
+            // Log detailed error information if available
+            if (err.response && err.response.description) {
+                bootstrapLogger(
+                    `launchBot: getMe() failure details - Code: ${err.code}, Description: ${err.response.description}, Parameters: ${JSON.stringify(err.response.parameters)}`
+                );
+            }
+            // Additionally, log err.response.data if it exists, as it might contain more info
+            if (err.response && err.response.data) {
+                bootstrapLogger(`launchBot: getMe() failure - err.response.data: ${JSON.stringify(err.response.data)}`);
+            }
+            if (botUsernamePromiseResolve) {
+                botUsernamePromiseResolve(null); // Resolve with null if getMe() failed
+            }
+        });
+})(); // Close and invoke the IIFE
 
 /**
  * Helper to get Quran data once.
