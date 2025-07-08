@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.09-0158] - 2025-07-09
+
+### Changed
+- Added detailed diagnostic logging within `src/botHandlers/actionHandlers.js#handleReciteAction` (specifically in the admin execution path) to inspect the `adminCtx` object immediately before `sendAyaRecitationFn` is called. This is to help diagnose an issue where `sendAyaRecitation` might be receiving an empty context object.
+
 ## [2025.07.09-0038] - 2025-07-09
 
 ### Fixed
