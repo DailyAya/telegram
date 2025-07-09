@@ -570,6 +570,7 @@ bot.telegram
 // Let's try adding a general `bot.on('callback_query')` that logs and then does nothing else,
 // allowing other handlers to pick up. Telegraf should call all matching handlers.
 
+/* REVERTED: This generic handler without next() caused all action buttons to stop working.
 bot.on('callback_query', async (ctx, next) => {
     const cbData = ctx.update.callback_query.data;
     const fromId = ctx.update.callback_query.from.id;
@@ -582,8 +583,9 @@ bot.on('callback_query', async (ctx, next) => {
     // For `Telegraf.action()`, it directly maps a regex/string to a handler.
     // If `bot.on('callback_query')` is also present, Telegraf will execute `on` handlers first, then `action` handlers that match.
     // So, this logger should fire, and then the specific `bot.action` should still fire.
-    // No `next()` call is needed here for `bot.action` to also work.
+    // No `next()` call is needed here for `bot.action` to also work. // THIS ASSUMPTION WAS WRONG
 });
+*/
 
 // adminProtectedAction and adminConditionalAction are now imported from botHelpers.js
 // as helperAdminProtectedAction and helperAdminConditionalAction.

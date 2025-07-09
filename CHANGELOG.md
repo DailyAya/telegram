@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.09-0423] - 2025-07-09
+
+### Fixed
+- **Reverted Critical Regression:** Commented out the generic `bot.on('callback_query', ...)` handler in `src/telegramBot.js` that was added in version `2025.07.09-0342`. This handler, by not calling `await next()`, was incorrectly consuming all callback query events and preventing specific `bot.action()` handlers from firing, thus breaking all inline keyboard button functionality. This revert is intended to restore button operation.
+
+### Changed
+- Diagnostic logging in `src/botHandlers/actionHandlers.js#handleReciteAction` remains simplified at its entry point (`logger('DEBUG: handleReciteAction --- ENTRY ---');`) from version `2025.07.09-0342` to aid in diagnosing the original recitation issue once button functionality is restored.
+
 ## [2025.07.09-0342] - 2025-07-09
 
 ### Changed
