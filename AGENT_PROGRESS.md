@@ -307,39 +307,42 @@
 -   Submit the new tests for `telegramBot.js`.
 
 ---
-## Session Summary: Jules - 2025-07-09 (Current Session - Diagnostics & Fixes for Recitation `chatId` Issue)
+## Session Summary: Jules - 2025-07-09 (Recitation Bug - Iteration 3 Diagnostics)
 
-**Goal:** Diagnose and resolve the "empty context" issue when sending recitations, and ensure robust error logging for benign Telegram API errors.
+**Goal:** Diagnose the "empty context" issue for the recitation feature, after reverting a previous change that caused a critical regression.
 
-**Work Done & Key Changes:**
+**Recap of Previous Session & Regression:**
+-   An attempt to add a generic `bot.on('callback_query', ...)` logger without `await next()` (Version `2025.07.09-0342`) caused all inline buttons to stop working. This was due to the generic handler consuming the event.
+-   This regression was reverted by commenting out the problematic handler (Version `2025.07.09-0423`).
+-   A full internal review (docs, codebase, test analysis) was conducted. Key learning: `await next()` is crucial for such generic handlers, and test coverage for middleware interactions is a gap.
 
-1.  **Initial Fixes & Reversion**:
-    *   Attempted fixes for benign error logging (`logger.js`) and `chatId` extraction in `ayaSender.js`. This included adding `logger.test.js`.
-    *   These changes were **reverted** using `reset_all()` after user feedback indicated an incorrect assumption about the `/nextaya` button's functionality, which made the initial line of reasoning for the `chatId` issue flawed. The submission for these changes was also to an incorrect branch name.
+**Work Done & Key Changes (Current Iteration - Leading to this commit):**
 
-2.  **Focused Investigation on Recitation Button Flow**:
-    *   Re-analyzed the code path for the "🔊" (recite) button, specifically `src/botHandlers/actionHandlers.js#handleReciteAction` and its call to `ayaSender.js#sendAyaRecitation`.
-    *   The primary puzzle was why `sendAyaRecitation` would receive an empty object `{}` as its context, as indicated by user-provided logs (`Details: { ctxKeys: [] }`).
+1.  **Added Diagnostic Log in `bot.action` for Recite Button (`telegramBot.js`):**
+    *   A `logger` statement was added as the very first line inside the `bot.action(/^{"recite":...}$/, ...)` handler.
+    *   Purpose: To confirm if this specific action handler is being triggered and to see the raw `ctx.update.callback_query.data` it receives.
 
-3.  **Diagnostic Logging for `handleReciteAction`**:
-    *   Added detailed diagnostic logging inside `src/botHandlers/actionHandlers.js#handleReciteAction`, specifically within the `adminFn` callback passed to `helperAdminConditionalAction`.
-    *   This logging aims to inspect the `adminCtx` object (type, keys, content snippet) immediately before it's passed to `sendAyaRecitationFn` to determine if it's already an empty object at that stage.
-
-4.  **Test Adjustments & Linting**:
-    *   Corrected minor linter errors (`no-prototype-builtins` in `ayaSender.js`, `no-unused-vars` in `telegramBot.js`) that were introduced during the (now reverted) first fix attempt and caught during a pre-commit check.
-    *   Ensured all tests passed after these minor lint fixes and the addition of the diagnostic log. The diagnostic log itself is not expected to break tests as it's console output.
+2.  **Added Defensive `JSON.parse` with Logging in `handleReciteAction` (`actionHandlers.js`):**
+    *   The `JSON.parse(ctx.update.callback_query.data)` call in `handleReciteAction` was wrapped in a `try...catch` block.
+    *   Purpose: To explicitly catch and log any JSON parsing errors that might occur before other logs in the function, and to see the raw data that caused the parse failure.
+    *   The simplified `logger('DEBUG: handleReciteAction --- ENTRY ---');` remains before this block.
 
 **Current Status:**
--   The codebase has been reverted to its state prior to the initial (flawed) fixes for this session.
--   **The primary change in the current iteration is the addition of targeted diagnostic logging in `actionHandlers.js#handleReciteAction`**.
--   This diagnostic logging is intended to provide data from the live environment to understand how an empty context object might be passed to `sendAyaRecitation`.
--   All tests are currently passing with this diagnostic logging in place.
+-   The critical regression from version `2025.07.09-0342` was addressed by reverting the problematic generic logger in version `2025.07.09-0423`. User confirmed basic button functionality (except recite) was restored.
+-   The "empty context" issue for the recitation button persists, with logs indicating `handleReciteAction` is still not being reached or is erroring very early.
+-   The current changes add more targeted logging directly at the `bot.action` level for recite and around the initial JSON parsing in `handleReciteAction`.
+-   All tests are passing with these new diagnostic additions.
 
-**Next Steps (within Pre-commit Routine):**
--   Update `CHANGELOG.md` to reflect the addition of diagnostic logging.
--   Generate a new version timestamp.
--   Update `package.json` with the new version.
--   Run `npm install` to synchronize `package-lock.json`.
--   Run linters (`npm run lint -- --fix`) and tests (`npm test`) again to confirm.
--   Prepare the commit message.
--   Submit the changes (containing only the diagnostic log addition and minor lint fixes from earlier) to the `jules_refactor` branch.
+**Next Steps (Post-Commit and Deployment):**
+1.  **Deploy & Verify:** User to deploy this version containing the new targeted logs.
+2.  **Test Recitation Button:** User to press the "🔊" (recite) button.
+3.  **Provide Logs:** User to provide the full logs from this interaction.
+4.  **Analyze New Logs:**
+    *   Check if the log from `bot.action` in `telegramBot.js` for the recite button appears.
+    *   If so, examine the raw `callback_query.data`.
+    *   Check if the `DEBUG: handleReciteAction --- ENTRY ---` log appears.
+    *   Check if any JSON parsing errors are logged from the new `try...catch` in `handleReciteAction`.
+    *   If these logs appear, further detailed logs within `handleReciteAction` and `helperAdminConditionalAction` should provide insight into the `ctx` object's state.
+5.  **Implement Fix:** Based on the new log analysis, implement a fix for the recitation issue.
+
+**(Self-correction from previous regression is being applied by focusing on targeted, incremental diagnostics and ensuring adherence to pre-commit routines.)**

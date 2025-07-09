@@ -146,12 +146,16 @@ export async function sendAyaRecitation(dependencies, ctx, ayaId, reciterIdentif
                 hasChatIdAccess: !!ctx.chat?.id, // Access via Telegraf's smart ctx.chat accessor
                 callbackQueryMessageChatId: ctx.callbackQuery?.message?.chat?.id, // More direct access
             };
-        } else if (typeof ctx.message_id === 'number' && ctx.hasOwnProperty('chat') && typeof ctx.date === 'number') {
+        } else if (
+            typeof ctx.message_id === 'number' &&
+            Object.prototype.hasOwnProperty.call(ctx, 'chat') &&
+            typeof ctx.date === 'number'
+        ) {
             // Heuristic: if it has message_id, a 'chat' property (even if null/empty), and 'date', it's likely a Message object.
             contextType = 'Telegram Message Object';
             relevantContextParts = {
                 message_id: ctx.message_id,
-                hasChatProperty: ctx.hasOwnProperty('chat'),
+                hasChatProperty: Object.prototype.hasOwnProperty.call(ctx, 'chat'),
                 chatObjectValue: ctx.chat, // Log the actual chat object
                 directChatIdIfPresent: ctx.chat?.id,
                 from_id: ctx.from?.id,

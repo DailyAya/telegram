@@ -557,6 +557,36 @@ bot.telegram
 
 // --- Action Handlers (Callback Queries) ---
 
+// It's better to have a single generic callback_query handler if we want to log ALL callbacks.
+// However, Telegraf's `bot.action` registers specific handlers.
+// To log all, we'd typically use `bot.on('callback_query', ...)`.
+// Let's add this generic handler first for logging, then ensure specific actions still work.
+// Note: If a generic `bot.on('callback_query')` is registered, it might intercept
+// callbacks before specific `bot.action()` handlers if not managed carefully (e.g. by calling next()).
+// For simple logging, placing it before specific `bot.action` might be okay if it doesn't stop propagation.
+// Telegraf processes `on` before `action` if both match.
+// A safer approach for just logging might be to wrap each action handler call,
+// but for initial broad diagnosis, a general logger is okay.
+// Let's try adding a general `bot.on('callback_query')` that logs and then does nothing else,
+// allowing other handlers to pick up. Telegraf should call all matching handlers.
+
+/* REVERTED: This generic handler without next() caused all action buttons to stop working.
+bot.on('callback_query', async (ctx, next) => {
+    const cbData = ctx.update.callback_query.data;
+    const fromId = ctx.update.callback_query.from.id;
+    const username = ctx.update.callback_query.from.username;
+    logger(
+        `DEBUG: ROOT_CALLBACK_QUERY_HANDLER: Received callback_query. Data: "${cbData}", From ID: ${fromId} (@${username || 'no_username'})`
+    );
+    // To ensure other action handlers are called, we would typically call `await next();`
+    // However, Telegraf's `bot.action` doesn't use the `next` middleware pattern in the same way `composer.action` does.
+    // For `Telegraf.action()`, it directly maps a regex/string to a handler.
+    // If `bot.on('callback_query')` is also present, Telegraf will execute `on` handlers first, then `action` handlers that match.
+    // So, this logger should fire, and then the specific `bot.action` should still fire.
+    // No `next()` call is needed here for `bot.action` to also work. // THIS ASSUMPTION WAS WRONG
+});
+*/
+
 // adminProtectedAction and adminConditionalAction are now imported from botHelpers.js
 // as helperAdminProtectedAction and helperAdminConditionalAction.
 
@@ -619,15 +649,18 @@ bot.action(/^{"aMenu":"[^"]+","a":\d+,"r":"[^"]+"}$/, async (ctx) =>
     })
 );
 
-bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) =>
-    actionHandlers.handleReciteAction(ctx, {
+bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
+    logger(
+        `DEBUG: telegramBot.js - bot.action for RECITE received. Data: "${ctx.update.callback_query.data}", From ID: ${ctx.update.callback_query.from.id} (@${ctx.update.callback_query.from.username || 'no_username'})`
+    );
+    return actionHandlers.handleReciteAction(ctx, {
         botTelegram: bot.telegram,
         botOptions: bot.options,
         helperAdminConditionalAction: helperAdminConditionalAction,
         sendAyaRecitationFn: senderSendAyaRecitation, // Use imported senderSendAyaRecitation
         ayaId2suraAyaFn: ayaId2suraAya, // from quranService.js
-    })
-);
+    });
+});
 
 // --- Other Event Handlers ---
 bot.on('text', async (ctx) => {

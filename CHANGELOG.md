@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.09-0528] - 2025-07-09
+
+### Changed
+- **Diagnostic Logging for Recitation Feature (Iteration 3)**:
+    - Added a `logger` statement at the beginning of the `bot.action(/^{"recite":...}$/, ...)` handler in `src/telegramBot.js`. This log captures the raw `ctx.update.callback_query.data` to verify if the specific action handler for recitation is being triggered and what data it initially receives.
+    - Wrapped the `JSON.parse(ctx.update.callback_query.data)` call within `src/botHandlers/actionHandlers.js#handleReciteAction` in a `try...catch` block. Any JSON parsing errors, along with the raw callback data, will be logged. This helps to check if invalid JSON data is the reason for early failure within `handleReciteAction`.
+- These targeted logs aim to pinpoint why the `handleReciteAction` might not be executing as expected or erroring out before its initial diagnostic logs can be seen.
+
+## [2025.07.09-0423] - 2025-07-09
+
+### Fixed
+- **Reverted Critical Regression:** Commented out the generic `bot.on('callback_query', ...)` handler in `src/telegramBot.js` that was added in version `2025.07.09-0342`. This handler, by not calling `await next()`, was incorrectly consuming all callback query events and preventing specific `bot.action()` handlers from firing, thus breaking all inline keyboard button functionality. This revert is intended to restore button operation.
+
+### Changed
+- Diagnostic logging in `src/botHandlers/actionHandlers.js#handleReciteAction` remains simplified at its entry point (`logger('DEBUG: handleReciteAction --- ENTRY ---');`) from version `2025.07.09-0342` to aid in diagnosing the original recitation issue once button functionality is restored.
+
+## [2025.07.09-0342] - 2025-07-09
+
+### Changed
+- **Diagnostic Logging for Recitation Feature (Iteration 2)**:
+    - Added a root `bot.on('callback_query', ...)` handler in `src/telegramBot.js` to log all incoming callback queries. This will help verify if the recitation callback is being received by Telegraf.
+    - Simplified the initial diagnostic log in `src/botHandlers/actionHandlers.js#handleReciteAction` to a basic string (`logger('DEBUG: handleReciteAction --- ENTRY ---');`). This is to ensure this first log appears and to rule out issues with more complex logging at the entry point.
+- These changes are to further diagnose why previous, more detailed logs for the recitation feature were not appearing in the output.
+
+## [2025.07.09-0325] - 2025-07-09
+
+### Changed
+- **Intensive Diagnostic Logging**: Added detailed diagnostic logging to `src/botHandlers/actionHandlers.js#handleReciteAction` and `src/botHelpers.js#helperAdminConditionalAction`. This logging traces the Telegraf context object (`ctx`) at multiple points:
+    - At the entry of `handleReciteAction`.
+    - At the entry of `helperAdminConditionalAction`.
+    - Within `helperAdminConditionalAction` before calling its `adminFn` callback.
+    - Within the `adminFn` callback in `handleReciteAction` (just before calling `sendAyaRecitationFn`).
+- The logs capture `ctx` type, keys, relevant properties (like `chat.id`, `callbackQuery.message.chat.id`, `callbackQuery.data`), and a truncated stringified version of selected `ctx` parts. This is to help diagnose the "empty context" issue reported when using the recitation feature.
+
 ## [2025.07.09-0244] - 2025-07-09
 
 ### Changed
