@@ -649,15 +649,18 @@ bot.action(/^{"aMenu":"[^"]+","a":\d+,"r":"[^"]+"}$/, async (ctx) =>
     })
 );
 
-bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) =>
-    actionHandlers.handleReciteAction(ctx, {
+bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
+    logger(
+        `DEBUG_TELEGRAMBOT_RECITE_ACTION: Entry. ctx keys: [${Object.keys(ctx).join(', ')}]. Data: ${ctx.update?.callback_query?.data}. ChatID: ${ctx.chat?.id}. FromID: ${ctx.from?.id}`
+    );
+    return actionHandlers.handleReciteAction(ctx, {
         botTelegram: bot.telegram,
         botOptions: bot.options,
         helperAdminConditionalAction: helperAdminConditionalAction,
-        sendAyaRecitationFn: senderSendAyaRecitation, // Use imported senderSendAyaRecitation
-        ayaId2suraAyaFn: ayaId2suraAya, // from quranService.js
-    })
-);
+        sendAyaRecitationFn: senderSendAyaRecitation,
+        ayaId2suraAyaFn: ayaId2suraAya,
+    });
+});
 
 // --- Other Event Handlers ---
 bot.on('text', async (ctx) => {

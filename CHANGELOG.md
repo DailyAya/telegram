@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.10-0116] - 2025-07-10
+
+### Changed
+- **Diagnostic Logging for Recitation Bug**: Added targeted diagnostic logging in `src/telegramBot.js`, `src/botHandlers/actionHandlers.js` (specifically `handleReciteAction`), and `src/botHelpers.js` (specifically `helperAdminConditionalAction`). These logs aim to trace the `ctx` (context) object flow for the recitation feature to understand why it might be arriving empty or malformed at the `sendAyaRecitation` function in `ayaSender.js`. Logs are prefixed with `DEBUG_TELEGRAMBOT_RECITE_ACTION`, `DEBUG_ACTIONHANDLERS_RECITECATION`, or `DEBUG_BOTHELPERS_CONDITIONAL`.
+
 ## [2025.07.10-0101] - 2025-07-10
 
 ### Fixed

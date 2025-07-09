@@ -351,7 +351,7 @@
 ---
 ## Session Summary: Jules - 2025-07-09 (Button Revert - Current)
 
-**Goal:** Formally commit the revert of the problematic generic `callback_query` handler to restore button functionality.
+**Goal:** Formally commit the revert of the problematic generic `callback_query` handler to restore button functionality. (Version: `2025.07.10-0101`)
 
 **Work Done & Key Changes:**
 
@@ -370,6 +370,39 @@
 
 **Next Steps (This Commit):**
 1.  Complete pre-commit routine (CHANGELOG, versioning, npm install, tests).
-2.  Submit the revert.
-3.  Await user deployment and confirmation of button functionality and log appearance.
+2.  Submit the revert. (This was done, version `2025.07.10-0101`)
+3.  Await user deployment and confirmation of button functionality and log appearance. (User confirmed button functionality restored, but recitation still fails with `Could not determine chatId`, and `DEBUG: handleReciteAction --- ENTRY ---` log is NOT appearing).
 4.  Proceed to diagnose original recitation bug.
+
+---
+## Session Summary: Jules - 2025-07-10 (Recitation Bug - Diagnostic Logging - Current)
+
+**Goal:** Add targeted diagnostic logging to trace `ctx` propagation for the recitation feature, to understand why it's arriving empty/malformed at `sendAyaRecitation`.
+
+**Work Done & Key Changes:**
+
+1.  **Added Focused Diagnostic Logging**:
+    *   **In `src/telegramBot.js`**: Added `logger` call inside `bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, ...)` to inspect `ctx` immediately upon Telegraf handling the action. Logs `Object.keys(ctx)`, `ctx.update?.callback_query?.data`, `ctx.chat?.id`, and `ctx.from?.id`.
+    *   **In `src/botHandlers/actionHandlers.js#handleReciteAction`**:
+        *   Kept `logger('DEBUG_ACTIONHANDLERS_RECITECATION: handleReciteAction --- ENTRY ---');` as the first line.
+        *   Added logging immediately after to inspect the received `ctx` keys, data, chatID, and fromID.
+        *   Added a check for `ctx` being null/undefined or empty; if so, logs and returns early.
+        *   Wrapped `JSON.parse(ctx.update.callback_query.data)` in a try-catch to log parsing errors.
+        *   Added logging within the `adminFn` and `nonAdminCb` passed to `helperAdminConditionalAction` to show `ctx` state there.
+    *   **In `src/botHelpers.js#helperAdminConditionalAction`**:
+        *   Added logging at the entry of the function to inspect the received `ctx`.
+        *   Added logging before calling `adminFn` and `nonAdminCb` to show the `ctx` being passed to them.
+    *   All new diagnostic logs are prefixed with `DEBUG_TELEGRAMBOT_RECITE_ACTION`, `DEBUG_ACTIONHANDLERS_RECITECATION`, or `DEBUG_BOTHELPERS_CONDITIONAL` for easier filtering.
+
+2.  **Pre-Commit Preparation (This session):**
+    *   This update to `AGENT_PROGRESS.md`.
+    *   Next: `CHANGELOG.md`, versioning, `npm install`, tests.
+
+**Current Status:**
+-   Diagnostic logging added.
+-   Preparing for pre-commit routine.
+
+**Next Steps (This Commit):**
+1.  Complete pre-commit routine.
+2.  Submit diagnostic logging changes.
+3.  Await user deployment and new logs to analyze the `ctx` flow.
