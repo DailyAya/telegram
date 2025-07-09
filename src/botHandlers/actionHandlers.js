@@ -258,63 +258,144 @@ export async function handleReciteAction(
     ctx,
     { botTelegram, botOptions, helperAdminConditionalAction, sendAyaRecitationFn, ayaId2suraAyaFn }
 ) {
-    const callbackData = JSON.parse(ctx.update.callback_query.data);
+    logger('DEBUG: handleReciteAction --- ENTRY ---'); // Simplified initial log
+
+    // --- BEGIN DIAGNOSTIC LOGGING for handleReciteAction (Entry Point) ---
+    // This detailed logging block is now secondary to the simple entry log.
+    // It will only be reached if the simple log above appears.
+    let initialCtxDetails = 'N/A';
+    const initialCtxType = typeof ctx;
+    const initialCtxKeys = ctx ? Object.keys(ctx).join(', ') : 'N/A';
+    const initialCtxUpdateExists = !!ctx?.update;
+    const initialCtxCbQueryData = ctx?.update?.callback_query?.data;
+    const initialCtxChatId = ctx?.chat?.id;
+    const initialCtxCbQueryMessageChatId = ctx?.callbackQuery?.message?.chat?.id;
+
+    try {
+        if (ctx && typeof ctx === 'object') {
+            const tempCtx = {
+                callbackQuery: ctx.callbackQuery,
+                chat: ctx.chat,
+                from: ctx.from,
+                message: ctx.message,
+                update: ctx.update
+                    ? {
+                          update_id: ctx.update.update_id,
+                          callback_query: ctx.update.callback_query
+                              ? {
+                                    data: ctx.update.callback_query.data,
+                                    from: ctx.update.callback_query.from,
+                                    message: ctx.update.callback_query.message
+                                        ? {
+                                              message_id: ctx.update.callback_query.message.message_id,
+                                              chat: ctx.update.callback_query.message.chat,
+                                          }
+                                        : undefined,
+                                }
+                              : undefined,
+                      }
+                    : undefined,
+            };
+            initialCtxDetails = JSON.stringify(tempCtx, null, 2);
+            if (initialCtxDetails.length > 1500) {
+                initialCtxDetails = initialCtxDetails.substring(0, 1500) + '... (truncated)';
+            }
+        } else {
+            initialCtxDetails = String(ctx);
+        }
+    } catch (stringifyError) {
+        initialCtxDetails = `Could not stringify initial ctx in handleReciteAction. Error: ${stringifyError.message}`;
+        logger(`DEBUG: handleReciteAction (Entry) - JSON.stringify failed for initial ctx:`, stringifyError);
+    }
+    logger(
+        `DEBUG: handleReciteAction (Entry Details) - Received ctx.
+        initialCtx Type: ${initialCtxType}
+        initialCtx Keys: ${initialCtxKeys}
+        initialCtx?.update (exists): ${initialCtxUpdateExists}
+        initialCtx?.update?.callback_query?.data: ${initialCtxCbQueryData}
+        initialCtx?.chat?.id (accessor): ${initialCtxChatId}
+        initialCtx?.callbackQuery?.message?.chat?.id (direct): ${initialCtxCbQueryMessageChatId}
+        initialCtx Relevant Parts: ${initialCtxDetails}`
+    );
+    // --- END DIAGNOSTIC LOGGING for handleReciteAction (Entry Point) ---
+
+    const callbackData = JSON.parse(ctx.update.callback_query.data); // Assuming ctx.update.callback_query.data is valid based on above log or previous behavior.
+
     await helperAdminConditionalAction(
-        ctx,
+        ctx, // Passing the initial ctx here
         botTelegram,
         async (adminCtx) => {
-            // --- BEGIN DIAGNOSTIC LOGGING for handleReciteAction ---
-            let adminCtxDetails = 'N/A';
-            const adminCtxType = typeof adminCtx;
-            const adminCtxKeys = adminCtx ? Object.keys(adminCtx).join(', ') : 'N/A';
-            const adminCtxUpdateExists = !!adminCtx?.update;
-            const adminCtxChatId = adminCtx?.chat?.id;
-            const adminCtxCbQueryChatId = adminCtx?.callbackQuery?.message?.chat?.id;
+            // This adminCtx is what helperAdminConditionalAction passes to adminFn
+            // --- BEGIN DIAGNOSTIC LOGGING for handleReciteAction (Inside adminFn) ---
+            let adminFnCtxDetails = 'N/A';
+            const adminFnCtxType = typeof adminCtx;
+            const adminFnCtxKeys = adminCtx ? Object.keys(adminCtx).join(', ') : 'N/A';
+            const adminFnCtxUpdateExists = !!adminCtx?.update;
+            const adminFnCtxChatId = adminCtx?.chat?.id;
+            const adminFnCtxCbQueryChatId = adminCtx?.callbackQuery?.message?.chat?.id; // Corrected from adminCtx.callback_query
+            const adminFnCtxCbQueryMessageId = adminCtx?.callbackQuery?.message?.message_id;
 
             try {
-                // Avoid stringifying full ctx if it's a complex Telegraf object with circular refs
-                // Instead, log key properties or a shallow representation.
                 if (adminCtx && typeof adminCtx === 'object') {
-                    const tempCtx = { ...adminCtx }; // Shallow clone
-                    delete tempCtx.telegram; // Often causes circular issues
-                    delete tempCtx.botInfo; // Can be large
-                    // delete tempCtx.update; // update itself can be large, already logging its existence
-                    adminCtxDetails = JSON.stringify(tempCtx, null, 2);
-                    if (adminCtxDetails.length > 1000) {
-                        // Keep it somewhat brief
-                        adminCtxDetails = adminCtxDetails.substring(0, 1000) + '... (truncated)';
+                    const tempCtx = {
+                        callbackQuery: adminCtx.callbackQuery,
+                        chat: adminCtx.chat,
+                        from: adminCtx.from,
+                        message: adminCtx.message,
+                        update: adminCtx.update
+                            ? {
+                                  update_id: adminCtx.update.update_id,
+                                  callback_query: adminCtx.update.callback_query
+                                      ? {
+                                            data: adminCtx.update.callback_query.data,
+                                            from: adminCtx.update.callback_query.from,
+                                            message: adminCtx.update.callback_query.message
+                                                ? {
+                                                      message_id: adminCtx.update.callback_query.message.message_id,
+                                                      chat: adminCtx.update.callback_query.message.chat,
+                                                  }
+                                                : undefined,
+                                        }
+                                      : undefined,
+                              }
+                            : undefined,
+                    };
+                    adminFnCtxDetails = JSON.stringify(tempCtx, null, 2);
+                    if (adminFnCtxDetails.length > 1500) {
+                        adminFnCtxDetails = adminFnCtxDetails.substring(0, 1500) + '... (truncated)';
                     }
                 } else {
-                    adminCtxDetails = String(adminCtx);
+                    adminFnCtxDetails = String(adminCtx);
                 }
             } catch (stringifyError) {
-                adminCtxDetails = `Could not stringify adminCtx in handleReciteAction. Error: ${stringifyError.message}`;
-                logger(`DEBUG: handleReciteAction - JSON.stringify failed for adminCtx:`, stringifyError);
+                adminFnCtxDetails = `Could not stringify adminCtx in handleReciteAction (adminFn). Error: ${stringifyError.message}`;
+                logger(`DEBUG: handleReciteAction (adminFn) - JSON.stringify failed for adminCtx:`, stringifyError);
             }
 
             logger(
-                `DEBUG: handleReciteAction - adminFn - Before calling sendAyaRecitationFn.
+                `DEBUG: handleReciteAction (adminFn) - Before calling sendAyaRecitationFn.
                 Callback Data: ${JSON.stringify(callbackData)}
-                adminCtx Type: ${adminCtxType}
-                adminCtx Keys: ${adminCtxKeys}
-                adminCtx?.update (exists): ${adminCtxUpdateExists}
-                adminCtx?.chat?.id (accessor): ${adminCtxChatId}
-                adminCtx?.callbackQuery?.message?.chat?.id (direct): ${adminCtxCbQueryChatId}
-                adminCtx Shallow Details: ${adminCtxDetails}`
+                adminCtx Type: ${adminFnCtxType}
+                adminCtx Keys: ${adminFnCtxKeys}
+                adminCtx?.update (exists): ${adminFnCtxUpdateExists}
+                adminCtx?.chat?.id (accessor): ${adminFnCtxChatId}
+                adminCtx?.callbackQuery?.message?.chat?.id (direct): ${adminFnCtxCbQueryChatId}
+                adminCtx?.callbackQuery?.message?.message_id: ${adminFnCtxCbQueryMessageId}
+                adminCtx Relevant Parts: ${adminFnCtxDetails}`
             );
-            // --- END DIAGNOSTIC LOGGING ---
+            // --- END DIAGNOSTIC LOGGING for handleReciteAction (Inside adminFn) ---
 
-            // Original logger call, which might fail if adminCtx.chat.id is not available
-            // logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite} in chat ${adminCtx.chat.id}`);
-            // Defensively log chat ID before using it:
             if (adminCtx && adminCtx.chat && adminCtx.chat.id) {
                 logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite} in chat ${adminCtx.chat.id}`);
             } else {
-                logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite}. adminCtx.chat.id MISSING.`);
+                logger(
+                    `Button reciter: ${callbackData.r} for Aya ${callbackData.recite}. adminCtx.chat.id MISSING before sendAyaRecitationFn.`
+                );
             }
             await sendAyaRecitationFn(adminCtx, callbackData.recite, callbackData.r);
         },
         async (_nonAdminCtx) => {
+            // _nonAdminCtx is what helperAdminConditionalAction passes to nonAdminCb
             const ayaIndex = ayaId2suraAyaFn(callbackData.recite);
             return `t.me/${botOptions.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
         },

@@ -307,39 +307,43 @@
 -   Submit the new tests for `telegramBot.js`.
 
 ---
-## Session Summary: Jules - 2025-07-09 (Current Session - Diagnostics & Fixes for Recitation `chatId` Issue)
+## Session Summary: Jules - 2025-07-09 (Recitation Bug - Post-Regression Analysis & Revert Plan)
 
-**Goal:** Diagnose and resolve the "empty context" issue when sending recitations, and ensure robust error logging for benign Telegram API errors.
+**Goal:** First, revert the change that caused a critical regression (all buttons failing). Second, continue diagnosing the original "empty context" issue for the recitation feature.
 
-**Work Done & Key Changes:**
+**Activities Performed (as per user's directive for internal review):**
 
-1.  **Initial Fixes & Reversion**:
-    *   Attempted fixes for benign error logging (`logger.js`) and `chatId` extraction in `ayaSender.js`. This included adding `logger.test.js`.
-    *   These changes were **reverted** using `reset_all()` after user feedback indicated an incorrect assumption about the `/nextaya` button's functionality, which made the initial line of reasoning for the `chatId` issue flawed. The submission for these changes was also to an incorrect branch name.
+1.  **Deep Dive into Telegraf Documentation:**
+    *   Re-studied Telegraf.js documentation (v4.8.5, specifically `Telegraf.on` and `Telegraf.action` inherited from `Composer`).
+    *   **Key Finding:** Middleware functions registered with `bot.on()` for a specific update type (like 'callback_query') are processed. If such a general handler does not call `await next()`, it can prevent subsequent, more specific handlers (like those registered with `bot.action()`) for the same update type from executing. This was the likely cause of the regression.
 
-2.  **Focused Investigation on Recitation Button Flow**:
-    *   Re-analyzed the code path for the "🔊" (recite) button, specifically `src/botHandlers/actionHandlers.js#handleReciteAction` and its call to `ayaSender.js#sendAyaRecitation`.
-    *   The primary puzzle was why `sendAyaRecitation` would receive an empty object `{}` as its context, as indicated by user-provided logs (`Details: { ctxKeys: [] }`).
+2.  **Full Codebase Review (All `src/**/*.js` files):**
+    *   Reviewed all JavaScript files in `src/`.
+    *   **Observations:**
+        *   The project is generally well-modularized.
+        *   Error handling is present in most key areas, utilizing the custom logger.
+        *   Context (`ctx`) object is passed through multiple layers, from `telegramBot.js` to handlers and helpers. The structure of these handoffs seems correct.
+        *   The `bot.on('callback_query', ...)` handler added in version `2025.07.09-0342` was indeed missing `await next()`.
+        *   No other obvious flaws jumped out that would explain the original "empty context" issue, pending visible logs.
 
-3.  **Diagnostic Logging for `handleReciteAction`**:
-    *   Added detailed diagnostic logging inside `src/botHandlers/actionHandlers.js#handleReciteAction`, specifically within the `adminFn` callback passed to `helperAdminConditionalAction`.
-    *   This logging aims to inspect the `adminCtx` object (type, keys, content snippet) immediately before it's passed to `sendAyaRecitationFn` to determine if it's already an empty object at that stage.
+3.  **Test Analysis (`npm test` and review of test files):**
+    *   Ran `npm test` on the current codebase (which has the problematic `bot.on('callback_query', ...)` handler commented out from the latest `replace_with_git_merge_diff` action). All 235 tests passed.
+    *   Reviewed `telegramBot.test.js` and `actionHandlers.test.js`.
+    *   **Key Finding:** The tests primarily unit-test the *logic within individual handler functions* by invoking them directly with mock contexts. They do *not* adequately test Telegraf's event dispatching mechanism or the interaction between multiple handlers registered for the same event type (e.g., a generic `bot.on` and specific `bot.action` for 'callback_query'). This is why the regression (all buttons failing) was not caught by the existing test suite.
 
-4.  **Test Adjustments & Linting**:
-    *   Corrected minor linter errors (`no-prototype-builtins` in `ayaSender.js`, `no-unused-vars` in `telegramBot.js`) that were introduced during the (now reverted) first fix attempt and caught during a pre-commit check.
-    *   Ensured all tests passed after these minor lint fixes and the addition of the diagnostic log. The diagnostic log itself is not expected to break tests as it's console output.
+4.  **Update `AGENT_PROGRESS.md` (This current update):** Reflecting these findings.
 
 **Current Status:**
--   The codebase has been reverted to its state prior to the initial (flawed) fixes for this session.
--   **The primary change in the current iteration is the addition of targeted diagnostic logging in `actionHandlers.js#handleReciteAction`**.
--   This diagnostic logging is intended to provide data from the live environment to understand how an empty context object might be passed to `sendAyaRecitation`.
--   All tests are currently passing with this diagnostic logging in place.
+-   **Understanding of Regression:** The cause of the critical regression (all buttons failing after version `2025.07.09-0342`) is understood to be the introduction of a generic `bot.on('callback_query', ...)` handler without `await next()`, which blocked specific `bot.action` handlers.
+-   **Code State for Revert:** The problematic handler in `src/telegramBot.js` has already been commented out in the agent's sandbox via `replace_with_git_merge_diff` in the current plan's step 1.
+-   **Original Issue:** The "empty context" for recitation remains unresolved. Diagnosis depends on logs becoming visible after the revert.
+-   The plan to revert the problematic handler and then proceed with diagnosing the original issue is active and approved.
 
-**Next Steps (within Pre-commit Routine):**
--   Update `CHANGELOG.md` to reflect the addition of diagnostic logging.
--   Generate a new version timestamp.
--   Update `package.json` with the new version.
--   Run `npm install` to synchronize `package-lock.json`.
--   Run linters (`npm run lint -- --fix`) and tests (`npm test`) again to confirm.
--   Prepare the commit message.
--   Submit the changes (containing only the diagnostic log addition and minor lint fixes from earlier) to the `jules_refactor` branch.
+**Immediate Next Steps (Per Approved Plan):**
+1.  The code with the problematic handler commented out is ready for the pre-commit routine.
+2.  **Commit & Deploy Revert:** User to be prompted to commit and deploy this fix.
+3.  **Verify Button Functionality:** After deployment, the user will verify if buttons work and if logs (especially the simplified `DEBUG: handleReciteAction --- ENTRY ---` log) reappear.
+4.  **Analyze Logs for Original Issue:** If logs are back, analyze them to diagnose the "empty context" problem.
+5.  **Fix Original Recitation Issue.**
+
+**(Self-correction: The previous session's introduction of the generic callback logger was flawed due to an incorrect assumption about Telegraf's middleware flow. The internal review process (documentation, full codebase, test analysis) has reinforced the correct understanding and highlighted gaps in test coverage for middleware interactions.)**
