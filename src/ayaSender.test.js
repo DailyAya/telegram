@@ -393,17 +393,19 @@ describe('sendAyaRecitation', () => {
                 message_id: 123,
                 chat: null, // 'chat' property exists but is null, so chat.id is undefined
                 date: 1678886400, // Add 'date' to fit the heuristic for Message object type
-                from: { id: 'userTest123' } // Optional, but good for full context logging
+                from: { id: 'userTest123' }, // Optional, but good for full context logging
             };
             await sendAyaRecitation(mockDependencies, faultyMessageCtx, ayaId, initialReciter);
             expect(mockLogger).toHaveBeenCalledWith(
-                expect.stringContaining('sendAyaRecitation: Could not determine chatId. Context type detected: Telegram Message Object.'),
+                expect.stringContaining(
+                    'sendAyaRecitation: Could not determine chatId. Context type detected: Telegram Message Object.'
+                ),
                 expect.objectContaining({
                     message_id: 123,
                     hasChatProperty: true, // because 'chat' key exists
                     chatObjectValue: null, // the value of ctx.chat
                     directChatIdIfPresent: undefined, // because faultyMessageCtx.chat.id is undefined
-                    from_id: 'userTest123'
+                    from_id: 'userTest123',
                 })
             );
             expect(mockGetRecitationFn).not.toHaveBeenCalled();

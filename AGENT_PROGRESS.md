@@ -313,7 +313,7 @@
 
 **Work Done & Key Changes:**
 
-1.  **Initial Fixes & Reversion**:
+1.  **Initial Fixes & Reversion (Previous attempt, now reverted)**:
     *   Attempted fixes for benign error logging (`logger.js`) and `chatId` extraction in `ayaSender.js`. This included adding `logger.test.js`.
     *   These changes were **reverted** using `reset_all()` after user feedback indicated an incorrect assumption about the `/nextaya` button's functionality, which made the initial line of reasoning for the `chatId` issue flawed. The submission for these changes was also to an incorrect branch name.
 
@@ -321,25 +321,28 @@
     *   Re-analyzed the code path for the "🔊" (recite) button, specifically `src/botHandlers/actionHandlers.js#handleReciteAction` and its call to `ayaSender.js#sendAyaRecitation`.
     *   The primary puzzle was why `sendAyaRecitation` would receive an empty object `{}` as its context, as indicated by user-provided logs (`Details: { ctxKeys: [] }`).
 
-3.  **Diagnostic Logging for `handleReciteAction`**:
-    *   Added detailed diagnostic logging inside `src/botHandlers/actionHandlers.js#handleReciteAction`, specifically within the `adminFn` callback passed to `helperAdminConditionalAction`.
-    *   This logging aims to inspect the `adminCtx` object (type, keys, content snippet) immediately before it's passed to `sendAyaRecitationFn` to determine if it's already an empty object at that stage.
+3.  **Intensive Diagnostic Logging for `handleReciteAction` and `helperAdminConditionalAction`**:
+    *   Added detailed diagnostic logging at the entry point of `src/botHandlers/actionHandlers.js#handleReciteAction` to inspect the initial `ctx` object.
+    *   Added detailed diagnostic logging at the entry point of `src/botHelpers.js#helperAdminConditionalAction` to inspect the `ctx` object it receives.
+    *   Added logging within `helperAdminConditionalAction` before it calls `adminFn` to see the `ctx` being passed.
+    *   Added detailed diagnostic logging inside the `adminFn` callback (within `handleReciteAction`) to inspect the `adminCtx` object immediately before it's passed to `sendAyaRecitationFn`.
+    *   Logging captures `ctx` type, keys, key properties (like `chat.id`, `callbackQuery.message.chat.id`, `callbackQuery.data`), and a truncated stringified version of relevant `ctx` parts.
 
 4.  **Test Adjustments & Linting**:
-    *   Corrected minor linter errors (`no-prototype-builtins` in `ayaSender.js`, `no-unused-vars` in `telegramBot.js`) that were introduced during the (now reverted) first fix attempt and caught during a pre-commit check.
-    *   Ensured all tests passed after these minor lint fixes and the addition of the diagnostic log. The diagnostic log itself is not expected to break tests as it's console output.
+    *   Corrected minor linter errors (`no-prototype-builtins` in `ayaSender.js`, `no-unused-vars` in `telegramBot.js`) that were identified during pre-commit checks of a previous reverted attempt.
+    *   Ensured all tests passed after these minor lint fixes and the addition of the new diagnostic logs. The diagnostic logs themselves are not expected to break tests as they are console output.
 
 **Current Status:**
--   The codebase has been reverted to its state prior to the initial (flawed) fixes for this session.
--   **The primary change in the current iteration is the addition of targeted diagnostic logging in `actionHandlers.js#handleReciteAction`**.
--   This diagnostic logging is intended to provide data from the live environment to understand how an empty context object might be passed to `sendAyaRecitation`.
+-   The codebase now includes extensive diagnostic logging in `actionHandlers.js` and `botHelpers.js` to trace the `ctx` object through the recitation callback flow.
+-   This logging is intended to provide data from the live environment to understand how an empty context object might be passed to `sendAyaRecitation`.
 -   All tests are currently passing with this diagnostic logging in place.
+-   The bot is ready for a pre-commit routine to deploy these logging changes.
 
-**Next Steps (within Pre-commit Routine):**
--   Update `CHANGELOG.md` to reflect the addition of diagnostic logging.
--   Generate a new version timestamp.
--   Update `package.json` with the new version.
--   Run `npm install` to synchronize `package-lock.json`.
--   Run linters (`npm run lint -- --fix`) and tests (`npm test`) again to confirm.
--   Prepare the commit message.
--   Submit the changes (containing only the diagnostic log addition and minor lint fixes from earlier) to the `jules_refactor` branch.
+**Next Steps (Post-Commit and Deployment):**
+-   User to deploy the version with enhanced logging.
+-   User to trigger the "🔊" (recite) button to reproduce the error.
+-   User to provide the new, detailed logs.
+-   Analyze the new logs to identify the exact point where the `ctx` object loses its data or becomes malformed (This is step 3 of the current plan).
+-   Implement a fix based on the findings (Step 4).
+-   Implement benign error logging (Step 5).
+-   Enhance tests (Step 6).
