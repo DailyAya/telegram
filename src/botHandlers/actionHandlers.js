@@ -258,7 +258,11 @@ export async function handleReciteAction(
     ctx,
     { botTelegram, botOptions, helperAdminConditionalAction, sendAyaRecitationFn, ayaId2suraAyaFn }
 ) {
+    logger('DEBUG: handleReciteAction --- ENTRY ---'); // Simplified initial log
+
     // --- BEGIN DIAGNOSTIC LOGGING for handleReciteAction (Entry Point) ---
+    // This detailed logging block is now secondary to the simple entry log.
+    // It will only be reached if the simple log above appears.
     let initialCtxDetails = 'N/A';
     const initialCtxType = typeof ctx;
     const initialCtxKeys = ctx ? Object.keys(ctx).join(', ') : 'N/A';
@@ -304,7 +308,7 @@ export async function handleReciteAction(
         logger(`DEBUG: handleReciteAction (Entry) - JSON.stringify failed for initial ctx:`, stringifyError);
     }
     logger(
-        `DEBUG: handleReciteAction (Entry) - Received ctx.
+        `DEBUG: handleReciteAction (Entry Details) - Received ctx.
         initialCtx Type: ${initialCtxType}
         initialCtx Keys: ${initialCtxKeys}
         initialCtx?.update (exists): ${initialCtxUpdateExists}

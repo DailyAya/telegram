@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.09-0342] - 2025-07-09
+
+### Changed
+- **Diagnostic Logging for Recitation Feature (Iteration 2)**:
+    - Added a root `bot.on('callback_query', ...)` handler in `src/telegramBot.js` to log all incoming callback queries. This will help verify if the recitation callback is being received by Telegraf.
+    - Simplified the initial diagnostic log in `src/botHandlers/actionHandlers.js#handleReciteAction` to a basic string (`logger('DEBUG: handleReciteAction --- ENTRY ---');`). This is to ensure this first log appears and to rule out issues with more complex logging at the entry point.
+- These changes are to further diagnose why previous, more detailed logs for the recitation feature were not appearing in the output.
+
 ## [2025.07.09-0325] - 2025-07-09
 
 ### Changed

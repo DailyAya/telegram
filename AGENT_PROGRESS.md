@@ -307,42 +307,39 @@
 -   Submit the new tests for `telegramBot.js`.
 
 ---
-## Session Summary: Jules - 2025-07-09 (Current Session - Diagnostics & Fixes for Recitation `chatId` Issue)
+## Session Summary: Jules - 2025-07-09 (Current Session - Diagnostics for Recitation `chatId` Issue - Iteration 2)
 
-**Goal:** Diagnose and resolve the "empty context" issue when sending recitations, and ensure robust error logging for benign Telegram API errors.
+**Goal:** Diagnose why previous diagnostic logs for the recitation feature were not appearing and pinpoint where the context (`ctx`) object might be lost or malformed.
 
-**Work Done & Key Changes:**
+**Work Done & Key Changes (Current Iteration):**
 
-1.  **Initial Fixes & Reversion (Previous attempt, now reverted)**:
-    *   Attempted fixes for benign error logging (`logger.js`) and `chatId` extraction in `ayaSender.js`. This included adding `logger.test.js`.
-    *   These changes were **reverted** using `reset_all()` after user feedback indicated an incorrect assumption about the `/nextaya` button's functionality, which made the initial line of reasoning for the `chatId` issue flawed. The submission for these changes was also to an incorrect branch name.
+1.  **Verified Action String Registration**:
+    *   Confirmed that the regex `/^{"recite":\d+,"r":"[^"]+"}$/` in `src/telegramBot.js` correctly matches the callback data `JSON.stringify({ recite: ayaId, r: reciter })` generated in `src/botHelpers.js#aMenuButtons`. A mismatch here is not the issue.
 
-2.  **Focused Investigation on Recitation Button Flow**:
-    *   Re-analyzed the code path for the "🔊" (recite) button, specifically `src/botHandlers/actionHandlers.js#handleReciteAction` and its call to `ayaSender.js#sendAyaRecitation`.
-    *   The primary puzzle was why `sendAyaRecitation` would receive an empty object `{}` as its context, as indicated by user-provided logs (`Details: { ctxKeys: [] }`).
+2.  **Added Root Callback Query Logging**:
+    *   Added a `bot.on('callback_query', ...)` handler in `src/telegramBot.js` *before* specific `bot.action` handlers. This new handler logs the raw `callback_query.data` and `from.id` for *all* callback queries to verify if the recitation callback is reaching Telegraf at the most basic level.
 
-3.  **Intensive Diagnostic Logging for `handleReciteAction` and `helperAdminConditionalAction`**:
-    *   Added detailed diagnostic logging at the entry point of `src/botHandlers/actionHandlers.js#handleReciteAction` to inspect the initial `ctx` object.
-    *   Added detailed diagnostic logging at the entry point of `src/botHelpers.js#helperAdminConditionalAction` to inspect the `ctx` object it receives.
-    *   Added logging within `helperAdminConditionalAction` before it calls `adminFn` to see the `ctx` being passed.
-    *   Added detailed diagnostic logging inside the `adminFn` callback (within `handleReciteAction`) to inspect the `adminCtx` object immediately before it's passed to `sendAyaRecitationFn`.
-    *   Logging captures `ctx` type, keys, key properties (like `chat.id`, `callbackQuery.message.chat.id`, `callbackQuery.data`), and a truncated stringified version of relevant `ctx` parts.
+3.  **Simplified Initial Log in `handleReciteAction`**:
+    *   Changed the very first log in `src/botHandlers/actionHandlers.js#handleReciteAction` to a simple string: `logger('DEBUG: handleReciteAction --- ENTRY ---');`. This is to rule out any complex object stringification issues that might prevent this initial log from appearing. The more detailed `ctx` logging within this function will only be attempted if this simple entry log is seen.
 
-4.  **Test Adjustments & Linting**:
-    *   Corrected minor linter errors (`no-prototype-builtins` in `ayaSender.js`, `no-unused-vars` in `telegramBot.js`) that were identified during pre-commit checks of a previous reverted attempt.
-    *   Ensured all tests passed after these minor lint fixes and the addition of the new diagnostic logs. The diagnostic logs themselves are not expected to break tests as they are console output.
+**Previous Iteration Summary (for context):**
+-   **Intensive Diagnostic Logging (Attempt 1)**: Added detailed logs in `handleReciteAction` and `helperAdminConditionalAction` to trace `ctx`.
+-   **Outcome of Attempt 1**: These logs did *not* appear in user-provided output, leading to the current diagnostic iteration (Attempt 2) focusing on earlier logging points and simpler initial logs.
 
 **Current Status:**
--   The codebase now includes extensive diagnostic logging in `actionHandlers.js` and `botHelpers.js` to trace the `ctx` object through the recitation callback flow.
--   This logging is intended to provide data from the live environment to understand how an empty context object might be passed to `sendAyaRecitation`.
--   All tests are currently passing with this diagnostic logging in place.
--   The bot is ready for a pre-commit routine to deploy these logging changes.
+-   The codebase has been modified with:
+    - A new root-level callback query logger in `telegramBot.js`.
+    - A simplified initial entry log in `handleReciteAction`.
+-   These changes are aimed at determining if the recitation callback is being received by Telegraf and if `handleReciteAction` is being entered at all.
+-   All tests are passing with these changes.
+-   The bot is ready for a pre-commit routine to deploy these new diagnostic measures.
 
 **Next Steps (Post-Commit and Deployment):**
--   User to deploy the version with enhanced logging.
+-   User to deploy the version with these new logging changes.
 -   User to trigger the "🔊" (recite) button to reproduce the error.
 -   User to provide the new, detailed logs.
--   Analyze the new logs to identify the exact point where the `ctx` object loses its data or becomes malformed (This is step 3 of the current plan).
--   Implement a fix based on the findings (Step 4).
--   Implement benign error logging (Step 5).
--   Enhance tests (Step 6).
+-   Analyze these logs to:
+    - Confirm if the root callback logger sees the recitation callback.
+    - Confirm if the simplified `handleReciteAction --- ENTRY ---` log appears.
+    - If entry log appears, examine further detailed logs from `handleReciteAction` and `helperAdminConditionalAction`.
+-   Based on these findings, proceed to implement a fix (Plan Step 5 of current plan).
