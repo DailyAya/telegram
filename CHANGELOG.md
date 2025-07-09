@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.09-0325] - 2025-07-09
+
+### Changed
+- **Intensive Diagnostic Logging**: Added detailed diagnostic logging to `src/botHandlers/actionHandlers.js#handleReciteAction` and `src/botHelpers.js#helperAdminConditionalAction`. This logging traces the Telegraf context object (`ctx`) at multiple points:
+    - At the entry of `handleReciteAction`.
+    - At the entry of `helperAdminConditionalAction`.
+    - Within `helperAdminConditionalAction` before calling its `adminFn` callback.
+    - Within the `adminFn` callback in `handleReciteAction` (just before calling `sendAyaRecitationFn`).
+- The logs capture `ctx` type, keys, relevant properties (like `chat.id`, `callbackQuery.message.chat.id`, `callbackQuery.data`), and a truncated stringified version of selected `ctx` parts. This is to help diagnose the "empty context" issue reported when using the recitation feature.
+
 ## [2025.07.09-0244] - 2025-07-09
 
 ### Changed
