@@ -302,23 +302,74 @@ export async function helperAdminConditionalAction(
     nonAdminAlert = false,
     nonAdminUrl = null
 ) {
+    // --- BEGIN DIAGNOSTIC LOGGING for helperAdminConditionalAction (Entry Point) ---
+    let hACAEntryCtxDetails = 'N/A';
+    const hACAEntryCtxType = typeof ctx;
+    const hACAEntryCtxKeys = ctx ? Object.keys(ctx).join(', ') : 'N/A';
+    const hACAEntryCtxCbQueryData = ctx?.update?.callback_query?.data;
+    const hACAEntryCtxChatId = ctx?.chat?.id;
+    const hACAEntryCtxCbQueryMessageChatId = ctx?.callbackQuery?.message?.chat?.id;
+
+    try {
+        if (ctx && typeof ctx === 'object') {
+            const tempCtx = {
+                callbackQuery: ctx.callbackQuery,
+                chat: ctx.chat,
+                from: ctx.from,
+                message: ctx.message,
+                update: ctx.update
+                    ? {
+                          update_id: ctx.update.update_id,
+                          callback_query: ctx.update.callback_query
+                              ? {
+                                    data: ctx.update.callback_query.data,
+                                    from: ctx.update.callback_query.from,
+                                    message: ctx.update.callback_query.message
+                                        ? {
+                                              message_id: ctx.update.callback_query.message.message_id,
+                                              chat: ctx.update.callback_query.message.chat,
+                                          }
+                                        : undefined,
+                                }
+                              : undefined,
+                      }
+                    : undefined,
+            };
+            hACAEntryCtxDetails = JSON.stringify(tempCtx, null, 2);
+            if (hACAEntryCtxDetails.length > 1500) {
+                hACAEntryCtxDetails = hACAEntryCtxDetails.substring(0, 1500) + '... (truncated)';
+            }
+        } else {
+            hACAEntryCtxDetails = String(ctx);
+        }
+    } catch (stringifyError) {
+        hACAEntryCtxDetails = `Could not stringify ctx in helperAdminConditionalAction (Entry). Error: ${stringifyError.message}`;
+        logger(`DEBUG: helperAdminConditionalAction (Entry) - JSON.stringify failed for ctx:`, stringifyError);
+    }
     logger(
-        `DEBUG_BOTHELPERS_CONDITIONAL: Entry. ctx keys: [${ctx ? Object.keys(ctx).join(', ') : 'ctx_is_null_or_undefined'}]. Data: ${ctx?.update?.callback_query?.data}. ChatID: ${ctx?.chat?.id}. FromID: ${ctx?.from?.id}`
+        `DEBUG: helperAdminConditionalAction (Entry) - Received ctx.
+        ctx Type: ${hACAEntryCtxType}
+        ctx Keys: ${hACAEntryCtxKeys}
+        ctx?.update?.callback_query?.data: ${hACAEntryCtxCbQueryData}
+        ctx?.chat?.id (accessor): ${hACAEntryCtxChatId}
+        ctx?.callbackQuery?.message?.chat?.id (direct): ${hACAEntryCtxCbQueryMessageChatId}
+        ctx Relevant Parts: ${hACAEntryCtxDetails}`
     );
-    // Old detailed hACAEntryCtxDetails logging removed.
+    // --- END DIAGNOSTIC LOGGING for helperAdminConditionalAction (Entry Point) ---
 
     const isUserAdmin = await adminChecker(ctx, botTelegram);
     logger(
-        `DEBUG_BOTHELPERS_CONDITIONAL: adminChecker result: ${isUserAdmin} for user ${ctx?.from?.id} in chat ${ctx?.chat?.id}. ctx?.update?.callback_query?.data: ${ctx?.update?.callback_query?.data}`
+        `DEBUG: helperAdminConditionalAction - adminChecker result: ${isUserAdmin} for user ${ctx?.from?.id} in chat ${ctx?.chat?.id}`
     );
 
     if (isUserAdmin) {
         try {
+            // The 'ctx' passed to adminFn is the same 'ctx' received by helperAdminConditionalAction
             logger(
-                `DEBUG_BOTHELPERS_CONDITIONAL: Calling adminFn. Passing ctx with keys: [${ctx ? Object.keys(ctx).join(', ') : 'ctx_is_null_or_undefined'}]. ChatID: ${ctx?.chat?.id}. FromID: ${ctx?.from?.id}`
+                `DEBUG: helperAdminConditionalAction - Calling adminFn. Passing ctx with keys: ${ctx ? Object.keys(ctx).join(', ') : 'N/A'}`
             );
-            await adminFn(ctx);
-            logger(`DEBUG_BOTHELPERS_CONDITIONAL: adminFn executed. Answering CBQ.`);
+            await adminFn(ctx); //<<<<< THIS IS WHERE CTX IS PASSED TO THE ASYNC ADMINFN CALLBACK
+            logger(`DEBUG: helperAdminConditionalAction - adminFn executed. Answering CBQ.`);
             await ctx.answerCbQuery().catch((e) => logger('Error answering CBQ after admin fn in conditional:', e));
         } catch (error) {
             logger('Error in helperAdminConditionalAction executing adminFn:', error);
@@ -327,17 +378,18 @@ export async function helperAdminConditionalAction(
                 .catch((e) => logger('Error answering CBQ after adminFn error in conditional:', e));
         }
     } else {
+        // The 'ctx' passed to nonAdminCb is the same 'ctx' received by helperAdminConditionalAction
         logger(
-            `DEBUG_BOTHELPERS_CONDITIONAL: User is not admin. Preparing nonAdminCb or URL. Passing ctx with keys: [${ctx ? Object.keys(ctx).join(', ') : 'ctx_is_null_or_undefined'}]. ChatID: ${ctx?.chat?.id}. FromID: ${ctx?.from?.id}`
+            `DEBUG: helperAdminConditionalAction - User is not admin. Preparing nonAdminCb or URL. Passing ctx with keys: ${ctx ? Object.keys(ctx).join(', ') : 'N/A'} to nonAdminCb if it's a function.`
         );
         const urlToOpen = nonAdminUrl || (typeof nonAdminCb === 'function' ? await nonAdminCb(ctx) : null);
         if (urlToOpen) {
-            logger(`DEBUG_BOTHELPERS_CONDITIONAL: Non-admin URL to open: ${urlToOpen}`);
+            logger(`DEBUG: helperAdminConditionalAction - Non-admin URL to open: ${urlToOpen}`);
             await ctx
                 .answerCbQuery(nonAdminAlert ? NON_ADMINS_ALERT : '', { url: urlToOpen })
                 .catch((e) => logger('Error answering CBQ with URL for non-admin:', e));
         } else {
-            logger(`DEBUG_BOTHELPERS_CONDITIONAL: Non-admin, no URL to open. Alert: ${nonAdminAlert}`);
+            logger(`DEBUG: helperAdminConditionalAction - Non-admin, no URL to open. Alert: ${nonAdminAlert}`);
             await ctx
                 .answerCbQuery(nonAdminAlert ? NON_ADMINS_ALERT : '', { show_alert: nonAdminAlert })
                 .catch((e) => logger('Error answering CBQ for non-admin (no URL):', e));

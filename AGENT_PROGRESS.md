@@ -375,7 +375,7 @@
 4.  Proceed to diagnose original recitation bug.
 
 ---
-## Session Summary: Jules - 2025-07-10 (Recitation Bug - Diagnostic Logging - Current)
+## Session Summary: Jules - 2025-07-10 (Recitation Bug - Diagnostic Logging - Current) (Version: `2025.07.10-0116`)
 
 **Goal:** Add targeted diagnostic logging to trace `ctx` propagation for the recitation feature, to understand why it's arriving empty/malformed at `sendAyaRecitation`.
 
@@ -403,6 +403,36 @@
 -   Preparing for pre-commit routine.
 
 **Next Steps (This Commit):**
-1.  Complete pre-commit routine.
-2.  Submit diagnostic logging changes.
-3.  Await user deployment and new logs to analyze the `ctx` flow.
+1.  Complete pre-commit routine. (This was completed for version `2025.07.10-0116` which added diagnostic logs).
+2.  Submit diagnostic logging changes. (This was submitted).
+3.  Await user deployment and new logs to analyze the `ctx` flow. (User deployed, but new logs did NOT appear, and the same `Could not determine chatId... { ctxKeys: [] }` error persisted, indicating the issue is earlier or `ctx` is too broken for logging).
+
+---
+## Session Summary: Jules - 2025-07-10 (Recitation Bug - Rollback Logs & Test Strategy - Current)
+
+**Goal:** Rollback the ineffective diagnostic logging changes from version `2025.07.10-0116`. Then, pivot to a test-driven approach to diagnose the "empty context" issue for the recitation feature.
+
+**Work Done & Key Changes:**
+
+1.  **Rolled Back Diagnostic Logging Changes**:
+    *   Restored `src/telegramBot.js` to its state prior to the diagnostic logging additions (i.e., reverted changes made for version `2025.07.10-0116` specifically in the `bot.action(/^{"recite":...})` handler).
+    *   Restored `src/botHandlers/actionHandlers.js` (specifically `handleReciteAction`) to its state prior to diagnostic logging additions.
+    *   Restored `src/botHelpers.js` (specifically `helperAdminConditionalAction`) to its state prior to diagnostic logging additions.
+    *   The codebase for these files now matches their state as of version `2025.07.10-0101`.
+
+2.  **Strategy Update**:
+    *   The previous diagnostic logs were ineffective as they did not appear, indicating the problem is very early in the callback handling or the `ctx` is too corrupted for the logs themselves to function.
+    *   The new strategy, as per user guidance, is to first enhance tests to reliably reproduce the "empty ctx" error before attempting further code modifications.
+
+3.  **Pre-Commit Preparation (This session):**
+    *   This update to `AGENT_PROGRESS.md`.
+    *   Next: `CHANGELOG.md`, versioning, `npm install`, tests for this rollback.
+
+**Current Status:**
+-   Ineffective diagnostic logging has been rolled back from the codebase.
+-   Ready to perform the pre-commit routine for this rollback.
+
+**Next Steps (This Commit):**
+1.  Complete pre-commit routine for the rollback.
+2.  Submit the rollback changes.
+3.  Proceed with the new plan focused on test enhancement and test-driven diagnosis.

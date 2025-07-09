@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.10-0134] - 2025-07-10
+
+### Changed
+- **Reverted Diagnostic Logging**: Rolled back the diagnostic logging changes introduced in version `2025.07.10-0116`. These logs were added to `src/telegramBot.js`, `src/botHandlers/actionHandlers.js`, and `src/botHelpers.js` to trace a context propagation issue for the recitation feature. The logs did not appear during testing, indicating the issue occurs earlier than anticipated or the context was too corrupted for logging. The codebase for these files has been restored to its state from version `2025.07.10-0101`.
+- The next step is to adopt a test-driven approach to diagnose and fix the recitation context issue.
+
 ## [2025.07.10-0116] - 2025-07-10
 
 ### Changed
