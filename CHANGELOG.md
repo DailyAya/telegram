@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.10-0101] - 2025-07-10
+
+### Fixed
+- **Reverted Critical Regression (Button Functionality):** Commented out the generic `bot.on('callback_query', ...)` handler in `src/telegramBot.js` that was introduced in version `2025.07.09-0342`. This handler was missing an `await next()` call (or equivalent propagation mechanism for Telegraf's `on` vs `action` handlers), causing it to consume all callback query events. This prevented specific `bot.action()` handlers from firing, rendering all inline keyboard buttons unresponsive. This revert restores button functionality.
+- The issue was identified after observing that all buttons stopped working post deployment of version `2025.07.09-0342`. A review of Telegraf documentation and the codebase confirmed the problematic interaction.
+
+### Changed
+- Diagnostic logging in `src/botHandlers/actionHandlers.js#handleReciteAction` remains simplified at its entry point (`logger('DEBUG: handleReciteAction --- ENTRY ---');`) from version `2025.07.09-0342`. This is to aid in diagnosing the original "empty context" recitation issue once button functionality is confirmed restored by this revert.
+
 ## [2025.07.09-0423] - 2025-07-09
 
 ### Fixed

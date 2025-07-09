@@ -347,3 +347,29 @@
 5.  **Fix Original Recitation Issue.**
 
 **(Self-correction: The previous session's introduction of the generic callback logger was flawed due to an incorrect assumption about Telegraf's middleware flow. The internal review process (documentation, full codebase, test analysis) has reinforced the correct understanding and highlighted gaps in test coverage for middleware interactions.)**
+
+---
+## Session Summary: Jules - 2025-07-09 (Button Revert - Current)
+
+**Goal:** Formally commit the revert of the problematic generic `callback_query` handler to restore button functionality.
+
+**Work Done & Key Changes:**
+
+1.  **Comprehensive Codebase Review**:
+    *   Reviewed all `src/**/*.js` files, `package.json`, `AGENT_PROGRESS.md`, `AGENTS.md`, and `README.md`.
+    *   **Confirmation**: Verified that the problematic `bot.on('callback_query', ...)` handler in `src/telegramBot.js` (introduced in version `2025.07.09-0342`) is indeed commented out in the current sandbox. This aligns with the previous session's notes.
+    *   The current `package.json` version is `2025.07.09-0423`, which predates the in-sandbox commenting out of the handler.
+
+2.  **Pre-Commit Preparation (This session):**
+    *   This update to `AGENT_PROGRESS.md` is the first step.
+    *   Next steps involve updating `CHANGELOG.md`, generating a new version, updating `package.json`, running `npm install`, and then tests.
+
+**Current Status:**
+-   Codebase is prepared for committing the revert. The problematic handler is confirmed to be commented out.
+-   Proceeding with the pre-commit routine as per `AGENTS.MD`.
+
+**Next Steps (This Commit):**
+1.  Complete pre-commit routine (CHANGELOG, versioning, npm install, tests).
+2.  Submit the revert.
+3.  Await user deployment and confirmation of button functionality and log appearance.
+4.  Proceed to diagnose original recitation bug.
