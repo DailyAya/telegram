@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.10-1922] - 2025-07-10
+
+### Changed
+
+- **Project Tracking Files Cleanup**:
+    - Performed an in-depth code review to validate the accuracy of `AGENT_PROGRESS.md` and `CHANGELOG.md`.
+    - **`AGENT_PROGRESS.md`**: Updated to be more concise and accurately reflect the project's evolution. This involved removing outdated "Next Steps" and intermediate "Current Status" sections from older session summaries, and slightly condensing descriptions of abandoned diagnostic paths, while preserving key historical "Work Done" details.
+    - **`CHANGELOG.md`**: Improved organization and clarity by removing two duplicate/redundant entries:
+        - Deleted the entry for `[2025.07.09-0423]` (identical to `[2025.07.10-0101]`).
+        - Deleted one of two identical entries for `[2025.07.09-0158]`.
+    - These changes ensure the tracking files are more streamlined and accurately represent the project's true status and history.
+
 ## [2025.07.10-1846] - 2025-07-10
 
 ### Changed
@@ -83,16 +95,6 @@ All notable changes to this project will be documented in this file.
 
 - Diagnostic logging in `src/botHandlers/actionHandlers.js#handleReciteAction` remains simplified at its entry point (`logger('DEBUG: handleReciteAction --- ENTRY ---');`) from version `2025.07.09-0342`. This is to aid in diagnosing the original "empty context" recitation issue once button functionality is confirmed restored by this revert.
 
-## [2025.07.09-0423] - 2025-07-09
-
-### Fixed
-
-- **Reverted Critical Regression:** Commented out the generic `bot.on('callback_query', ...)` handler in `src/telegramBot.js` that was added in version `2025.07.09-0342`. This handler, by not calling `await next()`, was incorrectly consuming all callback query events and preventing specific `bot.action()` handlers from firing, thus breaking all inline keyboard button functionality. This revert is intended to restore button operation.
-
-### Changed
-
-- Diagnostic logging in `src/botHandlers/actionHandlers.js#handleReciteAction` remains simplified at its entry point (`logger('DEBUG: handleReciteAction --- ENTRY ---');`) from version `2025.07.09-0342` to aid in diagnosing the original recitation issue once button functionality is restored.
-
 ## [2025.07.09-0342] - 2025-07-09
 
 ### Changed
@@ -118,12 +120,6 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **`AGENTS.MD`**: Updated the "Pre-commit Routine" section (step 11) to change the default commit branch from `jules_refactor` to `by_ai`. This new default applies unless explicitly overridden by session-specific instructions. Reviewed the document for other conflicting branch instructions and found none.
-
-## [2025.07.09-0158] - 2025-07-09
-
-### Changed
-
-- Added detailed diagnostic logging within `src/botHandlers/actionHandlers.js#handleReciteAction` (specifically in the admin execution path) to inspect the `adminCtx` object immediately before `sendAyaRecitationFn` is called. This is to help diagnose an issue where `sendAyaRecitation` might be receiving an empty context object.
 
 ## [2025.07.09-0158] - 2025-07-09
 
