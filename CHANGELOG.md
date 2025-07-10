@@ -12,7 +12,6 @@ All notable changes to this project will be documented in this file.
         - Added a new mandatory "Pre-Test API Specification Check" step to the "Pre-commit Routine". This requires agents to check `https://github.com/PaulSonOfLars/telegram-bot-api-spec` for updates to `api.json` and synchronize local test fixtures before running tests involving Telegram API interactions.
         - Explicitly mandated the use of **MSW (Mock Service Worker)** for integration testing of outgoing Telegram API calls and for simulating incoming updates (e.g., for `bot.launch()` testing). MSW handlers must align with the official Telegram API specification.
     - These changes aim to improve agent compliance with branching strategies and enhance the accuracy and reliability of testing by using up-to-date API specifications and realistic mocking techniques.
-
 ## [2025.07.10-1828] - 2025-07-10
 
 ### Fixed
