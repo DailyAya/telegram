@@ -279,9 +279,11 @@ export async function handleReciteAction(
         getRecitationFn: dependencies.getRecitationFn,
         getFavReciterDbFn: dependencies.getFavReciterDbFn,
         getRandomReciterIdentifierFn: dependencies.getRandomReciterIdentifierFn,
-        helperSuccessSendFn: dependencies.helperSuccessSendFn,
+        // helperSuccessSendFn is not used by sendAyaRecitationFn
         helperSendSorryFn: dependencies.helperSendSorryFn,
         helperAMenuButtonsFn: dependencies.helperAMenuButtonsFn,
+        ayaId2suraAyaFn: dependencies.ayaId2suraAyaFn, // Added missing dependency
+        lastAyaTimeDbFn: dependencies.lastAyaTimeDbFn, // Added missing dependency
     };
 
     const adminFn = async () => {

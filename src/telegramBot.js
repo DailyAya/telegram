@@ -766,9 +766,10 @@ bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
             getRecitationFn: getRecitation,
             getFavReciterDbFn: getFavReciter,
             getRandomReciterIdentifierFn: getRandomReciterIdentifier,
-            helperSuccessSendFn: helperSuccessSend,
+            // helperSuccessSendFn is not needed for recite action
             helperSendSorryFn: helperSendSorry,
             helperAMenuButtonsFn: helperAMenuButtons,
+            lastAyaTimeDbFn: lastAyaTime, // Added missing dependency
         }
     );
 });
