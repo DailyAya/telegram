@@ -306,7 +306,7 @@ Lingering Minor Issues (at that time):
 - `AGENTS.MD` modified. Previous commit acknowledged on different branch.
 
 ---
-## Session Summary: Jules - 2025.07.10-1922 (To be versioned with this timestamp)
+## Session Summary: Jules - 2025.07.10-1922 (Version `2025.07.10-1922`)
 
 **Goal:** Perform in-depth code review and update `AGENT_PROGRESS.md` and `CHANGELOG.md` to accurately reflect the true status of the project, making them more organized, clean, and to the point.
 **This entry refers to the previous task, completed just before the current logging refinement task.**
@@ -320,32 +320,55 @@ Lingering Minor Issues (at that time):
 **Outcome:** `AGENT_PROGRESS.md` and `CHANGELOG.md` updated for conciseness and accuracy.
 
 ---
-## Session Summary: Jules - (Current Session for Logging Refinements)
+## Session Summary: Jules - 2025.07.10-1939 (Version `2025.07.10-1939`)
 
 **Goal:** Refine application logging to ensure correct classification of log types (debug vs. error) and remove unnecessary diagnostic logs, particularly those related to the now-functional "recite button".
 
 **Work Done & Key Changes:**
 
 1.  **Identified Problematic Logs:**
-    *   Located `DEBUG: handleReciteAction --- ENTRY ---` in `src/botHandlers/actionHandlers.js` and confirmed its misclassification as an error due to `logger.js` behavior with a second argument.
-    *   Identified warning-level logs in `src/telegramBot.js` (recite action wrapper) that were also being treated as errors.
-    *   Reviewed a log in `src/ayaSender.js` for missing `botUsername` and its error classification.
-    *   Confirmed that logs for caught errors (e.g., `editMessageReplyMarkup` issues) are correctly handled by `logger.js`.
-
+    *   Located `DEBUG: handleReciteAction --- ENTRY ---` and other misclassified logs.
 2.  **Modified Log Classifications and Content:**
-    *   **`src/botHandlers/actionHandlers.js`**: Changed `DEBUG: handleReciteAction --- ENTRY ---` to be a `console.log` conditional on `config.debugging`. Imported `config`.
-    *   **`src/telegramBot.js`**: Modified warning logs in the recite action wrapper to embed context objects into the main message string, ensuring they are treated as informational by `logger.js`.
-    *   **`src/ayaSender.js`**:
-        *   Modified the log for missing `botUsername` to be conditional: logs with an `Error` object if `config.debugging` is true, otherwise logs as informational. Imported `config`.
-        *   Corrected a `TypeError: Assignment to constant variable` by changing `const { botUsername }` to `let { botUsername }` to allow fallback assignment.
-
+    *   **`src/botHandlers/actionHandlers.js`**: Changed `DEBUG: handleReciteAction --- ENTRY ---` to `console.log` conditional on `config.debugging`.
+    *   **`src/telegramBot.js`**: Modified warning logs to be informational.
+    *   **`src/ayaSender.js`**: Made `botUsername` missing log conditional (error if debugging, else info). Fixed `TypeError` for `botUsername` assignment.
 3.  **Tested Changes:**
-    *   Added necessary `config.js` mock to `src/ayaSender.test.js` to prevent test failures due to missing `telegramToken` when `config.js` was imported directly by `ayaSender.js`.
-    *   Fixed a failing test in `src/ayaSender.test.js` (`should log and use fallback if botUsername is missing`) by setting `config.debugging = true` for that specific test case to match the updated conditional logging logic.
-    *   All tests (175/175) passed after fixes.
+    *   Added `config.js` mock to `ayaSender.test.js`. Fixed related test. All tests passed.
+
+**Outcome:** Logging refined for accuracy and reduced noise. All tests (175/175) pass.
+
+---
+## Session Summary: Jules - (Current Session for Enhancing Testing Standards)
+
+**Goal:** Enhance testing methodologies to prevent regressions like the 'recite button' and `botUsername` issues, by updating `AGENTS.MD` and implementing more comprehensive tests.
+
+**Work Done & Key Changes:**
+
+1.  **Updated `AGENTS.MD` with Enhanced Testing Mandates:**
+    *   Added/amended "Enhanced Testing Standards" to mandate testing for:
+        *   Context propagation and data flow (including malformed/empty contexts).
+        *   Dependency injection verification.
+        *   Variable scope, mutability, and state management.
+        *   More rigorous integration testing for core user flows using real Telegraf instance with MSW.
+        *   Security considerations in tests.
+        *   Mindfulness of test performance and lightness.
+    *   Updated "Pre-commit Routine":
+        *   Emphasized thorough testing according to new standards in Step 1.
+        *   Added new mandatory Step 5: "Regression Test Creation (MANDATORY FOR BUG FIXES)".
+    *   Changes were approved by the user and applied to `AGENTS.MD`.
+
+2.  **Reviewed Existing Tests for Gaps (Recite Button & botUsername Issues):**
+    *   **Recite Button `ctx` Issue:** Identified need for a *valid* flow integration test in `telegramBot.test.js` using MSW. Considered `helperAdminConditionalAction` tests in `botHelpers.test.js` largely sufficient but noted potential for more explicit checks for `rawCtx` method availability. Identified need for a test in `actionHandlers.test.js` for `fullSenderDeps` integrity.
+    *   **`botUsername` Fallback Issue:** Identified need for a test in `ayaSender.test.js` covering the `config.debugging = false` path for the informational log.
+
+3.  **Implemented Enhanced Tests:**
+    *   **`src/ayaSender.test.js`**: Added test for `botUsername` fallback with `config.debugging = false`. (1 new test)
+    *   **`src/telegramBot.test.js`**: Added MSW-based integration test for a valid "recite" callback flow, verifying data propagation to `sendAudio`. (1 new test)
+    *   **`src/botHandlers/actionHandlers.test.js`**: Added test to verify `handleReciteAction` correctly assembles and passes `fullSenderDeps` to `sendAyaRecitationFn`. (1 new test)
+    *   All tests (now 178) passed after small corrections to the new tests.
 
 **Current Status:**
-- Logging has been refined. The specified debug log is now correctly classified. Warnings are now informational.
-- Unnecessary diagnostic logs related to the recite button have been effectively handled by these changes.
-- All tests pass.
-- Ready for final pre-commit steps.
+- `AGENTS.MD` has been updated with stricter testing guidelines.
+- New tests have been implemented to cover previously identified gaps, focusing on context/data flow, dependency injection, and specific known past issues.
+- All 178 tests are passing.
+- Ready for final pre-commit steps for this task.

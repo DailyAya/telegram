@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.10-2026] - 2025-07-10
+
+### Changed
+
+- **Enhanced Testing Standards and Implementation**:
+    - **`AGENTS.MD` Updated**:
+        - Strengthened "Enhanced Testing Standards" to mandate more rigorous testing for:
+            - Context propagation and data flow (including malformed/empty contexts).
+            - Correct dependency injection and utilization.
+            - Variable scope, mutability, and state management edge cases.
+            - More comprehensive integration testing for core user flows using a real Telegraf instance with MSW.
+            - Security considerations within tests (e.g., anonymized data, thorough auth logic tests).
+            - Mindfulness of test performance and resource usage.
+        - Updated "Pre-commit Routine" to emphasize thorough testing against these new standards and added a new mandatory step for creating regression tests for all bug fixes.
+    - **New Tests Added**:
+        - `src/ayaSender.test.js`: Added a test case for the `botUsername` fallback scenario when `config.debugging` is `false`, ensuring correct informational logging.
+        - `src/telegramBot.test.js`: Added an MSW-based integration test for a valid "recite" callback query, verifying the full data flow from incoming update to the (mocked) `sendAudio` API call, including correct primitive extraction.
+        - `src/botHandlers/actionHandlers.test.js`: Added a test to verify that `handleReciteAction` correctly assembles and passes all required dependencies in the `fullSenderDeps` object to `sendAyaRecitationFn`.
+    - These changes aim to improve test comprehensiveness and reliability, helping to prevent future regressions similar to recently fixed issues. All 178 tests are passing.
+
 ## [2025.07.10-1939] - 2025-07-10
 
 ### Changed

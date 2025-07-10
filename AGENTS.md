@@ -123,16 +123,19 @@ This file (`AGENTS.md`) is the primary source of development directives and guid
 
 **These steps MUST be performed in the exact order specified before every commit. No steps may be skipped or reordered. These instructions supersede any conflicting general agent knowledge.**
 
-1.  **Finalize Code Implementation:** Ensure all planned code modifications for the current task are complete, tested (conceptually or actually, if possible), and meet requirements.
+1.  **Finalize Code Implementation:** Ensure all planned code modifications for the current task are complete, **thoroughly tested according to the Enhanced Testing Standards (including adding new tests for new/modified logic and regression tests for bug fixes)**, and meet requirements.
 2.  **Update `README.md` (if applicable):** If changes impact user-facing features, general developer information, or setup instructions, update `README.md` accordingly.
 3.  **Update `AGENT_PROGRESS.md`:** Summarize the work done, decisions made, and current status. Ensure the "Current Project Focus / Features" section is updated if relevant.
 4.  **Update `CHANGELOG.md`:** Add a new entry for the upcoming version (using the timestamp that will be generated in a subsequent step). Summarize user-facing changes, significant internal improvements, and bug fixes. Clearly associate this entry with the generated version timestamp.
-5.  **Dependency Update (if applicable):** If `package.json` dependencies were added, removed, or changed (this step is distinct from the mandatory version update):
+5.  **Regression Test Creation (MANDATORY FOR BUG FIXES):**
+    -   If the work involved fixing a bug (especially a regression), a specific test case that reliably reproduces the bug's conditions and then verifies its fix **must** be added to the test suite. This test should be clearly named and documented to explain the scenario it covers.
+    -   This step should ideally be done *before* or *during* step 1 (Finalize Code Implementation) but is listed here as a final check.
+6.  **Dependency Update (if applicable):** If `package.json` dependencies were added, removed, or changed (this step is distinct from the mandatory version update):
     - Run `npm install`. This will update `package-lock.json` to reflect these dependency changes.
-6.  **Generate Real-time Version Timestamp:** Execute the command `TZ='Africa/Cairo' date +'%Y.%m.%d-%H%M'` to obtain the current Africa/Cairo timestamp. This value **MUST** be used for the version. No simulated, pre-calculated, or manually typed-from-memory timestamps are allowed.
-7.  **Update `package.json` Version:** Manually modify the `version` field in `package.json` with the **exact, verbatim timestamp** generated in step 6. Ensure the format is `yyyy.mm.dd-HHMM` (e.g., `2023.07.07-1430`).
-8.  **Synchronize `package-lock.json` (MANDATORY):** Run `npm install` again. This step is **crucial and mandatory** even if step 5 was performed (or if only the version in `package.json` changed). It ensures that `package-lock.json` is fully synchronized with `package.json`, particularly reflecting the new version in its internal `name` and `version` fields. **This step MUST follow step 7 directly.**
-9.  **Pre-Test API Specification Check (MANDATORY):**
+7.  **Generate Real-time Version Timestamp:** Execute the command `TZ='Africa/Cairo' date +'%Y.%m.%d-%H%M'` to obtain the current Africa/Cairo timestamp. This value **MUST** be used for the version. No simulated, pre-calculated, or manually typed-from-memory timestamps are allowed.
+8.  **Update `package.json` Version:** Manually modify the `version` field in `package.json` with the **exact, verbatim timestamp** generated in step 7. Ensure the format is `yyyy.mm.dd-HHMM` (e.g., `2023.07.07-1430`).
+9.  **Synchronize `package-lock.json` (MANDATORY):** Run `npm install` again. This step is **crucial and mandatory** even if step 5 was performed (or if only the version in `package.json` changed). It ensures that `package-lock.json` is fully synchronized with `package.json`, particularly reflecting the new version in its internal `name` and `version` fields. **This step MUST follow step 8 directly.**
+10. **Pre-Test API Specification Check (MANDATORY):**
     - Before running functional/integration tests that interact with the Telegram Bot API, you **MUST** perform the following:
         - Check the `telegram-bot-api-spec` repository (`https://github.com/PaulSonOfLars/telegram-bot-api-spec`) for any recent updates to its `api.json` file, particularly comparing it against the version/date of the local `api.json` or equivalent fixtures used by the test suite.
         - If the `telegram-bot-api-spec/api.json` is newer or indicates changes relevant to the methods or types being tested, the local fixtures **MUST** be updated to reflect these changes before proceeding with tests. This might involve:
@@ -140,9 +143,9 @@ This file (`AGENTS.md`) is the primary source of development directives and guid
             - Re-generating or manually updating local test fixtures (e.g., in `test/__fixtures__/telegram_api_responses/` or `test/__fixtures__/telegram_updates/`) to align with the latest specification.
             - Documenting this update in `AGENT_PROGRESS.md`.
     - This step ensures that tests are validated against the most current understanding of the Telegram API.
-10. **Run Linters/Tests (if configured):** Execute any project-defined linters (e.g., ESLint) and automated tests (e.g., Jest). Address any issues identified. The DailyAya project currently uses `npm run lint -- --fix` and `npm test`.
-11. **Prepare Commit Message:** Draft a descriptive commit message. The first line should be a concise summary (max 50 chars). Include the new version string (e.g., "Version: yyyy.mm.dd-HHMM") in the commit message body.
-12. **Submit Changes (MANDATORY TO `by_ai` BRANCH):** Commit all modified files, which typically include any changed source code files, `README.md` (if updated), `AGENT_PROGRESS.md` (if updated), `CHANGELOG.md` (if updated), `package.json`, and `package-lock.json`. **ALL COMMITS MUST BE TO A BRANCH NAMED `by_ai` UNLESS EXPLICITLY INSTRUCTED OTHERWISE BY THE USER FOR THE CURRENT SESSION/TASK. This is a primary directive.**
+11. **Run Linters/Tests (if configured):** Execute any project-defined linters (e.g., ESLint) and automated tests (e.g., Jest). Address any issues identified. The DailyAya project currently uses `npm run lint -- --fix` and `npm test`.
+12. **Prepare Commit Message:** Draft a descriptive commit message. The first line should be a concise summary (max 50 chars). Include the new version string (e.g., "Version: yyyy.mm.dd-HHMM") in the commit message body.
+13. **Submit Changes (MANDATORY TO `by_ai` BRANCH):** Commit all modified files, which typically include any changed source code files, `README.md` (if updated), `AGENT_PROGRESS.md` (if updated), `CHANGELOG.md` (if updated), `package.json`, and `package-lock.json`. **ALL COMMITS MUST BE TO A BRANCH NAMED `by_ai` UNLESS EXPLICITLY INSTRUCTED OTHERWISE BY THE USER FOR THE CURRENT SESSION/TASK. This is a primary directive.**
 
 ## Code Quality and Style:
 
@@ -183,11 +186,34 @@ This file (`AGENTS.md`) is the primary source of development directives and guid
     - **Repeatability:** Tests must be repeatable and not depend on external state or order of execution unless explicitly designed for sequence testing.
     - **Coverage:** Aim for comprehensive coverage of critical logic, including success paths, error handling, and edge cases.
     - **No Skipped Tests:** All tests in the suite must pass. Skipped tests are to be considered technical debt and require a plan for remediation or removal if obsolete.
-    - **Performance:** While accuracy is paramount, be mindful of test execution speed. Favor efficient mocking strategies where possible without sacrificing realism for critical interaction points.
+    - **Performance:** While accuracy is paramount, be mindful of test execution speed. Favor efficient mocking strategies where possible without sacrificing realism for critical interaction points. **Agents must avoid overly complex mocks or test setups that could hint at performance issues in the SUT itself or significantly slow down the test suite. Strive for lightweight tests that are quick to execute.**
 
 5.  **Clarity and Maintainability:**
     - Tests should be clear, well-documented, and easy to understand and maintain.
     - Fixture files should be well-organized and clearly named.
+
+6.  **Context Propagation and Data Flow Testing (NEW):**
+    -   **Mandatory:** Tests **must** verify the correct propagation and integrity of critical data (e.g., Telegraf `ctx` object, specific `ctx` properties like `chat.id` or `from.id`, callback query data, user information, state variables, and passed dependencies) through handler chains, helper functions, and services.
+    -   This includes testing with both valid and deliberately malformed/empty/null context objects or data payloads to ensure robust error handling and graceful failures, preventing issues like the "recite button `ctx` corruption".
+    -   Pay special attention to data flow in asynchronous operations and callback functions.
+
+7.  **Dependency Injection Verification (NEW):**
+    -   **Mandatory:** Tests **must** verify that all necessary dependencies are correctly injected into, and utilized by, functions and modules. This is especially critical after refactoring or when new dependencies are introduced to a function or class.
+    -   Verify that functions behave as expected based on the (mocked) dependencies they receive. This would have helped catch the `isValidReciterFn` or `ayaId2suraAyaFn` TypeErrors if the dependency was not correctly passed down.
+
+8.  **Variable Scope, Mutability, and State Management (NEW):**
+    -   **Mandatory:** For complex functions or those dealing with shared state or closures, tests **must** cover scenarios that could expose issues related to variable scope, unintended mutations of objects/arrays (especially those passed as parameters or dependencies), or incorrect state management.
+    -   The `botUsername` fallback logic (where a destructured `const` was incorrectly reassigned) is an example where more focused testing on how parameters are handled internally could have caught the issue. Tests should verify outcomes when such potentially mutable parameters are, or are not, provided.
+
+9.  **Integration Testing for Core User Flows (NEW & REINFORCED):**
+    -   **Mandatory:** Beyond unit tests, critical user flows **must** be covered by integration-style tests.
+    -   This includes using a **real Telegraf instance with MSW** (as already mandated for API calls) to simulate full command-to-response cycles or callback query handling from user interaction to the final bot action(s).
+    -   These tests should verify not just the invocation of the correct top-level handler, but also the sequence of key internal function calls and the final output or side-effects (e.g., correct API calls made via MSW, database updates).
+    -   Such tests would have been more likely to catch the `bot.on('callback_query')` regression that broke all buttons, as they test the Telegraf dispatching mechanism more completely.
+
+10. **Security Considerations in Tests (NEW):**
+    -   Ensure test data (e.g., mock chat/user IDs, text payloads) does not inadvertently include sensitive or real user data examples unless strictly necessary and anonymized.
+    -   Tests for authorization logic (e.g., `adminChecker`, `helperAdminProtectedAction`) must be thorough, covering all relevant positive and negative cases.
 
 **Adherence to these enhanced testing standards is critical for improving the overall quality and reliability of the DailyAyaBot.**
 
