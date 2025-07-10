@@ -1,0 +1,41 @@
+{
+    "update_id": 100000001,
+    "callback_query": {
+        "id": "7770000000000000001",
+        "from": {
+            "id": 987654321,
+            "is_bot": false,
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "username": "jane_doe",
+            "language_code": "en"
+        },
+        "message": {
+            "message_id": 1370,
+            "from": {
+                "id": 112233445,
+                "is_bot": true,
+                "first_name": "TestBot",
+                "username": "ActualTestBotUsername"
+            },
+            "chat": {
+                "id": 987654321,
+                "type": "private",
+                "first_name": "Jane",
+                "last_name": "Doe",
+                "username": "jane_doe"
+            },
+            "date": 1678886500,
+            "text": "Aya text previously sent by the bot.",
+            "reply_markup": {
+                "inline_keyboard": [
+                    [
+                        { "text": "🔊 Recite", "callback_data": "{\"recite\":262,\"r\":\"ar.alafasy\"}" }
+                    ]
+                ]
+            }
+        },
+        "chat_instance": "-1234567890123456789",
+        "data": "{\"recite\":262,\"r\":\"ar.alafasy\"}"
+    }
+}

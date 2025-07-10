@@ -121,6 +121,38 @@ This file (`AGENTS.md`) is the primary source of development directives and guid
 - **Error Handling**: Implement robust error handling for API interactions, database operations, and other potentially failing operations. Log errors appropriately.
 - **ESLint/Prettier**: Adhere to the project's ESLint and Prettier configurations for consistent code style.
 
+## Enhanced Testing Standards:
+**These standards are mandatory for all new tests and for refactoring existing tests.**
+
+1.  **Accurate and Comprehensive Mock Data:**
+    *   **Full Data Fixtures:** All tests simulating Telegram `Update` objects (e.g., messages, callback queries) or Telegram API method responses (e.g., from `sendMessage`, `getChatMember`) **must** use comprehensive data structures loaded from external JSON fixture files. These files will reside in a designated directory (e.g., `test/__fixtures__/telegram_updates/` and `test/__fixtures__/telegram_api_responses/`).
+    *   **Source of Truth:** Fixtures must be based on the [official Telegram Bot API documentation](https://core.telegram.org/bots/api#available-types) to ensure all relevant fields (including optional ones) are considered. The `@telegraf/types` package should be used as a reference for structural correctness.
+    *   **Variety:** Create a diverse set of fixtures covering various scenarios, chat types, user types, and potential edge cases. Avoid using minimal or incomplete data samples.
+
+2.  **Realistic Context (`ctx`) Object Simulation:**
+    *   **Centralized Helper:** For unit/integration tests of handlers that receive a Telegraf `Context` object, tests **must** use a centrally provided test helper function (e.g., `createMockCtx(updateFixture, botInstance)` located in `test/test_helpers/`).
+    *   **Functionality:** This helper will take a loaded `Update` fixture (from step 1.1) and the mocked Telegraf bot instance. It must return a `ctx` object that accurately mimics a Telegraf-generated context, including:
+        *   Populating `ctx.update` with the fixture data.
+        *   Correctly deriving and populating top-level convenience properties on `ctx` (e.g., `ctx.chat`, `ctx.from`, `ctx.message`, `ctx.callbackQuery`) from `ctx.update`.
+        *   Providing essential `ctx` methods (e.g., `reply()`, `answerCbQuery()`, `editMessageText()`) as `jest.fn()` mocks.
+
+3.  **Mocking Outgoing Telegram API Calls:**
+    *   **Realistic Responses:** When testing functions that make outgoing calls to the Telegram API (e.g., `ctx.telegram.sendMessage()`, `bot.telegram.getMe()`), mocks for these API methods **must** resolve or reject with full and accurate JSON response objects (for both success and error cases) loaded from external fixtures (see step 1.1). Do not use overly simplistic mock resolved values (e.g., `mockResolvedValue({})` or `mockResolvedValue(true)` if the actual API returns a complex object).
+    *   **(Future Consideration) HTTP Mock Server:** For deeper integration testing of outgoing API calls, especially for `getUpdates` in long polling, the use of an HTTP mock server like WireMock (configured to serve `Update` fixtures and mock API method responses) may be adopted. If implemented, its usage will be detailed here.
+
+4.  **Test Reliability and Best Practices:**
+    *   **Isolation:** Ensure unit tests are well-isolated.
+    *   **Repeatability:** Tests must be repeatable and not depend on external state or order of execution unless explicitly designed for sequence testing.
+    *   **Coverage:** Aim for comprehensive coverage of critical logic, including success paths, error handling, and edge cases.
+    *   **No Skipped Tests:** All tests in the suite must pass. Skipped tests are to be considered technical debt and require a plan for remediation or removal if obsolete.
+    *   **Performance:** While accuracy is paramount, be mindful of test execution speed. Favor efficient mocking strategies where possible without sacrificing realism for critical interaction points.
+
+5.  **Clarity and Maintainability:**
+    *   Tests should be clear, well-documented, and easy to understand and maintain.
+    *   Fixture files should be well-organized and clearly named.
+
+**Adherence to these enhanced testing standards is critical for improving the overall quality and reliability of the DailyAyaBot.**
+
 ## Current Project Focus / Features:
 _(This section should be updated by the AI agent to reflect the current development focus, key features being worked on, or major refactoring goals. Example: "Implementing user preferences for Quran reciters," or "Refactoring database interaction layer for improved error handling.")_
 
