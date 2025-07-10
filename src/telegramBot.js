@@ -1,6 +1,8 @@
+console.log('[TELEGRAMBOT_SUT] Importing dependencies...');
 import axios from 'axios'; // Added for direct getMe check
 import https from 'https'; // REINSTATED for custom agent
 import { Telegraf, Markup } from 'telegraf';
+console.log('[TELEGRAMBOT_SUT] Telegraf imported.');
 import config from './config.js'; // config is already imported, ensure it's used by directGetMeCheck
 import { logger, setBotInstance, bootstrapLogger } from './logger.js';
 import { lastAyaTime, setFavReciter, getFavReciter } from './database.js'; // Removed getDB
@@ -165,6 +167,7 @@ async function directGetMeCheck() {
             }
         });
 })(); // Close and invoke the IIFE
+console.log('[TELEGRAMBOT_SUT] getMe IIFE executed.');
 
 /**
  * Helper to get Quran data once.
@@ -649,15 +652,111 @@ bot.action(/^{"aMenu":"[^"]+","a":\d+,"r":"[^"]+"}$/, async (ctx) =>
     })
 );
 
-bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) =>
-    actionHandlers.handleReciteAction(ctx, {
-        botTelegram: bot.telegram,
-        botOptions: bot.options,
-        helperAdminConditionalAction: helperAdminConditionalAction,
-        sendAyaRecitationFn: senderSendAyaRecitation, // Use imported senderSendAyaRecitation
-        ayaId2suraAyaFn: ayaId2suraAya, // from quranService.js
-    })
-);
+bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
+    let callbackData;
+    let chatId;
+    let fromId;
+    let messageId;
+    let rawCtxForAnswerCbQuery = ctx; // Keep original ctx for methods like answerCbQuery
+
+    try {
+        if (!ctx || typeof ctx !== 'object' || Object.keys(ctx).length === 0) {
+            logger('Recite action (telegramBot.js): Received invalid or empty ctx.', {
+                ctxKeys: ctx ? Object.keys(ctx) : null,
+                ctxValue: ctx,
+            });
+            // Try to answer if possible, though ctx might be too broken
+            if (ctx && typeof ctx.answerCbQuery === 'function') {
+                await ctx
+                    .answerCbQuery('Error processing your request (ctx).', { show_alert: true })
+                    .catch((e) => logger('Error answering CBQ for bad/empty ctx:', e));
+            }
+            return;
+        }
+
+        // Defensive checks for critical properties
+        if (
+            !ctx.update ||
+            typeof ctx.update !== 'object' ||
+            !ctx.update.callback_query ||
+            typeof ctx.update.callback_query !== 'object' ||
+            typeof ctx.update.callback_query.data !== 'string'
+        ) {
+            logger('Recite action (telegramBot.js): ctx.update.callback_query.data is missing or invalid.', {
+                ctxUpdateKeys: ctx.update ? Object.keys(ctx.update) : 'no_update',
+                cbQuery: ctx.update ? ctx.update.callback_query : 'no_update',
+            });
+            await ctx
+                .answerCbQuery('Error processing your request (data).', { show_alert: true })
+                .catch((e) => logger('Error answering CBQ for bad ctx.update:', e));
+            return;
+        }
+        callbackData = JSON.parse(ctx.update.callback_query.data);
+
+        if (!ctx.chat || typeof ctx.chat !== 'object' || typeof ctx.chat.id === 'undefined') {
+            logger('Recite action (telegramBot.js): ctx.chat.id is missing or invalid.', { ctxChat: ctx.chat });
+            await ctx
+                .answerCbQuery('Error processing your request (chat).', { show_alert: true })
+                .catch((e) => logger('Error answering CBQ for bad ctx.chat:', e));
+            return;
+        }
+        chatId = ctx.chat.id;
+
+        // fromId is optional for some flows but good for admin checks.
+        fromId = ctx.from?.id;
+        if (!fromId) {
+            logger(
+                'Recite action (telegramBot.js): ctx.from.id is missing. Proceeding, but admin checks might be affected.',
+                { ctxFrom: ctx.from }
+            );
+        }
+
+        messageId = ctx.update.callback_query.message?.message_id;
+        if (!messageId) {
+            logger(
+                'Recite action (telegramBot.js): ctx.update.callback_query.message.message_id is missing. Recitation might not be able to edit original message markup.',
+                { cbQueryMsg: ctx.update.callback_query.message }
+            );
+        }
+    } catch (e) {
+        logger('Recite action (telegramBot.js): Error parsing ctx or callback_data in wrapper.', {
+            error: e.message,
+            ctxKeys: ctx ? Object.keys(ctx) : 'ctx_null_or_undefined_in_catch',
+        });
+        if (ctx && typeof ctx.answerCbQuery === 'function') {
+            await ctx
+                .answerCbQuery('Error parsing your request.', { show_alert: true })
+                .catch((eCb) => logger('Error answering CBQ for parse fail in wrapper:', eCb));
+        }
+        return;
+    }
+
+    // Call handleReciteAction with a new structured object containing extracted primitives
+    // and the rawCtx for methods like answerCbQuery if still needed by deeper functions.
+    // The goal is for downstream functions to primarily use the primitives.
+    actionHandlers.handleReciteAction(
+        {
+            // Primitives
+            chatId: chatId,
+            fromId: fromId, // May be undefined
+            messageId: messageId, // May be undefined
+            callbackQueryData: callbackData,
+
+            // Raw context, primarily for Telegraf methods like answerCbQuery, editMessageText etc.
+            // if they are still called directly by handleReciteAction or its direct helpers.
+            // Ideally, these methods would also be wrapped or their usage localized.
+            rawCtx: rawCtxForAnswerCbQuery,
+        },
+        {
+            // Dependencies remain the same
+            botTelegram: bot.telegram,
+            botOptions: bot.options,
+            helperAdminConditionalAction: helperAdminConditionalAction, // Will need refactoring
+            sendAyaRecitationFn: senderSendAyaRecitation, // Will need refactoring
+            ayaId2suraAyaFn: ayaId2suraAya,
+        }
+    );
+});
 
 // --- Other Event Handlers ---
 bot.on('text', async (ctx) => {
@@ -783,3 +882,4 @@ export async function launchBot() {
     // logger(`Telegraf bot error for ${ctx.updateType}:`, err);
     // });
 }
+console.log('[TELEGRAMBOT_SUT] End of module execution (after launchBot export).');

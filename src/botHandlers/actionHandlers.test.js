@@ -41,6 +41,7 @@ jest.unstable_mockModule('../logger.js', () => ({
 }));
 
 // --- Mock ../botHelpers.js ---
+// Define mock functions first
 const mockAdminChecker = jest.fn();
 const mockHelperAdminProtectedAction = jest.fn(async (ctx, botTelegram, actionFn, alertIfNotAdmin = true) => {
     const isAdmin = await mockAdminChecker(ctx, botTelegram);
@@ -54,8 +55,6 @@ const mockHelperAdminProtectedAction = jest.fn(async (ctx, botTelegram, actionFn
                 await ctx.answerCbQuery().catch(() => {});
             }
         } catch {
-            // Removed unused _e
-            // Prefix with _ to indicate unused
             if (ctx.answerCbQuery) {
                 await ctx.answerCbQuery('An error occurred in action.', { show_alert: true }).catch(() => {});
             }
@@ -68,13 +67,25 @@ const mockHelperAdminProtectedAction = jest.fn(async (ctx, botTelegram, actionFn
 });
 const mockHelperInstructions = jest.fn();
 
-jest.unstable_mockModule('../botHelpers.js', () => ({
-    __esModule: true,
-    helperAdminProtectedAction: mockHelperAdminProtectedAction,
-    adminChecker: mockAdminChecker,
-    NON_ADMINS_ALERT: 'NON_ADMINS_ALERT_MOCK',
-    instructions: mockHelperInstructions,
-}));
+// Now, set up the mock for the module, including the actual helperAdminConditionalAction
+jest.unstable_mockModule('../botHelpers.js', async () => {
+    const actualBotHelpers = await jest.importActual('../botHelpers.js');
+    return {
+        __esModule: true,
+        // Actual exports to preserve
+        helperAdminConditionalAction: actualBotHelpers.helperAdminConditionalAction,
+        // Mocked exports
+        helperAdminProtectedAction: mockHelperAdminProtectedAction,
+        adminChecker: mockAdminChecker,
+        NON_ADMINS_ALERT: 'NON_ADMINS_ALERT_MOCK', // Re-define mock constant if needed
+        instructions: mockHelperInstructions,
+        // Add any other exports from botHelpers that are not explicitly mocked but might be used by SUT
+        // If not added, they will be undefined if SUT imports them.
+        // For now, assuming only these are relevant for actionHandlers.js or are passed as params.
+        // If botHelpers.js exports other things like aMenuButtons, sendSorry, etc., and actionHandlers.js
+        // were to import them directly (it doesn't seem to), they'd need to be added here too.
+    };
+});
 
 // --- Mock ../database.js ---
 const mockDbSetFavReciter = jest.fn();
@@ -283,33 +294,31 @@ describe('Bot Action Handlers', () => {
             mockAdminChecker.mockClear();
             mockCtx.answerCbQuery.mockClear();
             mockSendAyaRecitationFn.mockClear();
-            mockAyaId2suraAyaFn.mockClear(); // Clear if its calls are specifically asserted per test
+            // mockAyaId2suraAyaFn is globally mocked and reset in main beforeEach
         });
 
-        it('should call sendAyaRecitationFn for admin user', async () => {
-            mockAdminChecker.mockResolvedValue(true);
+        it('should call sendAyaRecitationFn for admin user (with mocked helperAdminConditionalAction)', async () => {
+            mockAdminChecker.mockResolvedValue(true); // For the mocked helper
             await handleReciteAction(mockCtx, dependencies);
 
-            expect(dependencies.helperAdminConditionalAction).toHaveBeenCalled();
+            expect(dependencies.helperAdminConditionalAction).toHaveBeenCalled(); // This is the mock
             expect(mockSendAyaRecitationFn).toHaveBeenCalledWith(mockCtx, 300, 'reciterZ');
         });
 
-        it('should call answerCbQuery with URL for non-admin user', async () => {
+        it('should call answerCbQuery with URL for non-admin user (with mocked helperAdminConditionalAction)', async () => {
             mockCtx.chat.type = 'group';
-            mockAdminChecker.mockResolvedValue(false);
-            // Ensure the local mock passed to the handler is the one being configured
+            mockAdminChecker.mockResolvedValue(false); // For the mocked helper
             dependencies.ayaId2suraAyaFn.mockReturnValue({ sura: 7, aya: 77 });
 
             await handleReciteAction(mockCtx, dependencies);
 
-            expect(dependencies.helperAdminConditionalAction).toHaveBeenCalled();
-            // Assert on the mock that was actually passed to the SUT
+            expect(dependencies.helperAdminConditionalAction).toHaveBeenCalled(); // This is the mock
             expect(dependencies.ayaId2suraAyaFn).toHaveBeenCalledWith(300);
             expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('', { url: 't.me/TestBotForRecite?start=r7-77' });
             expect(mockSendAyaRecitationFn).not.toHaveBeenCalled();
         });
 
-        it('should throw error if callback_data is invalid JSON, before calling helper', async () => {
+        it('should throw error if callback_data is invalid JSON (before calling mocked helper)', async () => {
             mockCtx.update.callback_query.data = 'invalid-json-for-recite';
             try {
                 await handleReciteAction(mockCtx, dependencies);
@@ -317,6 +326,177 @@ describe('Bot Action Handlers', () => {
                 expect(e).toBeInstanceOf(SyntaxError);
             }
             expect(dependencies.helperAdminConditionalAction).not.toHaveBeenCalled();
+        });
+
+        // New test case using actual implementations where possible
+        it('should log "Could not determine chatId" if ctx is empty when calling actual sendAyaRecitation', async () => {
+            // Define minimal NON_ADMINS_ALERT for the test scope
+            const TEST_NON_ADMINS_ALERT = 'Test non-admins alert';
+
+            // Copied/adapted adminChecker for test scope
+            async function testAdminChecker(ctx, botTelegram) {
+                if (!ctx || !ctx.chat || !ctx.from) {
+                    mockLoggerLog('testAdminChecker: Invalid context received.', Object.keys(ctx));
+                    return false;
+                }
+                if (ctx.chat.type === 'private') {
+                    return true;
+                }
+                try {
+                    // Use the globally mocked mockBotTelegramDependency for getChatMember
+                    const member = await botTelegram.getChatMember(ctx.chat.id, ctx.from.id);
+                    return ['creator', 'administrator'].includes(member.status);
+                } catch (error) {
+                    mockLoggerLog('Error in testAdminChecker', error.message);
+                    return false;
+                }
+            }
+
+            // Copied/adapted helperAdminConditionalAction for test scope
+            async function testHelperAdminConditionalAction(
+                ctx,
+                botTelegram,
+                adminFn,
+                nonAdminCb,
+                nonAdminAlert = false,
+                nonAdminUrl = null
+            ) {
+                mockLoggerLog('testHelperAdminConditionalAction: ENTERED. Ctx keys:', Object.keys(ctx));
+                const isUserAdmin = await testAdminChecker(ctx, botTelegram);
+                mockLoggerLog('testHelperAdminConditionalAction: isAdmin:', isUserAdmin);
+                if (isUserAdmin) {
+                    try {
+                        mockLoggerLog(
+                            'testHelperAdminConditionalAction: Calling adminFn. Passing ctx with keys:',
+                            Object.keys(ctx)
+                        );
+                        await adminFn(ctx); // Pass the original ctx
+                        mockLoggerLog('testHelperAdminConditionalAction: adminFn completed.');
+                        await ctx
+                            .answerCbQuery()
+                            .catch((e) =>
+                                mockLoggerLog('Error answering CBQ after admin fn in conditional (test):', e.message)
+                            );
+                    } catch (error) {
+                        mockLoggerLog(
+                            'Error in testHelperAdminConditionalAction executing adminFn:',
+                            error.message,
+                            error.stack
+                        );
+                        await ctx
+                            .answerCbQuery('An error occurred (test).', { show_alert: true })
+                            .catch((e) =>
+                                mockLoggerLog(
+                                    'Error answering CBQ after adminFn error in conditional (test):',
+                                    e.message
+                                )
+                            );
+                    }
+                } else {
+                    const urlToOpen = nonAdminUrl || (typeof nonAdminCb === 'function' ? await nonAdminCb(ctx) : null);
+                    if (urlToOpen) {
+                        await ctx
+                            .answerCbQuery(nonAdminAlert ? TEST_NON_ADMINS_ALERT : '', { url: urlToOpen })
+                            .catch((e) =>
+                                mockLoggerLog('Error answering CBQ with URL for non-admin (test):', e.message)
+                            );
+                    } else {
+                        await ctx
+                            .answerCbQuery(nonAdminAlert ? TEST_NON_ADMINS_ALERT : '', { show_alert: nonAdminAlert })
+                            .catch((e) =>
+                                mockLoggerLog('Error answering CBQ for non-admin (no URL) (test):', e.message)
+                            );
+                    }
+                }
+            }
+
+            const { sendAyaRecitation: actualSendAyaRecitation } = await import('../ayaSender.js');
+            console.log('Type of actualSendAyaRecitation in test (after import):', typeof actualSendAyaRecitation);
+            if (typeof actualSendAyaRecitation !== 'function')
+                throw new Error('actualSendAyaRecitation is not a function');
+
+            // Prepare mockCtx carefully
+            const CHAT_ID = 12345;
+            const USER_ID = 67890;
+            const MSG_ID = 101;
+            const AYA_ID = 300;
+            const RECITER_ID = 'reciterRealTest';
+
+            const realCtx = {
+                update: {
+                    callback_query: {
+                        data: JSON.stringify({ recite: AYA_ID, r: RECITER_ID }),
+                        from: { id: USER_ID, username: 'testuser', language_code: 'en' },
+                        message: { message_id: MSG_ID, chat: { id: CHAT_ID, type: 'private' } },
+                    },
+                },
+                chat: { id: CHAT_ID, type: 'private' },
+                from: { id: USER_ID, username: 'testuser', language_code: 'en' },
+                telegram: mockBotTelegramDependency, // For adminChecker inside actualHelperAdminConditionalAction
+                answerCbQuery: jest.fn().mockResolvedValue(true),
+                // Add other methods if Telegraf context expects them (e.g., reply, editMessageText etc.)
+                // For this specific flow, answerCbQuery is the main one used by helper.
+            };
+
+            mockAdminChecker.mockResolvedValue(true); // User is admin
+
+            // Dependencies for actualSendAyaRecitation
+            const actualSenderDependencies = {
+                botTelegram: mockBotTelegramDependency,
+                botUsername: 'TestBotReal',
+                isValidReciterFn: jest.fn().mockReturnValue(true),
+                getFavReciterDbFn: jest.fn().mockResolvedValue({ success: true, data: RECITER_ID }),
+                getRandomReciterIdentifierFn: jest.fn().mockReturnValue(RECITER_ID),
+                helperSendSorryFn: jest.fn(),
+                getRecitationFn: jest.fn().mockResolvedValue('http://mock.audio.url'),
+                ayaId2suraAyaFn: mockAyaId2suraAyaFn.mockReturnValue({ sura: 1, aya: 1 }), // Use the global mock
+                helperAMenuButtonsFn: jest.fn().mockReturnValue({ inline_keyboard: [] }),
+                lastAyaTimeDbFn: jest.fn(),
+            };
+
+            // Modify the dependencies for handleReciteAction to use actual implementations
+            const realDependencies = {
+                botTelegram: mockBotTelegramDependency, // For adminChecker used by testHelperAdminConditionalAction
+                botOptions: { username: 'TestBotReal' }, // For nonAdminCb URL generation
+                helperAdminConditionalAction: testHelperAdminConditionalAction, // Use the in-test defined version
+                sendAyaRecitationFn: (adminCtx, ayaId, reciterId) => {
+                    // Renamed ctx to adminCtx to match usage
+                    mockLoggerLog('adminFn (in test): ENTERED. adminCtx keys:', Object.keys(adminCtx || {}));
+                    return actualSendAyaRecitation(actualSenderDependencies, adminCtx, ayaId, reciterId);
+                },
+                ayaId2suraAyaFn: mockAyaId2suraAyaFn, // For nonAdminCb URL generation
+            };
+
+            // --- This is the crucial part: Intentionally pass a corrupted context ---
+            // --- to the function that `actualHelperAdminConditionalAction` will call ---
+            // To simulate the bug, we need `adminFn` (the one passed to `actualHelperAdminConditionalAction`)
+            // to receive a bad `adminCtx`.
+            // The `adminFn` is `async (adminCtx) => { ... await sendAyaRecitationFn(adminCtx, ...) }`
+            // One way to make `adminCtx` empty is if `actualHelperAdminConditionalAction` somehow passes an empty object.
+            // For this test, let's first assume actualHelperAdminConditionalAction passes `realCtx` correctly.
+            // The bug might be that `realCtx` *itself* is fine, but `actualSendAyaRecitation` fails to parse it.
+            // Or, the bug is that `actualHelperAdminConditionalAction` passes a NEW, EMPTY ctx to its `adminFn`.
+
+            // To test the hypothesis that `actualHelperAdminConditionalAction` passes a bad ctx to `adminFn`:
+            // We can't directly change what `actualHelperAdminConditionalAction` passes.
+            // Instead, we'll call `handleReciteAction` with a `realCtx` that *should* work.
+            // If `senderSendAyaRecitation` (called via `adminFn`) still gets an empty object,
+            // the problem lies in the chain: `handleReciteAction` -> `actualHelperAdminConditionalAction` -> `adminFn` -> `actualSendAyaRecitation`.
+
+            await handleReciteAction(realCtx, realDependencies);
+
+            // Check logger calls
+            const loggerCalls = mockLoggerLog.mock.calls;
+            const errorLog = loggerCalls.find((call) => call[0].includes('Could not determine chatId'));
+
+            expect(errorLog).toBeDefined();
+            expect(errorLog[1]).toBeDefined(); // Second argument to logger is the details object
+            // The error message from the initial problem description was:
+            // "Context type detected: Unknown or malformed. Details: { ctxKeys: [] }"
+            // So, errorLog[1] should be an object containing a property `ctxKeys` which is an empty array.
+            // Or, if the issue is `ctx` being literally `{}`, then `Object.keys(ctx)` would be `[]`.
+            expect(errorLog[1]).toHaveProperty('ctxKeys');
+            expect(errorLog[1].ctxKeys).toEqual([]);
         });
     });
 

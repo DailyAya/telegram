@@ -93,26 +93,16 @@ jest.unstable_mockModule('./database.js', () => ({
     getFavReciter: mockDbGetFavReciter,
 }));
 
-// botHelpers.js
-const mockHelperAdminChecker = jest.fn();
+// botHelpers.js - NO LONGER MOCKED (will use actual implementations)
+// We will rely on its dependencies (logger) being mocked.
+// Spy on specific botHelper functions if needed within tests.
+const mockHelperAdminChecker = jest.fn(); // Keep for tests that might want to control it specifically, though SUT will use actual.
 const mockHelperSuccessSend = jest.fn();
 const mockHelperSendSorry = jest.fn();
 const mockHelperAMenuButtons = jest.fn();
-const mockHelperAdminProtectedAction = jest.fn(async (ctx, botTelegram, actionFn) => actionFn(ctx)); // Simplified for now
-const mockHelperAdminConditionalAction = jest.fn(); // Will be mocked more specifically if needed by a test
+const mockHelperAdminProtectedAction = jest.fn(async (ctx, botTelegram, actionFn) => actionFn(ctx));
 const mockHelperSendUnrecognizedMessage = jest.fn();
 const mockHelperInstructions = jest.fn();
-jest.unstable_mockModule('./botHelpers.js', () => ({
-    __esModule: true,
-    adminChecker: mockHelperAdminChecker,
-    successSend: mockHelperSuccessSend,
-    sendSorry: mockHelperSendSorry,
-    aMenuButtons: mockHelperAMenuButtons,
-    helperAdminProtectedAction: mockHelperAdminProtectedAction,
-    helperAdminConditionalAction: mockHelperAdminConditionalAction,
-    sendUnrecognizedMessage: mockHelperSendUnrecognizedMessage,
-    instructions: mockHelperInstructions,
-}));
 
 // commandHandlers.js
 const mockHandleStartCommand = jest.fn();
@@ -136,30 +126,14 @@ jest.unstable_mockModule('./botHandlers/commandHandlers.js', () => ({
     handleCommandsCommand: mockHandleCommandsCommand,
 }));
 
-// actionHandlers.js
-jest.unstable_mockModule('./botHandlers/actionHandlers.js', () => ({
-    __esModule: true,
-    handleGroupKhatmaAction: jest.fn(),
-    handleRecitersNavPageAction: jest.fn(),
-    handleSetReciterAction: jest.fn(),
-    handleInstructionsAction: jest.fn(),
-    handleSurpriseAyaAction: jest.fn(),
-    handleCurrAyaAction: jest.fn(),
-    handleAMenuAction: jest.fn(),
-    handleReciteAction: jest.fn(),
-}));
+// actionHandlers.js - NO LONGER MOCKED (will use actual implementations)
 
 // khatmaService.js
 jest.unstable_mockModule('./botFeatures/khatmaService.js', () => ({ __esModule: true, khatmaUpdate: jest.fn() }));
 
-// ayaSender.js
-const mockSenderSendAyaText = jest.fn();
-const mockSenderSendAyaRecitation = jest.fn();
-jest.unstable_mockModule('./ayaSender.js', () => ({
-    __esModule: true,
-    sendAyaText: mockSenderSendAyaText,
-    sendAyaRecitation: mockSenderSendAyaRecitation,
-}));
+// ayaSender.js - NO LONGER MOCKED (will use actual implementations)
+const mockSenderSendAyaText = jest.fn(); // Keep for tests that might want to control it specifically
+const mockSenderSendAyaRecitation = jest.fn(); // Keep for tests that might want to control it
 
 // quranService.js
 const mockPrepareAya = jest.fn();
@@ -212,6 +186,7 @@ let bot, launchBot, sendAya, surpriseAya, handleText, botUsernameReady;
 const registeredCommandHandlers = {}; // Store for command handlers
 let textHandlerFnForTest; // Store for 'text' handler
 let myChatMemberHandlerFnForTest; // Store for 'my_chat_member' handler
+const registeredActionHandlersForTest = {}; // Store for action handlers
 
 beforeAll(async () => {
     jest.resetModules(); // Important to get fresh SUT with mocks applied
@@ -289,6 +264,15 @@ beforeAll(async () => {
     if (myChatMemberCall && typeof myChatMemberCall[1] === 'function') {
         myChatMemberHandlerFnForTest = myChatMemberCall[1];
     }
+
+    // Populate action handlers store
+    mockMinimalTelegrafInstance.action.mock.calls.forEach((call) => {
+        const trigger = call[0]; // This can be a RegExp or a string
+        const handlerFn = call[1];
+        if (typeof handlerFn === 'function') {
+            registeredActionHandlersForTest[trigger.toString()] = handlerFn;
+        }
+    });
 });
 
 beforeEach(() => {
@@ -1215,3 +1199,103 @@ describe('MyChatMember Handler Logic', () => {
 // Final structure will have all direct function tests, then registration tests.
 // The TODO for launchBot is still relevant.
 // The TODO for Arabic Sura name parsing in handleText is also still relevant.
+
+describe('Action Handler Integration for "recite" button', () => {
+    let registeredReciteActionHandler;
+    const reciteRegexString = String(/^{"recite":\d+,"r":"[^"]+"}$/);
+
+    beforeAll(() => {
+        // registeredActionHandlersForTest is populated in the main beforeAll
+        registeredReciteActionHandler = registeredActionHandlersForTest[reciteRegexString];
+        if (!registeredReciteActionHandler) {
+            console.log(
+                'Available action triggers in registeredActionHandlersForTest:',
+                Object.keys(registeredActionHandlersForTest)
+            );
+            throw new Error(
+                `Recite action handler for regex ${reciteRegexString} not found. Check regex string or main beforeAll population.`
+            );
+        }
+    });
+
+    beforeEach(() => {
+        // Reset relevant mocks that are specific to this flow or might be checked
+        mockLogger.mockClear(); // Crucial for checking logs
+        mockHelperAdminChecker.mockClear(); // Used by the actual helperAdminConditionalAction
+        mockSenderSendAyaRecitation.mockClear(); // Though we use actual, its internal dependencies might be checked
+
+        // Reset mocks for dependencies of the actual functions if they were called by other tests
+        // For actual sendAyaRecitation's dependencies:
+        mockIsValidReciter.mockClear().mockReturnValue(true);
+        mockDbGetFavReciter.mockClear().mockResolvedValue({ success: true, data: 'mockReciter' });
+        mockGetRandomReciterIdentifier.mockClear().mockReturnValue('randomReciter');
+        mockHelperSendSorry.mockClear();
+        mockGetRecitation.mockClear().mockResolvedValue('http://mock.audio.url');
+        mockAyaId2suraAya.mockClear().mockReturnValue({ sura: 1, aya: 1 });
+        mockHelperAMenuButtons.mockClear().mockReturnValue({ inline_keyboard: [] });
+        mockDbLastAyaTime.mockClear();
+
+        // For actual adminChecker's dependencies (bot.telegram.getChatMember)
+        mockMinimalTelegrafInstance.telegram.getChatMember = jest.fn().mockResolvedValue({ status: 'administrator' });
+
+        // Ensure bot.options.username is set for functions that might need it (e.g. sendAyaRecitation)
+        mockMinimalTelegrafInstance.options.username = 'TestBotForReciteAction';
+    });
+
+    it('should ultimately log "Could not determine chatId" with ctxKeys:[] for recite action if ctx is corrupted', async () => {
+        if (!registeredReciteActionHandler) {
+            throw new Error('Recite action handler was not registered correctly.');
+        }
+
+        const CHAT_ID = 12345;
+        const USER_ID = 67890;
+        const MSG_ID = 101;
+        const AYA_ID = 789;
+        const RECITER_ID = 'testReciter';
+
+        // This is the mock context Telegraf is supposed to provide to the registered handler
+        const mockTelegrafCtx = {
+            update: {
+                callback_query: {
+                    data: JSON.stringify({ recite: AYA_ID, r: RECITER_ID }),
+                    from: { id: USER_ID, username: 'testuser', language_code: 'en' },
+                    message: { message_id: MSG_ID, chat: { id: CHAT_ID, type: 'private' } },
+                },
+            },
+            chat: { id: CHAT_ID, type: 'private' }, // Telegraf adds this top-level shortcut
+            from: { id: USER_ID, username: 'testuser', language_code: 'en' }, // Telegraf adds this
+            telegram: mockMinimalTelegrafInstance.telegram, // Needed by adminChecker
+            answerCbQuery: jest.fn().mockResolvedValue(true), // General Telegraf context method
+            // other ctx methods like reply, editMessageText etc., can be added if used by the flow.
+        };
+
+        // Simulate the scenario where ctx becomes empty or malformed
+        // For this test, we will pass a deliberately corrupted context to the registeredReciteActionHandler
+        // This is to force the error condition we are trying to catch.
+        // The actual bug might be that Telegraf itself (or our bot.action wrapper) creates such a ctx.
+        const corruptedCtx = {};
+
+        // Invoke the handler that telegramBot.js registered with Telegraf
+        // This handler is: async (ctx) => actionHandlers.handleReciteAction(ctx, dependencies)
+        // We are passing `corruptedCtx` here to simulate the problem.
+        await registeredReciteActionHandler(corruptedCtx);
+
+        // Verify that the initial guards in the telegramBot.js wrapper log the empty/invalid ctx
+        const wrapperErrorLog = mockLogger.mock.calls.find((call) =>
+            call[0].includes('Recite action (telegramBot.js): Received invalid or empty ctx.')
+        );
+        expect(wrapperErrorLog).toBeDefined();
+        expect(wrapperErrorLog[1]).toEqual({ ctxKeys: [], ctxValue: {} });
+
+        // Verify that the entry log inside the actual actionHandlers.handleReciteAction was NOT called
+        // because the wrapper should have returned early.
+        const handleReciteActionEntryLog = mockLogger.mock.calls.find(
+            (call) => call[0] === 'DEBUG: handleReciteAction --- ENTRY ---'
+        );
+        expect(handleReciteActionEntryLog).toBeUndefined();
+
+        // Also, the "Could not determine chatId" log from sendAyaRecitation should not be present
+        const senderErrorLog = mockLogger.mock.calls.find((call) => call[0].includes('Could not determine chatId'));
+        expect(senderErrorLog).toBeUndefined();
+    });
+});
