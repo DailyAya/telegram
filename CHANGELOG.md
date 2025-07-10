@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.10-1828] - 2025-07-10
+
+### Fixed
+
+- **Recitation Feature Dependency Error**: Resolved a `TypeError: ayaId2suraAyaFn is not a function` that occurred during recitation requests.
+    - Ensured `ayaId2suraAyaFn` is correctly passed from `telegramBot.js` through `actionHandlers.handleReciteAction` to `ayaSender.sendAyaRecitation`.
+    - Ensured `lastAyaTimeDbFn` (required by `sendAyaRecitation`) is also correctly passed through the same path.
+    - Removed an unused `helperSuccessSendFn` from the dependencies passed for the recite action for clarity.
+
 ## [2025.07.10-0403] - 2025-07-10
 
 ### Fixed

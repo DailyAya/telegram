@@ -327,9 +327,10 @@ describe('Bot Action Handlers', () => {
                 getRecitationFn: mockGetRecitationFn,
                 getFavReciterDbFn: mockGetFavReciterDbFn,
                 getRandomReciterIdentifierFn: mockGetRandomReciterIdentifierFn,
-                helperSuccessSendFn: mockHelperSuccessSendFn,
+                // helperSuccessSendFn is not passed to handleReciteAction's dependencies anymore
                 helperSendSorryFn: mockHelperSendSorryFn,
                 helperAMenuButtonsFn: mockHelperAMenuButtonsFn,
+                lastAyaTimeDbFn: jest.fn(), // Mock for lastAyaTimeDbFn
             };
             mockAdminChecker.mockClear().mockResolvedValue(true);
             rawMockCtx.answerCbQuery.mockClear();
@@ -376,9 +377,11 @@ describe('Bot Action Handlers', () => {
                     getRecitationFn: mockGetRecitationFn,
                     getFavReciterDbFn: mockGetFavReciterDbFn,
                     getRandomReciterIdentifierFn: mockGetRandomReciterIdentifierFn,
-                    helperSuccessSendFn: mockHelperSuccessSendFn,
+                    // helperSuccessSendFn is no longer part of fullSenderDeps
                     helperSendSorryFn: mockHelperSendSorryFn,
                     helperAMenuButtonsFn: mockHelperAMenuButtonsFn,
+                    ayaId2suraAyaFn: mockAyaId2suraAyaFn, // Added expected dependency
+                    lastAyaTimeDbFn: dependencies.lastAyaTimeDbFn, // Added expected dependency
                 }),
                 structuredArg.chatId,
                 structuredArg.messageId,

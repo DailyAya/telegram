@@ -656,3 +656,40 @@ Challenges & Learnings:
 Lingering Minor Issues:
 -   The "Jest did not exit one second after the test run has completed" warning persists for `telegramBot.test.js` when `bot.launch()` is used. This is accepted for now as tests pass.
 -   Some pre-existing console noise in `quranService.test.js` remains.
+
+---
+
+## Session Summary: Jules - 2025-07-10 (Recitation Bug Fix Follow-up)
+
+**Goal:** Fix the `TypeError: ayaId2suraAyaFn is not a function` occurring in `sendAyaRecitation` due to a missing dependency in the `handleReciteAction` flow.
+
+**Work Done & Key Changes:**
+
+1.  **Diagnosis**:
+    *   The error log `TypeError: ayaId2suraAyaFn is not a function` clearly indicates that `ayaId2suraAyaFn` was not correctly passed down to `sendAyaRecitation`.
+    *   Reviewed `src/botHandlers/actionHandlers.js` (`handleReciteAction`) and confirmed that `ayaId2suraAyaFn` was missing from the `fullSenderDeps` object being constructed and passed to `sendAyaRecitationFn`.
+    *   Reviewed `src/telegramBot.js` and confirmed that `ayaId2suraAyaFn` *was* being correctly passed from `telegramBot.js` to `handleReciteAction`'s dependencies.
+    *   Also noted that `lastAyaTimeDbFn` was required by `sendAyaRecitation` but was not being passed from `telegramBot.js` to `handleReciteAction`, and subsequently not to `sendAyaRecitation`.
+
+2.  **Fix Implementation**:
+    *   **In `src/botHandlers/actionHandlers.js` (`handleReciteAction` function):**
+        *   Added `ayaId2suraAyaFn: dependencies.ayaId2suraAyaFn` to the `fullSenderDeps` object.
+        *   Added `lastAyaTimeDbFn: dependencies.lastAyaTimeDbFn` to the `fullSenderDeps` object.
+        *   Removed the unused `helperSuccessSendFn` from `fullSenderDeps` for clarity.
+    *   **In `src/telegramBot.js` (in the `bot.action` handler for recite actions):**
+        *   Added `lastAyaTimeDbFn: lastAyaTime` to the dependencies object passed to `actionHandlers.handleReciteAction`.
+        *   Removed `helperSuccessSendFn` from this dependency object as it's not needed for the recite action.
+
+3.  **Pre-Commit Routine Adherence**:
+    *   This update to `AGENT_PROGRESS.md`.
+    *   (Will proceed with `CHANGELOG.md`, versioning, `npm install`, linting, and testing).
+
+**Current Status:**
+
+- Code changes to fix the missing dependencies for `sendAyaRecitation` are complete.
+- The bot should now correctly handle recitation requests without the `TypeError`.
+
+**Next Steps (This Session):**
+
+- Complete the pre-commit routine.
+- Submit the changes.
