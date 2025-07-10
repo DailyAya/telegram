@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.10-0403] - 2025-07-10
+
+### Fixed
+- **Unit Test Failures**: Addressed and fixed all failing unit tests in `actionHandlers.test.js`, `ayaSender.test.js`, and `telegramBot.test.js`. These failures were primarily due to:
+    - Changes in function signatures (e.g., `sendAyaRecitation` now taking primitive IDs instead of a full context object). Test calls were updated accordingly.
+    - Changes in mocking strategy for `telegramBot.test.js`, where key collaborator modules (`actionHandlers.js`, `botHelpers.js`, `ayaSender.js`) are no longer globally mocked but used as actual implementations. Tests were updated to:
+        - Control behavior of actual helper functions (like `adminChecker`) by mocking their deeper dependencies (e.g., `bot.telegram.getChatMember`).
+        - Assert side effects of actual function calls (e.g., calls to `bot.telegram.sendMessage` or database mocks) instead of calls to high-level mock functions that are no longer in the SUT's direct call path.
+        - Corrected mock implementations (e.g., for `bot.telegram.sendMessage` to return appropriate `chat.id` and `chat.type`) to ensure downstream actual functions receive correct data.
+        - Added missing mocks for Telegram API methods like `deleteMessage` and `editMessageReplyMarkup` that were being called by actual functions.
+- All project tests now pass (with one test in `actionHandlers.test.js` intentionally skipped as obsolete).
+
 ## [2025.07.10-0307] - 2025-07-10
 
 ### Fixed

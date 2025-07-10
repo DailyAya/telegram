@@ -223,8 +223,15 @@ async function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation = f
     try {
         const sentTextCtx = await senderSendAyaText(senderDependencies, chatId, targetAyaId, reciter, lang, trigger);
         if (sentTextCtx && withRecitation) {
-            // sendAyaRecitation takes ctx (which is sentTextCtx here), ayaId, reciterIdentifier
-            await senderSendAyaRecitation(senderDependencies, sentTextCtx, targetAyaId, reciter);
+            // Pass primitives to the refactored senderSendAyaRecitation
+            await senderSendAyaRecitation(
+                senderDependencies,
+                sentTextCtx.chat.id,       // chatId from the message context
+                sentTextCtx.message_id,    // messageId from the message context
+                sentTextCtx.from?.id,      // fromId (bot's ID) from the message context, optional
+                targetAyaId,
+                reciter
+            );
         }
     } catch (e) {
         logger(`sendAya: Error caught while sending Aya ${targetAyaId} to chat ${chatId}. Trigger: ${trigger}`, e);

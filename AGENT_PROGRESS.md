@@ -495,3 +495,48 @@
 8.  Submit.
 
 **(Self-correction: Initial attempts to use `jest.importActual` or `jest.spyOn` for ESM modules within Jest's mocking framework were problematic. Pivoting to a broader integration test with controlled unmocking for key modules, and then focusing on side-effect verification (logs) for the specific test case, proved more effective for diagnosing and verifying the fix for the `ctx` issue.)**
+
+---
+## Session Summary: Jules - 2025-07-10 (Recitation Bug - Test Fixes - Current)
+
+**Goal:** Address failing unit tests in `actionHandlers.test.js`, `ayaSender.test.js`, and `telegramBot.test.js` that resulted from the refactoring of the "recite" button feature and changes to mocking strategies.
+
+**Work Done & Key Changes:**
+
+1.  **Fixed Tests in `actionHandlers.test.js`:**
+    *   Updated tests for `handleReciteAction` to pass the new structured argument (`{ chatId, fromId, messageId, callbackQueryData, rawCtx }`) instead of the raw Telegraf `ctx`.
+    *   Adjusted assertions for `mockSendAyaRecitationFn` to expect new primitive arguments.
+    *   Skipped an obsolete test for JSON parsing (now handled in `telegramBot.js`).
+    *   Refined an integration-style test (using copied helpers) to verify `handleReciteAction`'s behavior when `chatId` is `null`, ensuring it logs an error and answers the callback query appropriately before calling `sendAyaRecitation`.
+    *   All tests in `actionHandlers.test.js` now pass (one skipped).
+
+2.  **Fixed Tests in `ayaSender.test.js`:**
+    *   Updated all calls to `sendAyaRecitation` to use its new signature: `(dependencies, chatId, messageId, _fromId, ayaId, reciterIdentifier)`.
+    *   Extracted `chatId`, `messageId`, `_fromId` from mock context objects in tests and passed them as individual arguments.
+    *   Removed obsolete tests for internal `chatId` detection and added new tests for the direct `chatId` parameter validation in `sendAyaRecitation`.
+    *   All tests in `ayaSender.test.js` now pass.
+
+3.  **Fixed Tests in `telegramBot.test.js` (Iterative Process):**
+    *   **Corrected Mocking Strategy Impact:** Addressed failures caused by unmocking `actionHandlers.js`, `botHelpers.js`, and `ayaSender.js`.
+        *   Updated tests for command handlers (e.g., `/start`, `/help`) and the `'text'` event handler to work with the *actual* `helperAdminChecker` by controlling its behavior via mocking `mockMinimalTelegrafInstance.telegram.getChatMember`. Assertions were changed to check calls to mocked command handlers (from `commandHandlers.js` mock) or `mockLogger`.
+        *   Updated tests for `sendAya`, `surpriseAya`, and direct `handleText` exports. Assertions now check side effects like calls to `mockMinimalTelegrafInstance.telegram.sendMessage` / `sendAudio` or `mockDbLastAyaTime`, as these SUT functions now call actual helper/sender functions.
+    *   **Specific Fixes:**
+        *   Corrected the `sendMessage` and `sendAudio` mocks in the global `beforeEach` to return more realistic `chat` objects (including `type` and `first_name`/`title`), which fixed issues with `helperSuccessSend` determining `chatName` for `mockDbLastAyaTime` assertions.
+        *   Added missing mocks for `editMessageReplyMarkup` and `deleteMessage` to `mockMinimalTelegrafInstance.telegram`, which resolved an issue where `sendAyaRecitation` would call `helperSendSorry` (and thus `sendMessage` a second time) due to TypeErrors.
+        *   Corrected various assertion details (expected `chatId` values, log message content typos).
+    *   All tests in `telegramBot.test.js` now pass, including the key integration test for the "recite" button's corrupted context handling.
+
+**Current Status:**
+-   The original "recite" button bug fix (refactoring data flow and adding guards) is complete and verified.
+-   All previously failing unit tests in `actionHandlers.test.js`, `ayaSender.test.js`, and `telegramBot.test.js` have been successfully fixed and are now passing (with one test in `actionHandlers.test.js` intentionally skipped as obsolete).
+-   The overall test suite is green.
+
+**Next Steps (Pre-Commit Routine for these test fixes):**
+1.  Update `CHANGELOG.md` for the test fixes.
+2.  Generate new version timestamp.
+3.  Update `package.json` version.
+4.  Run `npm install`.
+5.  Run `npm run lint -- --fix` (already done, passed with warnings).
+6.  Run `npm test` (already done, all pass with one skip).
+7.  Prepare commit message.
+8.  Submit.
