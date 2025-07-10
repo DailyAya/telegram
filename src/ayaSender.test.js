@@ -1,9 +1,38 @@
 import { jest } from '@jest/globals';
 
+// --- Manage config.js mock manually ---
+let currentConfigMock = {
+    __esModule: true,
+    default: {
+        telegramToken: 'AYASENDER_TEST_TOKEN',
+        devChatId: 'AYASENDER_DEV_CHAT_ID',
+        mongoDbCredentials: 'test-user:test-pass',
+        mongoSubdomain: 'test-cluster.mongodb.net',
+        mongoURI: 'mongodb+srv://test-user:test-pass@test-cluster.mongodb.net/?retryWrites=true&w=majority',
+        branch: 'test-branch',
+        inst: 'test-inst',
+        host: 'test-host',
+        totalInst: '1',
+        debugging: false, // Default to false, can be overridden in tests
+        codeVer: 'test-v0.0.0',
+        instActiveUntil: '2000-01-01',
+        port: 3008,
+        timerCheckMinutes: 60,
+        timerSendHours: 24,
+        pingTargetGeneral: 'http://test.example.com',
+        pingTargetAlternative: 'http://test.example.org',
+        pingTargetTelegramApiBase: 'http://test.api.telegram.org',
+        botLaunchRetryDelay: 1000,
+        maxBotLaunchRetries: 1,
+    },
+};
+jest.unstable_mockModule('./config.js', () => {
+    return currentConfigMock;
+});
+
 // --- Mock Logger ---
 const mockLogger = jest.fn();
 jest.unstable_mockModule('./logger.js', () => ({
-    // Corrected path
     __esModule: true,
     logger: mockLogger,
 }));
@@ -116,13 +145,17 @@ describe('sendAyaText', () => {
 
     it('should log and use fallback if botUsername is missing', async () => {
         mockDependencies.botUsername = null;
+        const originalDebugging = currentConfigMock.default.debugging; // Save original
+        currentConfigMock.default.debugging = true; // Set for this test
+
         await sendAyaText(mockDependencies, chatId, ayaId, reciter, lang, trigger);
 
         expect(mockLogger).toHaveBeenCalledWith(
-            'sendAyaText: botUsername is not available for prepareAya.',
+            'sendAyaText: botUsername is not available for prepareAya. Using fallback.',
             expect.any(Error)
         );
         expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, 'DailyAyaBot'); // Fallback username
+        currentConfigMock.default.debugging = originalDebugging; // Restore
         expect(mockBotTelegram.sendMessage).toHaveBeenCalled(); // Should still attempt to send
     });
 

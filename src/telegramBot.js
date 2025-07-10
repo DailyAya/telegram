@@ -713,16 +713,14 @@ bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
         fromId = ctx.from?.id;
         if (!fromId) {
             logger(
-                'Recite action (telegramBot.js): ctx.from.id is missing. Proceeding, but admin checks might be affected.',
-                { ctxFrom: ctx.from }
+                `Recite action (telegramBot.js): ctx.from.id is missing (ctxFrom: ${JSON.stringify(ctx.from)}). Proceeding, but admin checks might be affected.`
             );
         }
 
         messageId = ctx.update.callback_query.message?.message_id;
         if (!messageId) {
             logger(
-                'Recite action (telegramBot.js): ctx.update.callback_query.message.message_id is missing. Recitation might not be able to edit original message markup.',
-                { cbQueryMsg: ctx.update.callback_query.message }
+                `Recite action (telegramBot.js): ctx.update.callback_query.message.message_id is missing (cbQueryMsg: ${JSON.stringify(ctx.update.callback_query.message)}). Recitation might not be able to edit original message markup.`
             );
         }
     } catch (e) {

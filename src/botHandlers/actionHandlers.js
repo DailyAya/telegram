@@ -1,6 +1,7 @@
 // src/botHandlers/actionHandlers.js
 // import { Markup } from 'telegraf'; // Removed unused import
 import { logger } from '../logger.js';
+import config from '../config.js'; // Import config
 // ayaId2suraAya, nextAya are imported by functions that use these handlers (e.g. in telegramBot.js) and passed as Fn dependencies
 // import { getQuranData, ayaId2suraAya, nextAya } from '../quranService.js'; // Not needed directly here
 // import { setFavReciter } from '../database.js'; // Not needed directly here
@@ -262,7 +263,11 @@ export async function handleReciteAction(
     dependencies // This now contains botTelegram, botOptions, etc. directly
 ) {
     // console.log('[handleReciteAction SUT ENTRY] typeof dependencies:', typeof dependencies, 'Keys:', dependencies ? Object.keys(dependencies) : 'N/A'); // Removed diagnostic log
-    logger('DEBUG: handleReciteAction --- ENTRY ---', { chatId, fromId, callbackQueryData });
+    if (config.debugging) {
+        console.log(
+            `DEBUG: handleReciteAction --- ENTRY --- chatId: ${chatId}, fromId: ${fromId}, cbData: ${JSON.stringify(callbackQueryData)}`
+        );
+    }
 
     // callbackData is already parsed and passed as callbackQueryData
     // const callbackData = JSON.parse(ctx.update.callback_query.data); // Old way

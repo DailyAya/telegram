@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.10-1939] - 2025-07-10
+
+### Changed
+
+- **Logging Refinements**:
+    - Corrected classification of the `DEBUG: handleReciteAction --- ENTRY ---` log in `src/botHandlers/actionHandlers.js`. It now uses `console.log` and is conditional on `config.debugging`, preventing it from appearing as an error in production.
+    - Modified warning logs in `src/telegramBot.js` (recite action wrapper) concerning missing optional context data (e.g., `ctx.from.id`, `message_id`). These logs now embed context objects into the main message string, ensuring they are treated as informational by `logger.js` instead of errors.
+    - Updated the log for a missing `botUsername` in `src/ayaSender.js`. It now logs with an `Error` object only if `config.debugging` is true; otherwise, it's an informational log. This change also required importing `config` into `ayaSender.js` and `actionHandlers.js`.
+    - Fixed a `TypeError` in `ayaSender.js` by changing `const { botUsername }` to `let { botUsername }` to allow fallback assignment.
+    - Updated `ayaSender.test.js` to include a mock for `config.js` and to set `config.debugging = true` for a specific test case to align with the new conditional logging logic, ensuring all tests pass.
+    - These changes reduce log noise and ensure logs are classified more accurately, particularly preventing debug/warning information from being treated as errors.
+
 ## [2025.07.10-1922] - 2025-07-10
 
 ### Changed

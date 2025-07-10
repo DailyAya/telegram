@@ -1,5 +1,6 @@
 // src/ayaSender.js
 import { logger } from './logger.js';
+import config from './config.js'; // Import config
 
 /**
  * @module ayaSender
@@ -29,9 +30,10 @@ import { logger } from './logger.js';
  * @returns {Promise<import('telegraf/typings/core/types/typegram').Message.TextMessage | null>}
  */
 export async function sendAyaText(dependencies, chatId, ayaId, reciter, lang, trigger) {
-    const {
+    let {
+        // Changed const to let for botUsername
         botTelegram,
-        botUsername,
+        botUsername, // Now mutable within this scope
         prepareAyaFn,
         helperSendSorryFn,
         helperAMenuButtonsFn,
@@ -44,10 +46,15 @@ export async function sendAyaText(dependencies, chatId, ayaId, reciter, lang, tr
     const currentReciter = reciter || 'None';
 
     if (!botUsername) {
-        logger('sendAyaText: botUsername is not available for prepareAya.', new Error('botUsername missing'));
-        // Fallback or throw error, for now, prepareAyaFn might handle it
+        const msg = 'sendAyaText: botUsername is not available for prepareAya. Using fallback.';
+        if (config.debugging) {
+            logger(msg, new Error('botUsername missing for prepareAya'));
+        } else {
+            logger(msg);
+        }
+        botUsername = 'DailyAyaBot'; // Fallback
     }
-    const preparedAya = prepareAyaFn(ayaId, botUsername || 'DailyAyaBot');
+    const preparedAya = prepareAyaFn(ayaId, botUsername); // Use botUsername which now has fallback
 
     if (preparedAya.arText.startsWith('Error:')) {
         logger(`sendAyaText: Error preparing Aya ${ayaId}: ${preparedAya.arText}`);
