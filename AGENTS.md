@@ -132,9 +132,17 @@ This file (`AGENTS.md`) is the primary source of development directives and guid
 6.  **Generate Real-time Version Timestamp:** Execute the command `TZ='Africa/Cairo' date +'%Y.%m.%d-%H%M'` to obtain the current Africa/Cairo timestamp. This value **MUST** be used for the version. No simulated, pre-calculated, or manually typed-from-memory timestamps are allowed.
 7.  **Update `package.json` Version:** Manually modify the `version` field in `package.json` with the **exact, verbatim timestamp** generated in step 6. Ensure the format is `yyyy.mm.dd-HHMM` (e.g., `2023.07.07-1430`).
 8.  **Synchronize `package-lock.json` (MANDATORY):** Run `npm install` again. This step is **crucial and mandatory** even if step 5 was performed (or if only the version in `package.json` changed). It ensures that `package-lock.json` is fully synchronized with `package.json`, particularly reflecting the new version in its internal `name` and `version` fields. **This step MUST follow step 7 directly.**
-9.  **Run Linters/Tests (if configured):** Execute any project-defined linters (e.g., ESLint) and automated tests (e.g., Jest). Address any issues identified. The DailyAya project currently uses `npm run lint -- --fix` and `npm test`.
-10. **Prepare Commit Message:** Draft a descriptive commit message. The first line should be a concise summary (max 50 chars). Include the new version string (e.g., "Version: yyyy.mm.dd-HHMM") in the commit message body.
-11. **Submit Changes:** Commit all modified files, which typically include any changed source code files, `README.md` (if updated), `AGENT_PROGRESS.md` (if updated), `CHANGELOG.md` (if updated), `package.json`, and `package-lock.json`. All commits must be to a branch named `by_ai` unless explicitly instructed otherwise for the current session/task.
+9.  **Pre-Test API Specification Check (MANDATORY):**
+    - Before running functional/integration tests that interact with the Telegram Bot API, you **MUST** perform the following:
+        - Check the `telegram-bot-api-spec` repository (`https://github.com/PaulSonOfLars/telegram-bot-api-spec`) for any recent updates to its `api.json` file, particularly comparing it against the version/date of the local `api.json` or equivalent fixtures used by the test suite.
+        - If the `telegram-bot-api-spec/api.json` is newer or indicates changes relevant to the methods or types being tested, the local fixtures **MUST** be updated to reflect these changes before proceeding with tests. This might involve:
+            - Downloading the new `api.json`.
+            - Re-generating or manually updating local test fixtures (e.g., in `test/__fixtures__/telegram_api_responses/` or `test/__fixtures__/telegram_updates/`) to align with the latest specification.
+            - Documenting this update in `AGENT_PROGRESS.md`.
+    - This step ensures that tests are validated against the most current understanding of the Telegram API.
+10. **Run Linters/Tests (if configured):** Execute any project-defined linters (e.g., ESLint) and automated tests (e.g., Jest). Address any issues identified. The DailyAya project currently uses `npm run lint -- --fix` and `npm test`.
+11. **Prepare Commit Message:** Draft a descriptive commit message. The first line should be a concise summary (max 50 chars). Include the new version string (e.g., "Version: yyyy.mm.dd-HHMM") in the commit message body.
+12. **Submit Changes (MANDATORY TO `by_ai` BRANCH):** Commit all modified files, which typically include any changed source code files, `README.md` (if updated), `AGENT_PROGRESS.md` (if updated), `CHANGELOG.md` (if updated), `package.json`, and `package-lock.json`. **ALL COMMITS MUST BE TO A BRANCH NAMED `by_ai` UNLESS EXPLICITLY INSTRUCTED OTHERWISE BY THE USER FOR THE CURRENT SESSION/TASK. This is a primary directive.**
 
 ## Code Quality and Style:
 
@@ -164,7 +172,10 @@ This file (`AGENTS.md`) is the primary source of development directives and guid
 3.  **Mocking Outgoing Telegram API Calls:**
 
     - **Realistic Responses:** When testing functions that make outgoing calls to the Telegram API (e.g., `ctx.telegram.sendMessage()`, `bot.telegram.getMe()`), mocks for these API methods **must** resolve or reject with full and accurate JSON response objects (for both success and error cases) loaded from external fixtures (see step 1.1). Do not use overly simplistic mock resolved values (e.g., `mockResolvedValue({})` or `mockResolvedValue(true)` if the actual API returns a complex object).
-    - **(Future Consideration) HTTP Mock Server:** For deeper integration testing of outgoing API calls, especially for `getUpdates` in long polling, the use of an HTTP mock server like WireMock (configured to serve `Update` fixtures and mock API method responses) may be adopted. If implemented, its usage will be detailed here.
+    - **HTTP Mock Server (MSW - Mock Service Worker):** For integration testing of outgoing API calls (e.g., `bot.telegram.getMe()`, `ctx.telegram.sendMessage()`) and for simulating incoming updates (e.g., mocking `/getUpdates` for `bot.launch()` testing), the use of **MSW (Mock Service Worker)** is **mandatory**.
+        - MSW allows intercepting network requests at the network level, providing a realistic way to mock API interactions without altering application code.
+        - Handlers for MSW must be configured to serve responses that are structurally accurate according to the Telegram Bot API specification (see "Pre-Test API Specification Check" in the "Pre-commit Routine" section).
+        - This approach is preferred over direct mocking of `axios` or `node-fetch` within Telegraf's internals, or manual `ctx` object construction for testing full update processing flows.
 
 4.  **Test Reliability and Best Practices:**
 
