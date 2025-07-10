@@ -573,4 +573,116 @@ describe('MyChatMember Handler Logic', () => {
 });
 describe('Action Handler Integration for "recite" button', () => {
     it('placeholder', () => expect(true).toBe(true));
+
+    it('should process a valid "recite" callback query via MSW and attempt to send audio', async () => {
+        const ayaIdToRecite = 777;
+        const reciterId = 'ar.alafasy';
+        const chatId = 123456789;
+        const messageId = 555;
+        const callbackQueryId = 'cbq123';
+        const userId = 987654;
+
+        const reciteCallbackQuery = {
+            update_id: 200000000,
+            callback_query: {
+                id: callbackQueryId,
+                from: {
+                    id: userId,
+                    is_bot: false,
+                    first_name: 'TestReciteUser',
+                    username: 'testreciteuser',
+                    language_code: 'en',
+                },
+                message: {
+                    message_id: messageId,
+                    from: {
+                        id: getMeSuccessFixture.result.id,
+                        is_bot: true,
+                        first_name: getMeSuccessFixture.result.first_name,
+                        username: getMeSuccessFixture.result.username,
+                    },
+                    chat: { id: chatId, type: 'private', first_name: 'TestReciteUser', username: 'testreciteuser' },
+                    date: Math.floor(Date.now() / 1000),
+                    text: 'Some message with a button',
+                },
+                chat_instance: 'chatinst123',
+                data: JSON.stringify({ recite: ayaIdToRecite, r: reciterId }),
+            },
+        };
+
+        // MSW handler for the incoming update
+        mswServer.use(
+            http.post(
+                `https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/getUpdates`,
+                async () => {
+                    if (!getUpdatesCalledOnce) {
+                        getUpdatesCalledOnce = true;
+                        return HttpResponse.json({ ok: true, result: [reciteCallbackQuery] });
+                    }
+                    return HttpResponse.json(
+                        { ok: false, error_code: 500, description: 'Test-induced stop polling' },
+                        { status: 500 }
+                    );
+                },
+                { once: true }
+            ) // Ensure it only serves this update once for this specific test
+        );
+
+        // MSW handler for answerCbQuery (expected to be called)
+        const mockAnswerCbQuery = jest.fn(() => HttpResponse.json({ ok: true, result: true }));
+        mswServer.use(
+            http.post(
+                `https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/answerCallbackQuery`,
+                mockAnswerCbQuery
+            )
+        );
+
+        // MSW handler for editMessageReplyMarkup
+        const mockEditMessageReplyMarkup = jest.fn(() => HttpResponse.json({ ok: true, result: true }));
+        mswServer.use(
+            http.post(
+                `https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/editMessageReplyMarkup`,
+                mockEditMessageReplyMarkup
+            )
+        );
+
+        // MSW handler for sendAudio (expected to be called)
+        const mockSendAudio = jest.fn(() =>
+            HttpResponse.json({ ok: true, result: { message_id: messageId + 1, chat: { id: chatId } } })
+        );
+        mswServer.use(
+            http.post(`https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/sendAudio`, mockSendAudio)
+        );
+
+        // Mock dependencies that handleReciteAction and sendAyaRecitation will call
+        // These are already mocked at the top-level of the file, ensure their mocks are appropriate.
+        mockAyaId2suraAya.mockReturnValue({ sura: 11, aya: 11 }); // For caption generation / button menu
+        mockIsValidReciter.mockReturnValue(true);
+        mockGetRecitation.mockResolvedValue('http://mock.audio.url/recite777.mp3');
+        // mockGetFavReciterDbFn is part of top-level mocks, ensure it returns success:true, data: reciterId or 'surprise'
+        // mockGetRandomReciterIdentifierFn is part of top-level mocks
+        // mockHelperAdminConditionalAction will be called by the SUT. We need to ensure its adminFn path is taken.
+        // The adminChecker (mocked via botTelegram.getChatMember) should resolve to admin.
+        botTelegramGetChatMemberSpy.mockResolvedValue({ status: 'administrator', user: { id: userId } });
+
+        await launchBot(); // Launch the bot to start polling
+        await new Promise((resolve) => setTimeout(resolve, 200)); // Allow time for polling and processing
+
+        // Assertions
+        expect(mockAnswerCbQuery).toHaveBeenCalled();
+
+        const sendAudioRequestBody = await mockSendAudio.mock.calls[0][0].request.json();
+        expect(sendAudioRequestBody.chat_id).toBe(chatId); // Compare as number
+        expect(sendAudioRequestBody.audio).toBe('http://mock.audio.url/recite777.mp3');
+        expect(sendAudioRequestBody.caption).toContain(`@${bot.options.username} ➔ 11:11`); // From mockAyaId2suraAya
+
+        // Ensure the `DEBUG: handleReciteAction --- ENTRY ---` log was made (if debugging is on for tests)
+        // This confirms handleReciteAction was reached.
+        // The actual log content depends on config.debugging in actionHandlers.js
+        // For this test, let's assume config.debugging might be false, so no console.log.
+        // A better check is that sendAudio was called, which is downstream.
+
+        // Reset getUpdatesCalledOnce for other tests if this test modified it globally
+        getUpdatesCalledOnce = false;
+    }, 1000); // Increased timeout
 });

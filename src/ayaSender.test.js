@@ -159,6 +159,23 @@ describe('sendAyaText', () => {
         expect(mockBotTelegram.sendMessage).toHaveBeenCalled(); // Should still attempt to send
     });
 
+    it('should log and use fallback if botUsername is missing and debugging is false', async () => {
+        mockDependencies.botUsername = null;
+        const originalDebugging = currentConfigMock.default.debugging;
+        currentConfigMock.default.debugging = false; // Set for this test
+
+        await sendAyaText(mockDependencies, chatId, ayaId, reciter, lang, trigger);
+
+        expect(mockLogger).toHaveBeenCalledWith(
+            'sendAyaText: botUsername is not available for prepareAya. Using fallback.'
+            // No second argument (Error object) expected when debugging is false
+        );
+        expect(mockLogger).not.toHaveBeenCalledWith(expect.any(String), expect.any(Error));
+        expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, 'DailyAyaBot'); // Fallback username
+        currentConfigMock.default.debugging = originalDebugging; // Restore
+        expect(mockBotTelegram.sendMessage).toHaveBeenCalled(); // Should still attempt to send
+    });
+
     it('should handle "migrate to supergroup" error by calling lastAyaTime and retrying', async () => {
         const migrateError = new Error('Migrate to supergroup');
         migrateError.response = {

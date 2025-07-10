@@ -582,6 +582,41 @@ describe('Bot Action Handlers', () => {
                 { show_alert: true } // Corrected message
             );
         });
+
+        it('should correctly assemble and pass all dependencies in fullSenderDeps to sendAyaRecitationFn', async () => {
+            mockAdminChecker.mockResolvedValue(true); // Ensure admin path is taken
+            const parsedCbData = JSON.parse(rawMockCtx.update.callback_query.data);
+            const structuredArg = {
+                chatId: rawMockCtx.chat.id,
+                fromId: rawMockCtx.from.id,
+                messageId: rawMockCtx.update.callback_query.message?.message_id,
+                callbackQueryData: parsedCbData,
+                rawCtx: rawMockCtx,
+            };
+
+            // Call the handler
+            await handleReciteAction(structuredArg, dependencies);
+
+            // Check that sendAyaRecitationFn (which is mockSendAyaRecitationFn in this test scope)
+            // was called. The more important check is the first argument it received.
+            expect(mockSendAyaRecitationFn).toHaveBeenCalled();
+
+            // Get the first argument passed to mockSendAyaRecitationFn
+            const actualFullSenderDeps = mockSendAyaRecitationFn.mock.calls[0][0];
+
+            // Assert that all expected functions from the outer `dependencies` object
+            // are present in the `actualFullSenderDeps` passed to `sendAyaRecitationFn`.
+            expect(actualFullSenderDeps.botTelegram).toBe(dependencies.botTelegram);
+            expect(actualFullSenderDeps.botUsername).toBe(dependencies.botOptions.username);
+            expect(actualFullSenderDeps.isValidReciterFn).toBe(dependencies.isValidReciterFn);
+            expect(actualFullSenderDeps.getRecitationFn).toBe(dependencies.getRecitationFn);
+            expect(actualFullSenderDeps.getFavReciterDbFn).toBe(dependencies.getFavReciterDbFn);
+            expect(actualFullSenderDeps.getRandomReciterIdentifierFn).toBe(dependencies.getRandomReciterIdentifierFn);
+            expect(actualFullSenderDeps.helperSendSorryFn).toBe(dependencies.helperSendSorryFn);
+            expect(actualFullSenderDeps.helperAMenuButtonsFn).toBe(dependencies.helperAMenuButtonsFn);
+            expect(actualFullSenderDeps.ayaId2suraAyaFn).toBe(dependencies.ayaId2suraAyaFn);
+            expect(actualFullSenderDeps.lastAyaTimeDbFn).toBe(dependencies.lastAyaTimeDbFn);
+        });
     });
 
     // ... other describe blocks for handleAMenuAction, handleCurrAyaAction etc. should be fine ...
