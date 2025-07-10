@@ -1,0 +1,21 @@
+{
+    "ok": true,
+    "result": {
+        "message_id": 1366,
+        "from": {
+            "id": 112233445,
+            "is_bot": true,
+            "first_name": "TestBotName",
+            "username": "MyTestBotUsername"
+        },
+        "chat": {
+            "id": 123456789,
+            "type": "private",
+            "first_name": "John",
+            "last_name": "Doe",
+            "username": "john_doe"
+        },
+        "date": 1678886405,
+        "text": "This is a reply from the bot."
+    }
+}

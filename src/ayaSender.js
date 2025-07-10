@@ -1,5 +1,6 @@
 // src/ayaSender.js
 import { logger } from './logger.js';
+import config from './config.js'; // Import config
 
 /**
  * @module ayaSender
@@ -29,9 +30,10 @@ import { logger } from './logger.js';
  * @returns {Promise<import('telegraf/typings/core/types/typegram').Message.TextMessage | null>}
  */
 export async function sendAyaText(dependencies, chatId, ayaId, reciter, lang, trigger) {
-    const {
+    let {
+        // Changed const to let for botUsername
         botTelegram,
-        botUsername,
+        botUsername, // Now mutable within this scope
         prepareAyaFn,
         helperSendSorryFn,
         helperAMenuButtonsFn,
@@ -44,10 +46,15 @@ export async function sendAyaText(dependencies, chatId, ayaId, reciter, lang, tr
     const currentReciter = reciter || 'None';
 
     if (!botUsername) {
-        logger('sendAyaText: botUsername is not available for prepareAya.', new Error('botUsername missing'));
-        // Fallback or throw error, for now, prepareAyaFn might handle it
+        const msg = 'sendAyaText: botUsername is not available for prepareAya. Using fallback.';
+        if (config.debugging) {
+            logger(msg, new Error('botUsername missing for prepareAya'));
+        } else {
+            logger(msg);
+        }
+        botUsername = 'DailyAyaBot'; // Fallback
     }
-    const preparedAya = prepareAyaFn(ayaId, botUsername || 'DailyAyaBot');
+    const preparedAya = prepareAyaFn(ayaId, botUsername); // Use botUsername which now has fallback
 
     if (preparedAya.arText.startsWith('Error:')) {
         logger(`sendAyaText: Error preparing Aya ${ayaId}: ${preparedAya.arText}`);
@@ -97,11 +104,14 @@ export async function sendAyaText(dependencies, chatId, ayaId, reciter, lang, tr
  * @param {function} dependencies.ayaId2suraAyaFn - The ayaId2suraAya function from quranService.
  * @param {function} dependencies.helperAMenuButtonsFn - The helperAMenuButtons function from botHelpers.
  * @param {function} dependencies.lastAyaTimeDbFn - The lastAyaTime function from database.
- * @param {import('telegraf').Context} ctx - The Telegraf context object.
+ * @param {number|string} chatId - The ID of the chat to send the recitation to.
+ * @param {number|undefined} messageId - The ID of the message to potentially reply to or edit (optional).
+ * @param {number|string|undefined} fromId - The ID of the user initiating the action (optional, for logging or future use).
  * @param {number} ayaId - The global ID of the Aya.
  * @param {string|null} reciterIdentifier - The preferred reciter identifier, or null.
  */
-export async function sendAyaRecitation(dependencies, ctx, ayaId, reciterIdentifier) {
+export async function sendAyaRecitation(dependencies, chatId, messageId, _fromId, ayaId, reciterIdentifier) {
+    // _fromId is received but not used in the current logic beyond this point.
     const {
         botTelegram,
         botUsername,
@@ -115,60 +125,14 @@ export async function sendAyaRecitation(dependencies, ctx, ayaId, reciterIdentif
         lastAyaTimeDbFn,
     } = dependencies;
 
-    let chatId;
-    // Determine chatId based on the type of ctx received
-    if (ctx.update && ctx.chat?.id) {
-        // If ctx.update exists, it's a full Telegraf Context object.
-        // ctx.chat.id is the preferred Telegraf way to get chat_id from various update types.
-        chatId = ctx.chat.id;
-    } else if (ctx.update && ctx.callbackQuery?.message?.chat?.id) {
-        // Fallback specifically for callback query contexts if ctx.chat.id wasn't populated
-        chatId = ctx.callbackQuery.message.chat.id;
-    } else if (ctx.chat?.id) {
-        // If ctx.update is not present, ctx is likely a Message object (e.g., from a sendMessage response).
-        // In this case, ctx.chat.id is the direct path.
-        chatId = ctx.chat.id;
-    }
-    // It's also possible ctx is a Message object from ctx.message, check ctx.message.chat.id
-    // This should ideally be handled by the caller passing the right context or chatId directly.
-    // The original `ctx.message?.chat?.id` was removed from the one-liner, let's consider if it's needed
-    // if ctx is a full Context object and ctx.chat.id somehow fails.
-    // The current structure: Telegraf Context -> ctx.chat.id should work. Message Object -> ctx.chat.id should work.
-
+    // chatId is now a direct parameter. The following validation ensures it's usable.
     if (!chatId) {
-        let contextType = 'Unknown';
-        let relevantContextParts = {};
-
-        if (ctx.update) {
-            contextType = 'Telegraf Context';
-            relevantContextParts = {
-                updateType: ctx.updateType,
-                hasChatIdAccess: !!ctx.chat?.id, // Access via Telegraf's smart ctx.chat accessor
-                callbackQueryMessageChatId: ctx.callbackQuery?.message?.chat?.id, // More direct access
-            };
-        } else if (typeof ctx.message_id === 'number' && ctx.hasOwnProperty('chat') && typeof ctx.date === 'number') {
-            // Heuristic: if it has message_id, a 'chat' property (even if null/empty), and 'date', it's likely a Message object.
-            contextType = 'Telegram Message Object';
-            relevantContextParts = {
-                message_id: ctx.message_id,
-                hasChatProperty: ctx.hasOwnProperty('chat'),
-                chatObjectValue: ctx.chat, // Log the actual chat object
-                directChatIdIfPresent: ctx.chat?.id,
-                from_id: ctx.from?.id,
-            };
-        } else {
-            // Log a snippet of the context if it's not too large
-            contextType = 'Unknown or malformed'; // More specific "Unknown"
-            relevantContextParts = {
-                ctxKeys: Object.keys(ctx),
-                // Avoid logging full ctx if it might be sensitive or huge
-            };
-        }
-        logger(
-            `sendAyaRecitation: Could not determine chatId. Context type detected: ${contextType}. Details:`,
-            relevantContextParts
-        );
-        return; // Stop further processing
+        logger(`sendAyaRecitation: Received null or undefined chatId. Cannot send recitation.`, {
+            ayaId,
+            reciterIdentifier,
+        });
+        // Not sending helperSendSorry here as we don't have a chatId to send it to.
+        return;
     }
 
     let finalReciter = reciterIdentifier;
@@ -202,12 +166,14 @@ export async function sendAyaRecitation(dependencies, ctx, ayaId, reciterIdentif
             disable_notification: true,
         });
 
-        const originalMessageId = ctx.message?.message_id || ctx.update?.callback_query?.message?.message_id;
+        // messageId is now a direct parameter. Use it.
+        // const originalMessageId = ctx.message?.message_id || ctx.update?.callback_query?.message?.message_id; // Old way
 
-        if (originalMessageId) {
-            if (sentAudioCtx.message_id === originalMessageId + 1) {
+        if (messageId) {
+            // Check if messageId was provided
+            if (sentAudioCtx.message_id === messageId + 1) {
                 await botTelegram
-                    .editMessageReplyMarkup(chatId, originalMessageId, undefined, undefined)
+                    .editMessageReplyMarkup(chatId, messageId, undefined, undefined)
                     .catch((e) => logger('Warning: Message not modified (remove markup text):', e));
                 await botTelegram
                     .editMessageReplyMarkup(chatId, sentAudioCtx.message_id, undefined, buttons)
@@ -217,14 +183,14 @@ export async function sendAyaRecitation(dependencies, ctx, ayaId, reciterIdentif
                     .deleteMessage(chatId, sentAudioCtx.message_id)
                     .catch((e) => logger('Warning: Message ID invalid (delete initial audio):', e));
                 await botTelegram.sendAudio(chatId, recitationUrl, {
-                    reply_to_message_id: originalMessageId,
+                    reply_to_message_id: messageId, // Use messageId here
                     caption: recitationCaption,
                     parse_mode: 'HTML',
                     disable_notification: true,
                     reply_markup: buttons,
                 });
                 await botTelegram
-                    .editMessageReplyMarkup(chatId, originalMessageId, undefined, undefined)
+                    .editMessageReplyMarkup(chatId, messageId, undefined, undefined) // And here
                     .catch((e) => logger('Warning: Message not modified (remove markup text reply):', e));
             }
         } else {

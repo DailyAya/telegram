@@ -1,6 +1,7 @@
 // src/botHandlers/actionHandlers.js
 // import { Markup } from 'telegraf'; // Removed unused import
 import { logger } from '../logger.js';
+import config from '../config.js'; // Import config
 // ayaId2suraAya, nextAya are imported by functions that use these handlers (e.g. in telegramBot.js) and passed as Fn dependencies
 // import { getQuranData, ayaId2suraAya, nextAya } from '../quranService.js'; // Not needed directly here
 // import { setFavReciter } from '../database.js'; // Not needed directly here
@@ -255,71 +256,83 @@ export async function handleAMenuAction(
  * @param {function} dependencies.ayaId2suraAyaFn - The `ayaId2suraAya` helper from quranService.
  */
 export async function handleReciteAction(
-    ctx,
-    { botTelegram, botOptions, helperAdminConditionalAction, sendAyaRecitationFn, ayaId2suraAyaFn }
+    // ctx, // Old first argument (raw Telegraf context)
+    // New first argument: an object with extracted data
+    { chatId, fromId, messageId, callbackQueryData, rawCtx },
+    // Dependencies remain the second argument
+    dependencies // This now contains botTelegram, botOptions, etc. directly
 ) {
-    const callbackData = JSON.parse(ctx.update.callback_query.data);
-    await helperAdminConditionalAction(
-        ctx,
-        botTelegram,
-        async (adminCtx) => {
-            // --- BEGIN DIAGNOSTIC LOGGING for handleReciteAction ---
-            let adminCtxDetails = 'N/A';
-            const adminCtxType = typeof adminCtx;
-            const adminCtxKeys = adminCtx ? Object.keys(adminCtx).join(', ') : 'N/A';
-            const adminCtxUpdateExists = !!adminCtx?.update;
-            const adminCtxChatId = adminCtx?.chat?.id;
-            const adminCtxCbQueryChatId = adminCtx?.callbackQuery?.message?.chat?.id;
+    // console.log('[handleReciteAction SUT ENTRY] typeof dependencies:', typeof dependencies, 'Keys:', dependencies ? Object.keys(dependencies) : 'N/A'); // Removed diagnostic log
+    if (config.debugging) {
+        console.log(
+            `DEBUG: handleReciteAction --- ENTRY --- chatId: ${chatId}, fromId: ${fromId}, cbData: ${JSON.stringify(callbackQueryData)}`
+        );
+    }
 
-            try {
-                // Avoid stringifying full ctx if it's a complex Telegraf object with circular refs
-                // Instead, log key properties or a shallow representation.
-                if (adminCtx && typeof adminCtx === 'object') {
-                    const tempCtx = { ...adminCtx }; // Shallow clone
-                    delete tempCtx.telegram; // Often causes circular issues
-                    delete tempCtx.botInfo; // Can be large
-                    // delete tempCtx.update; // update itself can be large, already logging its existence
-                    adminCtxDetails = JSON.stringify(tempCtx, null, 2);
-                    if (adminCtxDetails.length > 1000) {
-                        // Keep it somewhat brief
-                        adminCtxDetails = adminCtxDetails.substring(0, 1000) + '... (truncated)';
-                    }
-                } else {
-                    adminCtxDetails = String(adminCtx);
-                }
-            } catch (stringifyError) {
-                adminCtxDetails = `Could not stringify adminCtx in handleReciteAction. Error: ${stringifyError.message}`;
-                logger(`DEBUG: handleReciteAction - JSON.stringify failed for adminCtx:`, stringifyError);
+    // callbackData is already parsed and passed as callbackQueryData
+    // const callbackData = JSON.parse(ctx.update.callback_query.data); // Old way
+
+    // helperAdminConditionalAction will be refactored to take primitives.
+    // For now, it still expects a ctx-like object for adminChecker and answerCbQuery.
+    // We pass rawCtx for that.
+
+    // Construct fullSenderDeps here, in the direct scope of `dependencies`
+    const fullSenderDeps = {
+        botTelegram: dependencies.botTelegram,
+        botUsername: dependencies.botOptions?.username,
+        isValidReciterFn: dependencies.isValidReciterFn,
+        getRecitationFn: dependencies.getRecitationFn,
+        getFavReciterDbFn: dependencies.getFavReciterDbFn,
+        getRandomReciterIdentifierFn: dependencies.getRandomReciterIdentifierFn,
+        // helperSuccessSendFn is not used by sendAyaRecitationFn
+        helperSendSorryFn: dependencies.helperSendSorryFn,
+        helperAMenuButtonsFn: dependencies.helperAMenuButtonsFn,
+        ayaId2suraAyaFn: dependencies.ayaId2suraAyaFn, // Added missing dependency
+        lastAyaTimeDbFn: dependencies.lastAyaTimeDbFn, // Added missing dependency
+    };
+
+    const adminFn = async () => {
+        // Takes no arguments, relies on closure
+        if (!chatId) {
+            // Uses chatId from handleReciteAction's parameters
+            logger('Button reciter: CHAT_ID IS MISSING (in handleReciteAction adminFn). Cannot send recitation.');
+            if (rawCtx && typeof rawCtx.answerCbQuery === 'function') {
+                await rawCtx
+                    .answerCbQuery('Error: Chat ID missing.', { show_alert: true })
+                    .catch((e) => logger('Error answering CBQ for missing chatId in adminFn:', e));
             }
+            return;
+        }
+        logger(`Button reciter: ${callbackQueryData.r} for Aya ${callbackQueryData.recite} in chat ${chatId}`);
 
-            logger(
-                `DEBUG: handleReciteAction - adminFn - Before calling sendAyaRecitationFn.
-                Callback Data: ${JSON.stringify(callbackData)}
-                adminCtx Type: ${adminCtxType}
-                adminCtx Keys: ${adminCtxKeys}
-                adminCtx?.update (exists): ${adminCtxUpdateExists}
-                adminCtx?.chat?.id (accessor): ${adminCtxChatId}
-                adminCtx?.callbackQuery?.message?.chat?.id (direct): ${adminCtxCbQueryChatId}
-                adminCtx Shallow Details: ${adminCtxDetails}`
-            );
-            // --- END DIAGNOSTIC LOGGING ---
+        // adminFn now uses the pre-constructed fullSenderDeps from its closure
+        await dependencies.sendAyaRecitationFn(
+            // This is sendAyaRecitationFn from outer `dependencies`
+            fullSenderDeps, // Pass the pre-constructed object
+            chatId,
+            messageId,
+            fromId,
+            callbackQueryData.recite,
+            callbackQueryData.r
+        );
+    };
 
-            // Original logger call, which might fail if adminCtx.chat.id is not available
-            // logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite} in chat ${adminCtx.chat.id}`);
-            // Defensively log chat ID before using it:
-            if (adminCtx && adminCtx.chat && adminCtx.chat.id) {
-                logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite} in chat ${adminCtx.chat.id}`);
-            } else {
-                logger(`Button reciter: ${callbackData.r} for Aya ${callbackData.recite}. adminCtx.chat.id MISSING.`);
-            }
-            await sendAyaRecitationFn(adminCtx, callbackData.recite, callbackData.r);
-        },
-        async (_nonAdminCtx) => {
-            const ayaIndex = ayaId2suraAyaFn(callbackData.recite);
-            return `t.me/${botOptions.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
+    await dependencies.helperAdminConditionalAction(
+        // Use dependencies.helperAdminConditionalAction
+        rawCtx,
+        dependencies.botTelegram, // Use dependencies.botTelegram
+        adminFn,
+        async () => {
+            // nonAdminCb
+            const ayaIndex = dependencies.ayaId2suraAyaFn(callbackQueryData.recite);
+            return `t.me/${dependencies.botOptions?.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
         },
         false,
-        `t.me/${botOptions.username || 'DailyAyaBot'}?start=r${ayaId2suraAyaFn(callbackData.recite).sura}-${ayaId2suraAyaFn(callbackData.recite).aya}`
+        (() => {
+            // nonAdminUrl
+            const ayaIndex = dependencies.ayaId2suraAyaFn(callbackQueryData.recite);
+            return `t.me/${dependencies.botOptions?.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
+        })()
     );
 }
 

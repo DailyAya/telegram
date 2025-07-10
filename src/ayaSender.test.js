@@ -1,9 +1,38 @@
 import { jest } from '@jest/globals';
 
+// --- Manage config.js mock manually ---
+let currentConfigMock = {
+    __esModule: true,
+    default: {
+        telegramToken: 'AYASENDER_TEST_TOKEN',
+        devChatId: 'AYASENDER_DEV_CHAT_ID',
+        mongoDbCredentials: 'test-user:test-pass',
+        mongoSubdomain: 'test-cluster.mongodb.net',
+        mongoURI: 'mongodb+srv://test-user:test-pass@test-cluster.mongodb.net/?retryWrites=true&w=majority',
+        branch: 'test-branch',
+        inst: 'test-inst',
+        host: 'test-host',
+        totalInst: '1',
+        debugging: false, // Default to false, can be overridden in tests
+        codeVer: 'test-v0.0.0',
+        instActiveUntil: '2000-01-01',
+        port: 3008,
+        timerCheckMinutes: 60,
+        timerSendHours: 24,
+        pingTargetGeneral: 'http://test.example.com',
+        pingTargetAlternative: 'http://test.example.org',
+        pingTargetTelegramApiBase: 'http://test.api.telegram.org',
+        botLaunchRetryDelay: 1000,
+        maxBotLaunchRetries: 1,
+    },
+};
+jest.unstable_mockModule('./config.js', () => {
+    return currentConfigMock;
+});
+
 // --- Mock Logger ---
 const mockLogger = jest.fn();
 jest.unstable_mockModule('./logger.js', () => ({
-    // Corrected path
     __esModule: true,
     logger: mockLogger,
 }));
@@ -116,13 +145,17 @@ describe('sendAyaText', () => {
 
     it('should log and use fallback if botUsername is missing', async () => {
         mockDependencies.botUsername = null;
+        const originalDebugging = currentConfigMock.default.debugging; // Save original
+        currentConfigMock.default.debugging = true; // Set for this test
+
         await sendAyaText(mockDependencies, chatId, ayaId, reciter, lang, trigger);
 
         expect(mockLogger).toHaveBeenCalledWith(
-            'sendAyaText: botUsername is not available for prepareAya.',
+            'sendAyaText: botUsername is not available for prepareAya. Using fallback.',
             expect.any(Error)
         );
         expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, 'DailyAyaBot'); // Fallback username
+        currentConfigMock.default.debugging = originalDebugging; // Restore
         expect(mockBotTelegram.sendMessage).toHaveBeenCalled(); // Should still attempt to send
     });
 
@@ -182,7 +215,14 @@ describe('sendAyaRecitation', () => {
 
     it('should send audio with specified valid reciter', async () => {
         mockIsValidReciterFn.mockReturnValueOnce(true); // initialReciter is valid
-        await sendAyaRecitation(mockDependencies, mockCtx, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockGetRecitationFn).toHaveBeenCalledWith(ayaId, initialReciter);
         expect(mockBotTelegram.sendAudio).toHaveBeenCalledWith(
@@ -194,11 +234,18 @@ describe('sendAyaRecitation', () => {
     });
 
     it('should use favorite reciter if initial reciter is invalid', async () => {
-        mockIsValidReciterFn.mockReturnValueOnce(false); // initialReciter is invalid
-        mockIsValidReciterFn.mockReturnValueOnce(true); // fav.reciter is valid
+        mockIsValidReciterFn.mockReturnValueOnce(false);
+        mockIsValidReciterFn.mockReturnValueOnce(true);
         mockDependencies.getFavReciterDbFn.mockResolvedValueOnce({ success: true, data: 'fav.reciter' });
 
-        await sendAyaRecitation(mockDependencies, mockCtx, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockIsValidReciterFn).toHaveBeenCalledWith(initialReciter);
         expect(mockDependencies.getFavReciterDbFn).toHaveBeenCalledWith(mockCtx.chat.id);
@@ -208,11 +255,18 @@ describe('sendAyaRecitation', () => {
     });
 
     it('should use random reciter if initial and favorite are invalid', async () => {
-        mockIsValidReciterFn.mockReturnValue(false); // Both initial and fav are invalid
+        mockIsValidReciterFn.mockReturnValue(false);
         mockDependencies.getFavReciterDbFn.mockResolvedValueOnce({ success: true, data: 'invalid.fav.reciter' });
         mockDependencies.getRandomReciterIdentifierFn.mockReturnValueOnce('random.reciter.ok');
 
-        await sendAyaRecitation(mockDependencies, mockCtx, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockDependencies.getRandomReciterIdentifierFn).toHaveBeenCalled();
         expect(mockGetRecitationFn).toHaveBeenCalledWith(ayaId, 'random.reciter.ok');
@@ -222,9 +276,16 @@ describe('sendAyaRecitation', () => {
     it('should call sendSorryFn if no valid reciter can be found', async () => {
         mockIsValidReciterFn.mockReturnValue(false);
         mockDependencies.getFavReciterDbFn.mockResolvedValueOnce({ success: false, data: null });
-        mockDependencies.getRandomReciterIdentifierFn.mockReturnValueOnce(null); // No random reciter available
+        mockDependencies.getRandomReciterIdentifierFn.mockReturnValueOnce(null);
 
-        await sendAyaRecitation(mockDependencies, mockCtx, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockGetRecitationFn).not.toHaveBeenCalled();
         expect(mockBotTelegram.sendAudio).not.toHaveBeenCalled();
@@ -234,7 +295,14 @@ describe('sendAyaRecitation', () => {
     it('should call sendSorryFn if getRecitationFn throws an error', async () => {
         mockGetRecitationFn.mockRejectedValueOnce(new Error('Failed to get audio URL'));
 
-        await sendAyaRecitation(mockDependencies, mockCtx, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockHelperSendSorryFn).toHaveBeenCalledWith(mockBotTelegram, mockCtx.chat.id, 'audio');
     });
@@ -244,10 +312,17 @@ describe('sendAyaRecitation', () => {
         blockError.response = { description: 'Forbidden: bot was blocked by the user' };
         mockBotTelegram.sendAudio.mockRejectedValueOnce(blockError);
 
-        await sendAyaRecitation(mockDependencies, mockCtx, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockLastAyaTimeDbFn).toHaveBeenCalledWith(mockCtx.chat.id, 'blocked');
-        expect(mockHelperSendSorryFn).not.toHaveBeenCalled(); // Specific block error doesn't trigger sorry
+        expect(mockHelperSendSorryFn).not.toHaveBeenCalled();
     });
 
     it('should call sendSorryFn for other Telegram API errors during sendAudio', async () => {
@@ -255,170 +330,119 @@ describe('sendAyaRecitation', () => {
         apiError.response = { description: 'Internal server error' };
         mockBotTelegram.sendAudio.mockRejectedValueOnce(apiError);
 
-        await sendAyaRecitation(mockDependencies, mockCtx, ayaId, initialReciter);
-        // Assuming mockCtx.chat.id is primary if available, or from callback_query
-        const expectedChatId = mockCtx.chat?.id || mockCtx.update?.callback_query?.message?.chat?.id;
-        expect(mockLastAyaTimeDbFn).not.toHaveBeenCalledWith(expectedChatId, 'blocked');
-        expect(mockHelperSendSorryFn).toHaveBeenCalledWith(mockBotTelegram, expectedChatId, 'audio');
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
+
+        expect(mockLastAyaTimeDbFn).not.toHaveBeenCalledWith(mockCtx.chat.id, 'blocked');
+        expect(mockHelperSendSorryFn).toHaveBeenCalledWith(mockBotTelegram, mockCtx.chat.id, 'audio');
     });
 
-    it('should attempt to edit/delete messages correctly when original messageId is from ctx.message', async () => {
-        const localMockCtx = {
-            // Use a local mock to ensure no side effects from other tests' mockCtx
-            chat: { id: 'chatMsgOriginal' },
-            message: { message_id: 200, chat: { id: 'chatMsgOriginal' } }, // Ensure message has chat.id
-            // No 'update' field, simulating a Message object or a simple context
-        };
+    it('should attempt to edit/delete messages correctly when original messageId is provided', async () => {
+        const chatId = 'chatMsgEdit';
+        const messageId = 200; // This is the original message with buttons
+        const fromId = 'userEdit';
+
         mockBotTelegram.sendAudio.mockResolvedValue({
-            chat: { id: localMockCtx.chat.id },
-            message_id: localMockCtx.message.message_id + 1,
+            chat: { id: chatId },
+            message_id: messageId + 1, // Sequential audio message
         });
-        await sendAyaRecitation(mockDependencies, localMockCtx, ayaId, initialReciter);
+        await sendAyaRecitation(mockDependencies, chatId, messageId, fromId, ayaId, initialReciter);
 
         expect(mockBotTelegram.editMessageReplyMarkup).toHaveBeenNthCalledWith(
             1,
-            localMockCtx.chat.id,
-            localMockCtx.message.message_id,
+            chatId,
+            messageId, // Original message
             undefined,
             undefined
         );
         expect(mockBotTelegram.editMessageReplyMarkup).toHaveBeenNthCalledWith(
             2,
-            localMockCtx.chat.id,
-            localMockCtx.message.message_id + 1,
+            chatId,
+            messageId + 1, // Audio message
             undefined,
             expect.any(Object)
         );
         expect(mockBotTelegram.deleteMessage).not.toHaveBeenCalled();
     });
 
-    it('should attempt to reply and delete if sentAudio message_id is not sequential (ctx.message)', async () => {
-        const localMockCtx = {
-            chat: { id: 'chatMsgReply' },
-            message: { message_id: 200, chat: { id: 'chatMsgReply' } },
-        };
-        mockBotTelegram.sendAudio.mockResolvedValueOnce({ chat: { id: localMockCtx.chat.id }, message_id: 999 }); // Initial sendAudio
-        mockBotTelegram.sendAudio.mockResolvedValueOnce({ chat: { id: localMockCtx.chat.id }, message_id: 1000 }); // Second sendAudio (reply)
+    it('should attempt to reply and delete if sentAudio message_id is not sequential', async () => {
+        const chatId = 'chatMsgReplyDel';
+        const messageId = 200; // Original message
+        const fromId = 'userReplyDel';
 
-        await sendAyaRecitation(mockDependencies, localMockCtx, ayaId, initialReciter);
+        mockBotTelegram.sendAudio.mockResolvedValueOnce({ chat: { id: chatId }, message_id: 999 }); // Initial sendAudio (non-sequential)
+        // The second call to sendAudio (the reply) will use the default mock from beforeEach
+        // which is mockBotTelegram.sendAudio.mockResolvedValue({ chat: { id: 'chat123' }, message_id: 789 })
+        // This is fine for this test as we are checking the reply_to_message_id.
 
-        expect(mockBotTelegram.deleteMessage).toHaveBeenCalledWith(localMockCtx.chat.id, 999);
+        await sendAyaRecitation(mockDependencies, chatId, messageId, fromId, ayaId, initialReciter);
+
+        expect(mockBotTelegram.deleteMessage).toHaveBeenCalledWith(chatId, 999);
         expect(mockBotTelegram.sendAudio).toHaveBeenLastCalledWith(
-            localMockCtx.chat.id,
+            chatId,
             'http://example.com/audio.mp3',
             expect.objectContaining({
-                reply_to_message_id: localMockCtx.message.message_id,
+                reply_to_message_id: messageId,
                 reply_markup: expect.any(Object),
             })
         );
         expect(mockBotTelegram.editMessageReplyMarkup).toHaveBeenCalledWith(
-            localMockCtx.chat.id,
-            localMockCtx.message.message_id,
+            chatId,
+            messageId, // Original message
             undefined,
             undefined
         );
     });
 
-    it('should attempt to edit/delete messages correctly when original messageId is from callback_query', async () => {
-        const cbCtx = {
-            update: { callback_query: { message: { chat: { id: 'chatAudioCb' }, message_id: 100 } } },
-            chat: { id: 'chatAudioCb' }, // Telegraf context usually populates ctx.chat
-        };
-        mockBotTelegram.sendAudio.mockResolvedValue({ chat: { id: 'chatAudioCb' }, message_id: 101 });
-        await sendAyaRecitation(mockDependencies, cbCtx, ayaId, initialReciter);
+    it('should edit only the new audio message if messageId is undefined (e.g. direct call)', async () => {
+        const chatId = 'chatDirectAudio';
+        const messageId = undefined; // No original message context
+        const fromId = 'userDirect';
 
-        expect(mockBotTelegram.editMessageReplyMarkup).toHaveBeenNthCalledWith(
-            1,
-            'chatAudioCb',
-            100,
+        mockBotTelegram.sendAudio.mockResolvedValue({ chat: { id: chatId }, message_id: 1001 });
+
+        await sendAyaRecitation(mockDependencies, chatId, messageId, fromId, ayaId, initialReciter);
+
+        // Only one editMessageReplyMarkup call on the new audio message
+        expect(mockBotTelegram.editMessageReplyMarkup).toHaveBeenCalledTimes(1);
+        expect(mockBotTelegram.editMessageReplyMarkup).toHaveBeenCalledWith(
+            chatId,
+            1001, // The new audio message's ID
             undefined,
-            undefined
-        );
-        expect(mockBotTelegram.editMessageReplyMarkup).toHaveBeenNthCalledWith(
-            2,
-            'chatAudioCb',
-            101,
-            undefined,
-            expect.any(Object)
+            expect.any(Object) // The new buttons
         );
         expect(mockBotTelegram.deleteMessage).not.toHaveBeenCalled();
     });
 
-    describe('chatId determination in sendAyaRecitation', () => {
-        it('should extract chatId from Telegraf Context (callback_query)', async () => {
-            const ctxFromCb = {
-                update: { callback_query: { message: { chat: { id: 'cbChat123' } } } },
-                chat: { id: 'cbChat123' }, // Telegraf often populates this
-            };
-            await sendAyaRecitation(mockDependencies, ctxFromCb, ayaId, initialReciter);
-            expect(mockGetRecitationFn).toHaveBeenCalledWith(ayaId, initialReciter); // Check if it proceeded
-            expect(mockBotTelegram.sendAudio).toHaveBeenCalledWith('cbChat123', expect.anything(), expect.anything());
-        });
-
-        it('should extract chatId from a Message object (simulating sentTextCtx)', async () => {
-            const messageCtx = {
-                chat: { id: 'messageChat456' },
-                message_id: 789, // other properties of a Message object
-            };
-            await sendAyaRecitation(mockDependencies, messageCtx, ayaId, initialReciter);
+    // New/Revised tests for direct chatId handling
+    describe('chatId parameter handling in sendAyaRecitation', () => {
+        it('should proceed if chatId is valid', async () => {
+            const validChatId = 'validChat123';
+            await sendAyaRecitation(mockDependencies, validChatId, 100, 'user1', ayaId, initialReciter);
             expect(mockGetRecitationFn).toHaveBeenCalledWith(ayaId, initialReciter);
-            expect(mockBotTelegram.sendAudio).toHaveBeenCalledWith(
-                'messageChat456',
-                expect.anything(),
-                expect.anything()
-            );
+            expect(mockBotTelegram.sendAudio).toHaveBeenCalledWith(validChatId, expect.anything(), expect.anything());
         });
 
-        it('should log detailed error and return if chatId cannot be determined (Telegraf Context type)', async () => {
-            // Context that has `update` but `chat.id` and `callback_query.message.chat.id` are missing
-            const faultyTelegrafCtx = {
-                update: { update_id: 1, callback_query: { message: { chat: {} } } }, // chat object exists but no id
-                chat: null, // or chat: { id: null }
-            };
-            await sendAyaRecitation(mockDependencies, faultyTelegrafCtx, ayaId, initialReciter);
+        it('should log error and return if chatId is null', async () => {
+            await sendAyaRecitation(mockDependencies, null, 100, 'user1', ayaId, initialReciter);
             expect(mockLogger).toHaveBeenCalledWith(
-                expect.stringContaining(
-                    'sendAyaRecitation: Could not determine chatId. Context type detected: Telegraf Context.'
-                ),
-                expect.objectContaining({
-                    hasChatIdAccess: false,
-                    callbackQueryMessageChatId: undefined,
-                })
+                'sendAyaRecitation: Received null or undefined chatId. Cannot send recitation.',
+                { ayaId, reciterIdentifier: initialReciter }
             );
             expect(mockGetRecitationFn).not.toHaveBeenCalled();
         });
 
-        it('should log detailed error and return if chatId cannot be determined (Message object type)', async () => {
-            const faultyMessageCtx = {
-                message_id: 123,
-                chat: null, // 'chat' property exists but is null, so chat.id is undefined
-                date: 1678886400, // Add 'date' to fit the heuristic for Message object type
-                from: { id: 'userTest123' } // Optional, but good for full context logging
-            };
-            await sendAyaRecitation(mockDependencies, faultyMessageCtx, ayaId, initialReciter);
+        it('should log error and return if chatId is undefined', async () => {
+            await sendAyaRecitation(mockDependencies, undefined, 100, 'user1', ayaId, initialReciter);
             expect(mockLogger).toHaveBeenCalledWith(
-                expect.stringContaining('sendAyaRecitation: Could not determine chatId. Context type detected: Telegram Message Object.'),
-                expect.objectContaining({
-                    message_id: 123,
-                    hasChatProperty: true, // because 'chat' key exists
-                    chatObjectValue: null, // the value of ctx.chat
-                    directChatIdIfPresent: undefined, // because faultyMessageCtx.chat.id is undefined
-                    from_id: 'userTest123'
-                })
-            );
-            expect(mockGetRecitationFn).not.toHaveBeenCalled();
-        });
-
-        it('should log detailed error and return if chatId cannot be determined (Unknown context type)', async () => {
-            const unknownCtx = { someRandomField: 'value' }; // Neither .update nor .chat.id
-            await sendAyaRecitation(mockDependencies, unknownCtx, ayaId, initialReciter);
-            expect(mockLogger).toHaveBeenCalledWith(
-                expect.stringContaining(
-                    'sendAyaRecitation: Could not determine chatId. Context type detected: Unknown or malformed.'
-                ),
-                expect.objectContaining({
-                    ctxKeys: ['someRandomField'],
-                })
+                'sendAyaRecitation: Received null or undefined chatId. Cannot send recitation.',
+                { ayaId, reciterIdentifier: initialReciter }
             );
             expect(mockGetRecitationFn).not.toHaveBeenCalled();
         });
