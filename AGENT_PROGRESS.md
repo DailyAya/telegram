@@ -656,3 +656,77 @@ Challenges & Learnings:
 Lingering Minor Issues:
 -   The "Jest did not exit one second after the test run has completed" warning persists for `telegramBot.test.js` when `bot.launch()` is used. This is accepted for now as tests pass.
 -   Some pre-existing console noise in `quranService.test.js` remains.
+
+---
+
+## Session Summary: Jules - 2025-07-10 (Recitation Bug Fix Follow-up)
+
+**Goal:** Fix the `TypeError: ayaId2suraAyaFn is not a function` occurring in `sendAyaRecitation` due to a missing dependency in the `handleReciteAction` flow.
+
+**Work Done & Key Changes:**
+
+1.  **Diagnosis**:
+    *   The error log `TypeError: ayaId2suraAyaFn is not a function` clearly indicates that `ayaId2suraAyaFn` was not correctly passed down to `sendAyaRecitation`.
+    *   Reviewed `src/botHandlers/actionHandlers.js` (`handleReciteAction`) and confirmed that `ayaId2suraAyaFn` was missing from the `fullSenderDeps` object being constructed and passed to `sendAyaRecitationFn`.
+    *   Reviewed `src/telegramBot.js` and confirmed that `ayaId2suraAyaFn` *was* being correctly passed from `telegramBot.js` to `handleReciteAction`'s dependencies.
+    *   Also noted that `lastAyaTimeDbFn` was required by `sendAyaRecitation` but was not being passed from `telegramBot.js` to `handleReciteAction`, and subsequently not to `sendAyaRecitation`.
+
+2.  **Fix Implementation**:
+    *   **In `src/botHandlers/actionHandlers.js` (`handleReciteAction` function):**
+        *   Added `ayaId2suraAyaFn: dependencies.ayaId2suraAyaFn` to the `fullSenderDeps` object.
+        *   Added `lastAyaTimeDbFn: dependencies.lastAyaTimeDbFn` to the `fullSenderDeps` object.
+        *   Removed the unused `helperSuccessSendFn` from `fullSenderDeps` for clarity.
+    *   **In `src/telegramBot.js` (in the `bot.action` handler for recite actions):**
+        *   Added `lastAyaTimeDbFn: lastAyaTime` to the dependencies object passed to `actionHandlers.handleReciteAction`.
+        *   Removed `helperSuccessSendFn` from this dependency object as it's not needed for the recite action.
+
+3.  **Pre-Commit Routine Adherence**:
+    *   This update to `AGENT_PROGRESS.md`.
+    *   (Will proceed with `CHANGELOG.md`, versioning, `npm install`, linting, and testing).
+
+**Current Status:**
+
+- Code changes to fix the missing dependencies for `sendAyaRecitation` are complete.
+- The bot should now correctly handle recitation requests without the `TypeError`.
+
+**Next Steps (This Session):**
+
+- Complete the pre-commit routine.
+- Submit the changes.
+
+---
+
+## Session Summary: Jules - 2025-07-10 (AGENTS.md Update - Current)
+
+**Goal:** Update `AGENTS.MD` to incorporate user feedback regarding primary commit branch and enhanced testing methodologies.
+
+**Work Done & Key Changes:**
+
+1.  **Received User Feedback**:
+    *   Noted that the previous commit for "Fix: Correct dependencies for sendAyaRecitation" (version `2025.07.10-1828`) was made to `fix/recitation-dependencies` instead of the mandated `by_ai` branch.
+    *   Received instructions to make `by_ai` a primary directive for commits.
+    *   Received instructions to enhance testing standards in `AGENTS.MD` to include:
+        *   Mandatory use of MSW (Mock Service Worker) for realistic API mocking.
+        *   Use of `telegram-bot-api-spec` (`https://github.com/PaulSonOfLars/telegram-bot-api-spec`) as the source of truth for Telegram API details.
+        *   A pre-test routine to check `telegram-bot-api-spec` for updates to `api.json` and synchronize local test fixtures accordingly.
+
+2.  **Updated `AGENTS.MD`**:
+    *   Modified the "Pre-commit Routine" section:
+        *   Step 12 (Submit Changes) now strongly emphasizes: **"ALL COMMITS MUST BE TO A BRANCH NAMED `by_ai` UNLESS EXPLICITLY INSTRUCTED OTHERWISE BY THE USER FOR THE CURRENT SESSION/TASK. This is a primary directive."**
+        *   Added a new mandatory Step 9: "Pre-Test API Specification Check", detailing the process of checking `telegram-bot-api-spec/api.json` and updating local fixtures before running tests. Subsequent steps were renumbered.
+    *   Modified the "Enhanced Testing Standards" section:
+        *   Updated item "3. Mocking Outgoing Telegram API Calls" to explicitly mandate the use of **MSW (Mock Service Worker)** for integration testing of outgoing API calls and simulating incoming updates. It clarifies that MSW handlers must use responses aligned with the Telegram Bot API specification (referencing the new pre-test check).
+
+3.  **Plan Update**:
+    *   This current session's plan has been updated to prioritize these documentation changes before any further code modifications or addressing the previous commit's branch.
+
+**Current Status:**
+
+- `AGENTS.MD` has been modified to reflect the new directives.
+- The previous commit (version `2025.07.10-1828`) remains on the `fix/recitation-dependencies` branch. The user has indicated that updating documentation should be prioritized before addressing the branch of that commit.
+
+**Next Steps (This Session):**
+
+- This update to `AGENT_PROGRESS.MD`.
+- Proceed with the pre-commit routine for the changes to `AGENTS.MD` and this progress file.
+- Commit these documentation updates to the `by_ai` branch.

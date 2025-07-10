@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.10-1846] - 2025-07-10
+
+### Changed
+
+- **`AGENTS.MD` Update**:
+    - **Primary Commit Branch**: Mandated that all commits **MUST** be made to the `by_ai` branch unless explicitly instructed otherwise by the user. This is now a primary directive within the "Pre-commit Routine" section.
+    - **Enhanced Testing Standards**:
+        - Added a new mandatory "Pre-Test API Specification Check" step to the "Pre-commit Routine". This requires agents to check `https://github.com/PaulSonOfLars/telegram-bot-api-spec` for updates to `api.json` and synchronize local test fixtures before running tests involving Telegram API interactions.
+        - Explicitly mandated the use of **MSW (Mock Service Worker)** for integration testing of outgoing Telegram API calls and for simulating incoming updates (e.g., for `bot.launch()` testing). MSW handlers must align with the official Telegram API specification.
+    - These changes aim to improve agent compliance with branching strategies and enhance the accuracy and reliability of testing by using up-to-date API specifications and realistic mocking techniques.
+
+## [2025.07.10-1828] - 2025-07-10
+
+### Fixed
+
+- **Recitation Feature Dependency Error**: Resolved a `TypeError: ayaId2suraAyaFn is not a function` that occurred during recitation requests.
+    - Ensured `ayaId2suraAyaFn` is correctly passed from `telegramBot.js` through `actionHandlers.handleReciteAction` to `ayaSender.sendAyaRecitation`.
+    - Ensured `lastAyaTimeDbFn` (required by `sendAyaRecitation`) is also correctly passed through the same path.
+    - Removed an unused `helperSuccessSendFn` from the dependencies passed for the recite action for clarity.
+
 ## [2025.07.10-0403] - 2025-07-10
 
 ### Fixed
