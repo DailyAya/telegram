@@ -226,9 +226,9 @@ async function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation = f
             // Pass primitives to the refactored senderSendAyaRecitation
             await senderSendAyaRecitation(
                 senderDependencies,
-                sentTextCtx.chat.id,       // chatId from the message context
-                sentTextCtx.message_id,    // messageId from the message context
-                sentTextCtx.from?.id,      // fromId (bot's ID) from the message context, optional
+                sentTextCtx.chat.id, // chatId from the message context
+                sentTextCtx.message_id, // messageId from the message context
+                sentTextCtx.from?.id, // fromId (bot's ID) from the message context, optional
                 targetAyaId,
                 reciter
             );
@@ -758,9 +758,17 @@ bot.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
             // Dependencies remain the same
             botTelegram: bot.telegram,
             botOptions: bot.options,
-            helperAdminConditionalAction: helperAdminConditionalAction, // Will need refactoring
-            sendAyaRecitationFn: senderSendAyaRecitation, // Will need refactoring
+            helperAdminConditionalAction: helperAdminConditionalAction,
+            sendAyaRecitationFn: senderSendAyaRecitation,
             ayaId2suraAyaFn: ayaId2suraAya,
+            // Add functions needed by sendAyaRecitationFn via actionHandlers
+            isValidReciterFn: isValidReciter,
+            getRecitationFn: getRecitation,
+            getFavReciterDbFn: getFavReciter,
+            getRandomReciterIdentifierFn: getRandomReciterIdentifier,
+            helperSuccessSendFn: helperSuccessSend,
+            helperSendSorryFn: helperSendSorry,
+            helperAMenuButtonsFn: helperAMenuButtons,
         }
     );
 });

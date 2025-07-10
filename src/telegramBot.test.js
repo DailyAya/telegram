@@ -39,28 +39,33 @@ const getMeSuccessFixture = {
     result: {
         id: 112233445,
         is_bot: true,
-        first_name: "TestBotFromMSW",
-        username: "MyMSWTestBot_Username", // This will be used by bot.options.username
+        first_name: 'TestBotFromMSW',
+        username: 'MyMSWTestBot_Username', // This will be used by bot.options.username
         can_join_groups: true,
         can_read_all_group_messages: false,
-        supports_inline_queries: false
-    }
+        supports_inline_queries: false,
+    },
 };
 const sendMessageSuccessFixture = {
     ok: true,
     result: {
         message_id: 54321,
-        from: { id: 112233445, is_bot: true, first_name: "TestBotFromMSW", username: "MyMSWTestBot_Username" }, // Will be overridden by getMeSuccessFixture in mock
+        from: { id: 112233445, is_bot: true, first_name: 'TestBotFromMSW', username: 'MyMSWTestBot_Username' }, // Will be overridden by getMeSuccessFixture in mock
         chat: { id: 0, type: 'private' }, // Placeholder, will be set dynamically by handler/mock
         date: Math.floor(Date.now() / 1000),
-        text: "MSW Bot Startup Message" // Placeholder, will be set by handler/mock
-    }
+        text: 'MSW Bot Startup Message', // Placeholder, will be set by handler/mock
+    },
 };
 // Add other fixtures as needed for sendAudio, getChatMember etc.
-const mockSendAudioSuccessResult = { message_id: 67890, from: getMeSuccessFixture.result, chat: {id: 123, type: 'private'} };
-const mockGetChatMemberResult = { user: { id: 123, is_bot: false, first_name: 'TestUser' }, status: 'member' };
+// const mockSendAudioSuccessResult = { // Unused - Removed for ESLint
+//     message_id: 67890,
+//     from: getMeSuccessFixture.result,
+//     chat: { id: 123, type: 'private' },
+// };
+// const mockGetChatMemberResult = { user: { id: 123, is_bot: false, first_name: 'TestUser' }, status: 'member' }; // Unused - Removed for ESLint
 
-const mockTextMessageUpdateResult = [ // /getUpdates returns an array of Update objects
+const mockTextMessageUpdateResult = [
+    // /getUpdates returns an array of Update objects
     {
         update_id: 100000000, // Example update_id
         message: {
@@ -71,20 +76,20 @@ const mockTextMessageUpdateResult = [ // /getUpdates returns an array of Update 
                 first_name: 'Test',
                 last_name: 'User',
                 username: 'TestUser',
-                language_code: 'en'
+                language_code: 'en',
             },
             chat: {
                 id: 777000, // Assuming private chat for simplicity
                 first_name: 'Test',
                 last_name: 'User',
                 username: 'TestUser',
-                type: 'private'
+                type: 'private',
             },
             date: Math.floor(Date.now() / 1000),
             text: '/start', // A command to trigger a command handler
-            entities: [{ "offset": 0, "length": 6, "type": "bot_command" }]
-        }
-    }
+            entities: [{ offset: 0, length: 6, type: 'bot_command' }],
+        },
+    },
 ];
 let getUpdatesCalledOnce = false; // Flag for /getUpdates handler
 
@@ -120,7 +125,8 @@ jest.unstable_mockModule('telegraf', () => {
     return {
         __esModule: true,
         Telegraf: ActualTelegraf.Telegraf, // Use the REAL Telegraf class
-        Markup: { // Keep Markup mocked as it's for constructing message components
+        Markup: {
+            // Keep Markup mocked as it's for constructing message components
             inlineKeyboard: jest.fn((buttons) => ({ inline_keyboard: buttons })),
             button: {
                 callback: jest.fn((text, data) => ({ text, callback_data: data })),
@@ -128,11 +134,10 @@ jest.unstable_mockModule('telegraf', () => {
             },
         },
         Composer: ActualTelegraf.Composer, // If SUT uses Composer, it should be real too
-        session: ActualTelegraf.session,   // If SUT uses session, it should be real
-        Context: ActualTelegraf.Context,   // If SUT uses Context, it should be real
+        session: ActualTelegraf.session, // If SUT uses session, it should be real
+        Context: ActualTelegraf.Context, // If SUT uses Context, it should be real
     };
 });
-
 
 // --- Mock Logger ---
 const mockLogger = jest.fn();
@@ -147,15 +152,15 @@ jest.unstable_mockModule('./logger.js', () => ({
 
 // --- Mock other direct module dependencies ---
 const mockDbLastAyaTime = jest.fn();
-jest.unstable_mockModule('./database.js', () => ({ /* ... existing full mock ... */
-    __esModule: true,
+jest.unstable_mockModule('./database.js', () => ({
+    /* ... existing full mock ... */ __esModule: true,
     lastAyaTime: mockDbLastAyaTime,
     setFavReciter: jest.fn(),
     getFavReciter: jest.fn(),
 }));
 const mockHandleStartCommand = jest.fn();
-jest.unstable_mockModule('./botHandlers/commandHandlers.js', () => ({ /* ... existing full mock ... */
-    __esModule: true,
+jest.unstable_mockModule('./botHandlers/commandHandlers.js', () => ({
+    /* ... existing full mock ... */ __esModule: true,
     handleStartCommand: mockHandleStartCommand,
     handleHelpCommand: jest.fn(),
     handleSurpriseMeCommand: jest.fn(),
@@ -176,11 +181,11 @@ const mockSuraAya2ayaId = jest.fn();
 const mockRasmifize = jest.fn((text) => text);
 const mockGetQuranData = jest.fn(() => ({
     arReciters: [],
-    enQuran: [{ ayahs: [], name: "Al-Fatiha", englishName: "Al-Fatiha" }]
+    enQuran: [{ ayahs: [], name: 'Al-Fatiha', englishName: 'Al-Fatiha' }],
 }));
 const mockCheckSource = jest.fn().mockResolvedValue(undefined); // Ensure it returns a promise
-jest.unstable_mockModule('./quranService.js', () => ({ /* ... existing full mock ... */
-    __esModule: true,
+jest.unstable_mockModule('./quranService.js', () => ({
+    /* ... existing full mock ... */ __esModule: true,
     prepareAya: mockPrepareAya,
     getRecitation: mockGetRecitation,
     isValidReciter: mockIsValidReciter,
@@ -194,28 +199,27 @@ jest.unstable_mockModule('./quranService.js', () => ({ /* ... existing full mock
     checkSource: mockCheckSource,
 }));
 const mockRecitersNavPage = jest.fn();
-jest.unstable_mockModule('./botFeatures/reciterService.js', () => ({ /* ... existing full mock ... */
-    __esModule: true,
+jest.unstable_mockModule('./botFeatures/reciterService.js', () => ({
+    /* ... existing full mock ... */ __esModule: true,
     populateRecitersButtons: jest.fn(),
     recitersNavPage: mockRecitersNavPage,
 }));
 const mockRandomAyaNumber = jest.fn();
-jest.unstable_mockModule('./utils.js', () => ({ /* ... existing full mock ... */
-    __esModule: true,
+jest.unstable_mockModule('./utils.js', () => ({
+    /* ... existing full mock ... */ __esModule: true,
     randomAyaNumber: mockRandomAyaNumber,
-    numArabicToEnglish: jest.fn(text => text),
-    maskTokenInUrl: jest.fn(url => url),
+    numArabicToEnglish: jest.fn((text) => text),
+    maskTokenInUrl: jest.fn((url) => url),
     checkConnectivity: jest.fn().mockResolvedValue({ success: true, details: 'Mocked connectivity success' }),
     sendEmergencyNotification: jest.fn().mockResolvedValue(undefined),
 }));
 
-
 // --- SUT variables and handler stores ---
 let bot, launchBot, sendAya, surpriseAya, handleText, botUsernameReady;
-const registeredCommandHandlers = {};
-let textHandlerFnForTest;
-let myChatMemberHandlerFnForTest;
-const registeredActionHandlersForTest = {};
+// const registeredCommandHandlers = {}; // Unused - Removed for ESLint
+// let textHandlerFnForTest; // Unused - Removed for ESLint
+// let myChatMemberHandlerFnForTest; // Unused - Removed for ESLint
+// const registeredActionHandlersForTest = {}; // Unused - Removed for ESLint
 
 // --- MSW Server Setup ---
 // Fixtures (getMeSuccessFixture, sendMessageSuccessFixture, etc.) are now defined globally near the top of the file.
@@ -228,13 +232,16 @@ let mswServer;
 let botStartSpy, botHelpSpy, botCommandSpy, botOnSpy, botActionSpy, botLaunchSpy, botCatchSpy;
 
 // Spies on bot.telegram.xyz, set up AFTER bot instance exists
-let botTelegramGetMeSpy, botTelegramSendMessageSpy, botTelegramSendAudioSpy,
-    botTelegramSetMyCommandsSpy, botTelegramGetChatMemberSpy,
-    botTelegramEditMessageReplyMarkupSpy, botTelegramDeleteMessageSpy;
+let botTelegramGetMeSpy,
+    botTelegramSendMessageSpy,
+    botTelegramSendAudioSpy,
+    botTelegramSetMyCommandsSpy,
+    botTelegramGetChatMemberSpy,
+    botTelegramEditMessageReplyMarkupSpy,
+    botTelegramDeleteMessageSpy;
 
 // Import Telegraf for instanceof check (or method checks)
-import { Telegraf } from 'telegraf';
-
+// import { Telegraf } from 'telegraf'; // Unused - Removed for ESLint (typeof bot.handleUpdate used instead)
 
 beforeAll(async () => {
     jest.resetModules();
@@ -251,33 +258,43 @@ beforeAll(async () => {
         http.post(`https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/getMe`, () => {
             return HttpResponse.json(getMeSuccessFixture);
         }),
-        http.post(`https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/sendMessage`, async ({ request }) => {
-            const requestBody = await request.json();
-            const dynamicResponse = {
-                ...sendMessageSuccessFixture,
-                result: {
-                    ...sendMessageSuccessFixture.result,
-                    from: getMeSuccessFixture.result, // Ensure bot info is from the correct fixture
-                    chat: { ...sendMessageSuccessFixture.result.chat, id: requestBody.chat_id },
-                    text: requestBody.text
-                }
-            };
-            return HttpResponse.json(dynamicResponse);
-        }),
-        http.post(`https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/getUpdates`, async ({ request }) => {
-            if (!getUpdatesCalledOnce) {
-                getUpdatesCalledOnce = true;
-                const currentUpdateId = mockTextMessageUpdateResult[0].update_id;
-                const nextUpdateId = currentUpdateId + 1;
-                const updateToSend = JSON.parse(JSON.stringify(mockTextMessageUpdateResult));
-                updateToSend[0].update_id = nextUpdateId;
-                mockTextMessageUpdateResult[0].update_id = nextUpdateId;
-                return HttpResponse.json({ ok: true, result: updateToSend });
+        http.post(
+            `https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/sendMessage`,
+            async ({ request }) => {
+                const requestBody = await request.json();
+                const dynamicResponse = {
+                    ...sendMessageSuccessFixture,
+                    result: {
+                        ...sendMessageSuccessFixture.result,
+                        from: getMeSuccessFixture.result, // Ensure bot info is from the correct fixture
+                        chat: { ...sendMessageSuccessFixture.result.chat, id: requestBody.chat_id },
+                        text: requestBody.text,
+                    },
+                };
+                return HttpResponse.json(dynamicResponse);
             }
-            // Simulate a server error to try and stop Telegraf's polling more definitively
-            console.debug('MSW /getUpdates: Polling limit reached for test, returning error to stop.');
-            return HttpResponse.json({ ok: false, error_code: 500, description: "Test-induced stop polling" }, { status: 500 });
-        }),
+        ),
+        http.post(
+            `https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/getUpdates`,
+            async ({ _request }) => {
+                // Prefixed request with _ as it's unused
+                if (!getUpdatesCalledOnce) {
+                    getUpdatesCalledOnce = true;
+                    const currentUpdateId = mockTextMessageUpdateResult[0].update_id;
+                    const nextUpdateId = currentUpdateId + 1;
+                    const updateToSend = JSON.parse(JSON.stringify(mockTextMessageUpdateResult));
+                    updateToSend[0].update_id = nextUpdateId;
+                    mockTextMessageUpdateResult[0].update_id = nextUpdateId;
+                    return HttpResponse.json({ ok: true, result: updateToSend });
+                }
+                // Simulate a server error to try and stop Telegraf's polling more definitively
+                console.debug('MSW /getUpdates: Polling limit reached for test, returning error to stop.');
+                return HttpResponse.json(
+                    { ok: false, error_code: 500, description: 'Test-induced stop polling' },
+                    { status: 500 }
+                );
+            }
+        ),
         // Add handlers for setMyCommands and deleteWebhook
         http.post(`https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/setMyCommands`, () => {
             return HttpResponse.json({ ok: true, result: true });
@@ -311,7 +328,6 @@ beforeAll(async () => {
     botOnSpy = jest.spyOn(bot, 'on');
     botActionSpy = jest.spyOn(bot, 'action');
     botCatchSpy = jest.spyOn(bot, 'catch');
-
 
     // --- Initialize Spies on the real bot's `telegram` object ---
     // These are spied on AFTER the bot instance is created by the SUT.
@@ -383,7 +399,6 @@ afterEach(() => {
 
 afterAll(() => mswServer?.close());
 
-
 // --- Test Suites ---
 
 describe('Telegram Bot - Initialization and Structure', () => {
@@ -416,7 +431,9 @@ describe('launchBot', () => {
         // A more robust MSW test would verify the MSW handler was called.
         // For now, we'll trust the MSW setup logs for /sendMessage if added.
         // The original bootstrapLogger for success is:
-        expect(mockBootstrapLogger).toHaveBeenCalledWith('launchBot: Startup state message successfully sent to dev group.');
+        expect(mockBootstrapLogger).toHaveBeenCalledWith(
+            'launchBot: Startup state message successfully sent to dev group.'
+        );
         expect(mockCheckSource).toHaveBeenCalled();
     });
 
@@ -426,7 +443,9 @@ describe('launchBot', () => {
         currentConfigMock.default.devChatId = null;
         await launchBot(); // bot.options.username should be set from MSW getMe in beforeAll
         // Verify sendMessage was NOT called for the startup message
-        const sendMessageDevCall = mockLogger.mock.calls.find(call => call[0].includes('Attempting to send startup state message'));
+        const sendMessageDevCall = mockLogger.mock.calls.find((call) =>
+            call[0].includes('Attempting to send startup state message')
+        );
         expect(sendMessageDevCall).toBeUndefined(); // Or check that the specific sendMessage was not made
         currentConfigMock.default.devChatId = originalDevChatId;
     });
@@ -436,9 +455,13 @@ describe('launchBot', () => {
         // To test this, we'd need to make MSW /getMe fail or return no username.
         // For this PoC, we'll assume getMe succeeds. This test might need specific MSW handler override.
         mswServer.use(
-            http.post(`https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/getMe`, () => {
-                return HttpResponse.json({ok: true, result: { ...getMeSuccessFixture.result, username: null }});
-            }, { once: true })
+            http.post(
+                `https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/getMe`,
+                () => {
+                    return HttpResponse.json({ ok: true, result: { ...getMeSuccessFixture.result, username: null } });
+                },
+                { once: true }
+            )
         );
         await jest.resetModules(); // Re-import SUT to pick up new MSW handler for getMe
         const tempTelegramBotModule = await import('./telegramBot.js');
@@ -447,12 +470,13 @@ describe('launchBot', () => {
 
         await tempTelegramBotModule.launchBot();
         expect(mockBootstrapLogger).toHaveBeenCalledWith(
-             'launchBot: Cannot send startup state message to dev group - bot username not available or devChatId not set.'
+            'launchBot: Cannot send startup state message to dev group - bot username not available or devChatId not set.'
         );
     });
     // ... other launchBot tests ...
     it('should handle bot.launch() failure', async () => {
-        botLaunchSpy.mockImplementationOnce(() => { // Changed to botLaunchSpy (instance spy)
+        botLaunchSpy.mockImplementationOnce(() => {
+            // Changed to botLaunchSpy (instance spy)
             throw new Error('Launch Failed');
         });
         await expect(launchBot()).rejects.toThrow('Launch Failed');
@@ -463,7 +487,7 @@ describe('launchBot', () => {
         expect(mockCheckSource).not.toHaveBeenCalled();
         currentConfigMock.default.debugging = false; // Reset
     });
-     it('should call checkSource with a functional sendMessage callback', async () => {
+    it('should call checkSource with a functional sendMessage callback', async () => {
         currentConfigMock.default.debugging = false;
         await launchBot();
         expect(mockCheckSource).toHaveBeenCalled();
@@ -479,8 +503,12 @@ describe('launchBot', () => {
 // The rest of the file would follow the patterns established (e.g. for command handlers).
 
 // Placeholder for the rest of the tests, which would need similar review
-describe('sendAya', () => { it('placeholder', () => expect(true).toBe(true)); });
-describe('surpriseAya', () => { it('placeholder', () => expect(true).toBe(true)); });
+describe('sendAya', () => {
+    it('placeholder', () => expect(true).toBe(true));
+});
+describe('surpriseAya', () => {
+    it('placeholder', () => expect(true).toBe(true));
+});
 
 describe('MSW - Incoming /getUpdates', () => {
     it('should process an incoming /start command from MSW /getUpdates', async () => {
@@ -501,7 +529,7 @@ describe('MSW - Incoming /getUpdates', () => {
 
         // Add a small delay to allow Telegraf's async update processing to occur after launchBot resolves.
         // launchBot's promise resolves when bot.launch() resolves, but update processing might be slightly deferred.
-        await new Promise(resolve => setTimeout(resolve, 200)); // Adjust if needed, 50-200ms is typical.
+        await new Promise((resolve) => setTimeout(resolve, 200)); // Adjust if needed, 50-200ms is typical.
 
         // Stop the bot's polling loop - temporarily removed to diagnose timeout
         // if (bot && typeof bot.stop === 'function') {
@@ -531,8 +559,18 @@ describe('MSW - Incoming /getUpdates', () => {
     }, 1000); // Increased timeout for this test due to launch + async update processing
 });
 
-describe('handleText (direct test of exported function)', () => {it('placeholder', () => expect(true).toBe(true)); });
-describe('Command Handler Registrations and Admin Checks', () => { it('placeholder', () => expect(true).toBe(true)); });
-describe('Text Handler Registration and Admin Check', () => { it('placeholder', () => expect(true).toBe(true)); });
-describe('MyChatMember Handler Logic', () => { it('placeholder', () => expect(true).toBe(true)); });
-describe('Action Handler Integration for "recite" button', () => { it('placeholder', () => expect(true).toBe(true)); });
+describe('handleText (direct test of exported function)', () => {
+    it('placeholder', () => expect(true).toBe(true));
+});
+describe('Command Handler Registrations and Admin Checks', () => {
+    it('placeholder', () => expect(true).toBe(true));
+});
+describe('Text Handler Registration and Admin Check', () => {
+    it('placeholder', () => expect(true).toBe(true));
+});
+describe('MyChatMember Handler Logic', () => {
+    it('placeholder', () => expect(true).toBe(true));
+});
+describe('Action Handler Integration for "recite" button', () => {
+    it('placeholder', () => expect(true).toBe(true));
+});

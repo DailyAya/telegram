@@ -28,11 +28,7 @@
             "date": 1678886500,
             "text": "Aya text previously sent by the bot.",
             "reply_markup": {
-                "inline_keyboard": [
-                    [
-                        { "text": "🔊 Recite", "callback_data": "{\"recite\":262,\"r\":\"ar.alafasy\"}" }
-                    ]
-                ]
+                "inline_keyboard": [[{ "text": "🔊 Recite", "callback_data": "{\"recite\":262,\"r\":\"ar.alafasy\"}" }]]
             }
         },
         "chat_instance": "-1234567890123456789",

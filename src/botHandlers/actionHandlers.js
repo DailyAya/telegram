@@ -259,8 +259,9 @@ export async function handleReciteAction(
     // New first argument: an object with extracted data
     { chatId, fromId, messageId, callbackQueryData, rawCtx },
     // Dependencies remain the second argument
-    { botTelegram, botOptions, helperAdminConditionalAction, sendAyaRecitationFn, ayaId2suraAyaFn }
+    dependencies // This now contains botTelegram, botOptions, etc. directly
 ) {
+    // console.log('[handleReciteAction SUT ENTRY] typeof dependencies:', typeof dependencies, 'Keys:', dependencies ? Object.keys(dependencies) : 'N/A'); // Removed diagnostic log
     logger('DEBUG: handleReciteAction --- ENTRY ---', { chatId, fromId, callbackQueryData });
 
     // callbackData is already parsed and passed as callbackQueryData
@@ -269,64 +270,62 @@ export async function handleReciteAction(
     // helperAdminConditionalAction will be refactored to take primitives.
     // For now, it still expects a ctx-like object for adminChecker and answerCbQuery.
     // We pass rawCtx for that.
-    // The adminFn and nonAdminCb will also need to be aware of the new structure or receive primitives.
-    await helperAdminConditionalAction(
-        rawCtx, // Pass rawCtx for helper's own interaction with Telegraf context methods
-        botTelegram,
-        // adminFn: This function is executed if the user is an admin.
-        // It now receives an 'adminPathCtx' which could be the rawCtx or a modified version.
-        // For this refactor, let's make adminFn receive the necessary primitives directly.
-        async (/* adminPathCtx */) => {
-            // adminPathCtx (original rawCtx) is available if needed by helper, but adminFn now uses primitives
-            if (chatId) {
-                // Ensure chatId is valid
-                logger(`Button reciter: ${callbackQueryData.r} for Aya ${callbackQueryData.recite} in chat ${chatId}`);
-            } else {
-                logger(
-                    `Button reciter: ${callbackQueryData.r} for Aya ${callbackQueryData.recite}. CHAT_ID IS MISSING (in handleReciteAction).`
-                );
-                // Consider answering callback query with error if possible via rawCtx
+
+    // Construct fullSenderDeps here, in the direct scope of `dependencies`
+    const fullSenderDeps = {
+        botTelegram: dependencies.botTelegram,
+        botUsername: dependencies.botOptions?.username,
+        isValidReciterFn: dependencies.isValidReciterFn,
+        getRecitationFn: dependencies.getRecitationFn,
+        getFavReciterDbFn: dependencies.getFavReciterDbFn,
+        getRandomReciterIdentifierFn: dependencies.getRandomReciterIdentifierFn,
+        helperSuccessSendFn: dependencies.helperSuccessSendFn,
+        helperSendSorryFn: dependencies.helperSendSorryFn,
+        helperAMenuButtonsFn: dependencies.helperAMenuButtonsFn,
+    };
+
+    const adminFn = async () => {
+        // Takes no arguments, relies on closure
+        if (!chatId) {
+            // Uses chatId from handleReciteAction's parameters
+            logger('Button reciter: CHAT_ID IS MISSING (in handleReciteAction adminFn). Cannot send recitation.');
+            if (rawCtx && typeof rawCtx.answerCbQuery === 'function') {
                 await rawCtx
-                    .answerCbQuery('Error: Chat ID missing for recitation.', { show_alert: true })
-                    .catch((e) => logger('Error in handleReciteAction adminFn answering CBQ for missing chatId:', e));
-                return; // Don't proceed if chatId is missing
+                    .answerCbQuery('Error: Chat ID missing.', { show_alert: true })
+                    .catch((e) => logger('Error answering CBQ for missing chatId in adminFn:', e));
             }
-            // sendAyaRecitationFn will be refactored to take primitives like (dependencies, chatId, messageId, ayaId, reciterId)
-            // instead of (dependencies, ctx, ayaId, reciterId)
-            await sendAyaRecitationFn(
-                // No first ctx argument anymore for the refactored sendAyaRecitationFn
-                chatId,
-                messageId, // Pass messageId
-                fromId, // Pass fromId (might be useful for logging or other logic in sender)
-                callbackQueryData.recite, // This is ayaId
-                callbackQueryData.r // This is reciterIdentifier
-                // Note: The `dependencies` for sendAyaRecitationFn are implicitly passed if it's called directly
-                // from the object provided by telegramBot.js. If sendAyaRecitationFn is a standalone function,
-                // it would need its own full dependencies object.
-                // The current call in telegramBot.js is: sendAyaRecitationFn: senderSendAyaRecitation,
-                // So, this call here will be to the actual senderSendAyaRecitation.
-                // It needs its OWN dependencies. The call from telegramBot.js is actionHandlers.handleReciteAction(params, depsForHandleRecite)
-                // The depsForHandleRecite includes sendAyaRecitationFn which is already bound to ITS dependencies.
-                // This means this call is effectively:
-                // actual_senderSendAyaRecitation(actual_sender_deps, chatId, messageId, fromId, ayaId, reciterId)
-                // This needs careful wiring.
-                // For now, let's assume sendAyaRecitationFn is the function itself and we are passing params.
-                // The dependencies for sendAyaRecitationFn are handled when it's created/passed.
-            );
+            return;
+        }
+        logger(`Button reciter: ${callbackQueryData.r} for Aya ${callbackQueryData.recite} in chat ${chatId}`);
+
+        // adminFn now uses the pre-constructed fullSenderDeps from its closure
+        await dependencies.sendAyaRecitationFn(
+            // This is sendAyaRecitationFn from outer `dependencies`
+            fullSenderDeps, // Pass the pre-constructed object
+            chatId,
+            messageId,
+            fromId,
+            callbackQueryData.recite,
+            callbackQueryData.r
+        );
+    };
+
+    await dependencies.helperAdminConditionalAction(
+        // Use dependencies.helperAdminConditionalAction
+        rawCtx,
+        dependencies.botTelegram, // Use dependencies.botTelegram
+        adminFn,
+        async () => {
+            // nonAdminCb
+            const ayaIndex = dependencies.ayaId2suraAyaFn(callbackQueryData.recite);
+            return `t.me/${dependencies.botOptions?.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
         },
-        // nonAdminCb: This function generates the URL for non-admins.
-        // It also needs access to botOptions.username and ayaId2suraAyaFn.
-        async (/* nonAdminPathCtx */) => {
-            // nonAdminPathCtx not strictly needed if we use callbackQueryData
-            const ayaIndex = ayaId2suraAyaFn(callbackQueryData.recite); // Uses callbackQueryData from outer scope
-            return `t.me/${botOptions.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
-        },
-        false, // nonAdminAlert
-        // Construct the nonAdminUrl inside the function scope where callbackQueryData is available
+        false,
         (() => {
-            const ayaIndex = ayaId2suraAyaFn(callbackQueryData.recite);
-            return `t.me/${botOptions.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
-        })() // Immediately invoked
+            // nonAdminUrl
+            const ayaIndex = dependencies.ayaId2suraAyaFn(callbackQueryData.recite);
+            return `t.me/${dependencies.botOptions?.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
+        })()
     );
 }
 

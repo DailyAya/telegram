@@ -205,7 +205,14 @@ describe('sendAyaRecitation', () => {
         mockIsValidReciterFn.mockReturnValueOnce(true);
         mockDependencies.getFavReciterDbFn.mockResolvedValueOnce({ success: true, data: 'fav.reciter' });
 
-        await sendAyaRecitation(mockDependencies, mockCtx.chat.id, mockCtx.update.callback_query.message?.message_id, mockCtx.from?.id, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockIsValidReciterFn).toHaveBeenCalledWith(initialReciter);
         expect(mockDependencies.getFavReciterDbFn).toHaveBeenCalledWith(mockCtx.chat.id);
@@ -219,7 +226,14 @@ describe('sendAyaRecitation', () => {
         mockDependencies.getFavReciterDbFn.mockResolvedValueOnce({ success: true, data: 'invalid.fav.reciter' });
         mockDependencies.getRandomReciterIdentifierFn.mockReturnValueOnce('random.reciter.ok');
 
-        await sendAyaRecitation(mockDependencies, mockCtx.chat.id, mockCtx.update.callback_query.message?.message_id, mockCtx.from?.id, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockDependencies.getRandomReciterIdentifierFn).toHaveBeenCalled();
         expect(mockGetRecitationFn).toHaveBeenCalledWith(ayaId, 'random.reciter.ok');
@@ -231,7 +245,14 @@ describe('sendAyaRecitation', () => {
         mockDependencies.getFavReciterDbFn.mockResolvedValueOnce({ success: false, data: null });
         mockDependencies.getRandomReciterIdentifierFn.mockReturnValueOnce(null);
 
-        await sendAyaRecitation(mockDependencies, mockCtx.chat.id, mockCtx.update.callback_query.message?.message_id, mockCtx.from?.id, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockGetRecitationFn).not.toHaveBeenCalled();
         expect(mockBotTelegram.sendAudio).not.toHaveBeenCalled();
@@ -241,7 +262,14 @@ describe('sendAyaRecitation', () => {
     it('should call sendSorryFn if getRecitationFn throws an error', async () => {
         mockGetRecitationFn.mockRejectedValueOnce(new Error('Failed to get audio URL'));
 
-        await sendAyaRecitation(mockDependencies, mockCtx.chat.id, mockCtx.update.callback_query.message?.message_id, mockCtx.from?.id, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockHelperSendSorryFn).toHaveBeenCalledWith(mockBotTelegram, mockCtx.chat.id, 'audio');
     });
@@ -251,7 +279,14 @@ describe('sendAyaRecitation', () => {
         blockError.response = { description: 'Forbidden: bot was blocked by the user' };
         mockBotTelegram.sendAudio.mockRejectedValueOnce(blockError);
 
-        await sendAyaRecitation(mockDependencies, mockCtx.chat.id, mockCtx.update.callback_query.message?.message_id, mockCtx.from?.id, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockLastAyaTimeDbFn).toHaveBeenCalledWith(mockCtx.chat.id, 'blocked');
         expect(mockHelperSendSorryFn).not.toHaveBeenCalled();
@@ -262,7 +297,14 @@ describe('sendAyaRecitation', () => {
         apiError.response = { description: 'Internal server error' };
         mockBotTelegram.sendAudio.mockRejectedValueOnce(apiError);
 
-        await sendAyaRecitation(mockDependencies, mockCtx.chat.id, mockCtx.update.callback_query.message?.message_id, mockCtx.from?.id, ayaId, initialReciter);
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
 
         expect(mockLastAyaTimeDbFn).not.toHaveBeenCalledWith(mockCtx.chat.id, 'blocked');
         expect(mockHelperSendSorryFn).toHaveBeenCalledWith(mockBotTelegram, mockCtx.chat.id, 'audio');
@@ -344,7 +386,6 @@ describe('sendAyaRecitation', () => {
         );
         expect(mockBotTelegram.deleteMessage).not.toHaveBeenCalled();
     });
-
 
     // New/Revised tests for direct chatId handling
     describe('chatId parameter handling in sendAyaRecitation', () => {

@@ -13,9 +13,13 @@ export function createMockCtx(updateObject, mockBotInstance) {
     const ctx = {
         update: updateObject,
         telegram: mockBotInstance.telegram,
-        botInfo: mockBotInstance.options.username ? // Ensure botInfo is based on whether username is set
-            { username: mockBotInstance.options.username, id: mockBotInstance.telegram.getMe?.mock?.results[0]?.value?.id || 0, is_bot: true } :
-            undefined, // or some default botInfo if username is not yet set on mockBotInstance.options
+        botInfo: mockBotInstance.options.username // Ensure botInfo is based on whether username is set
+            ? {
+                  username: mockBotInstance.options.username,
+                  id: mockBotInstance.telegram.getMe?.mock?.results[0]?.value?.id || 0,
+                  is_bot: true,
+              }
+            : undefined, // or some default botInfo if username is not yet set on mockBotInstance.options
 
         // Standard Telegraf methods (mocked)
         reply: jest.fn().mockResolvedValue({ message_id: Date.now(), chat: {}, from: {} }), // Return a basic message structure
