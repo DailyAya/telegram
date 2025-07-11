@@ -374,7 +374,7 @@ describe('helperAdminConditionalAction', () => {
     it('should execute adminFn if user is admin', async () => {
         mockBotTelegram.getChatMember.mockResolvedValue({ status: 'administrator' });
         await helperAdminConditionalAction(mockCtx, mockBotTelegram, adminFn, nonAdminCb);
-        expect(adminFn).toHaveBeenCalledWith(mockCtx);
+        expect(adminFn).toHaveBeenCalled(); // No longer called with mockCtx
         expect(nonAdminCb).not.toHaveBeenCalled();
         expect(mockCtx.answerCbQuery).toHaveBeenCalledWith();
     });
@@ -416,7 +416,7 @@ describe('helperAdminConditionalAction', () => {
         mockBotTelegram.getChatMember.mockResolvedValue({ status: 'administrator' });
         adminFn.mockRejectedValue(new Error('Admin action failed'));
         await helperAdminConditionalAction(mockCtx, mockBotTelegram, adminFn, nonAdminCb);
-        expect(adminFn).toHaveBeenCalledWith(mockCtx);
+        expect(adminFn).toHaveBeenCalled(); // No longer called with mockCtx
         expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('An error occurred.', { show_alert: true });
         expect(mockLoggerLog).toHaveBeenCalledWith(
             'Error in helperAdminConditionalAction executing adminFn:',

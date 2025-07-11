@@ -270,6 +270,314 @@ describe('Bot Action Handlers', () => {
         });
     });
 
+    describe('handleCurrAyaAction', () => {
+        let mockCtx;
+        let dependencies;
+        let mockSendAyaFnDependency;
+        let localMockHelperAdminConditionalAction;
+
+        beforeEach(() => {
+            mockCtx = {
+                from: { id: 'userCurrAya', language_code: 'ar' },
+                chat: { id: 'chatCurrAya', type: 'group' },
+                update: { callback_query: { data: JSON.stringify({ currAya: 100, r: 'reciterX' }) } },
+                answerCbQuery: jest.fn().mockResolvedValue(true),
+            };
+            mockSendAyaFnDependency = jest.fn();
+
+            // More functional mock for helperAdminConditionalAction for this suite
+            localMockHelperAdminConditionalAction = jest.fn(
+                async (
+                    ctxInternal,
+                    _botTelegramInternal,
+                    adminFnInternal,
+                    nonAdminCbInternal,
+                    nonAdminAlertInternal,
+                    nonAdminUrlInternal
+                ) => {
+                    const isAdmin = await mockAdminChecker(ctxInternal, _botTelegramInternal); // Uses global mockAdminChecker
+                    if (isAdmin) {
+                        await adminFnInternal(ctxInternal);
+                        if (ctxInternal.answerCbQuery) await ctxInternal.answerCbQuery().catch(() => {});
+                    } else {
+                        const urlToOpen =
+                            nonAdminUrlInternal ||
+                            (typeof nonAdminCbInternal === 'function' ? await nonAdminCbInternal(ctxInternal) : null);
+                        if (ctxInternal.answerCbQuery) {
+                            if (urlToOpen) {
+                                await ctxInternal
+                                    .answerCbQuery(nonAdminAlertInternal ? 'NON_ADMINS_ALERT_MOCK' : '', {
+                                        url: urlToOpen,
+                                    })
+                                    .catch(() => {});
+                            } else {
+                                await ctxInternal
+                                    .answerCbQuery(nonAdminAlertInternal ? 'NON_ADMINS_ALERT_MOCK' : '', {
+                                        show_alert: nonAdminAlertInternal,
+                                    })
+                                    .catch(() => {});
+                            }
+                        }
+                    }
+                }
+            );
+
+            dependencies = {
+                botTelegram: mockBotTelegramDependency,
+                botOptions: { username: 'TestBotCurrAya' },
+                helperAdminConditionalAction: localMockHelperAdminConditionalAction, // Use the local, more functional mock
+                sendAyaFn: mockSendAyaFnDependency,
+                nextAyaFn: mockNextAyaFn, // Global mock
+                ayaId2suraAyaFn: mockAyaId2suraAyaFn, // Global mock
+            };
+
+            mockAdminChecker.mockClear();
+            mockSendAyaFnDependency.mockClear();
+            mockNextAyaFn.mockClear().mockImplementation((id) => id + 1); // Reset global mock with default behavior
+            mockAyaId2suraAyaFn.mockClear().mockReturnValue({ sura: 2, aya: 101 }); // Reset global mock
+            mockCtx.answerCbQuery.mockClear();
+        });
+
+        it('should call sendAyaFn with next Aya if user is admin', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            const callbackData = JSON.parse(mockCtx.update.callback_query.data);
+            const expectedNextAyaId = callbackData.currAya + 1;
+
+            await handleCurrAyaAction(mockCtx, dependencies);
+
+            expect(localMockHelperAdminConditionalAction).toHaveBeenCalled();
+            expect(mockLoggerLog).toHaveBeenCalledWith(
+                `Next Aya after ${callbackData.currAya} by ${callbackData.r} for chat ${mockCtx.chat.id}`
+            );
+            expect(mockNextAyaFn).toHaveBeenCalledWith(callbackData.currAya);
+            expect(mockSendAyaFnDependency).toHaveBeenCalledWith(
+                mockCtx.chat.id,
+                expectedNextAyaId,
+                callbackData.r,
+                mockCtx.from.language_code,
+                'next',
+                false
+            );
+            expect(mockCtx.answerCbQuery).toHaveBeenCalled(); // Called by the mock helper
+        });
+
+        it('should call answerCbQuery with URL if user is not admin', async () => {
+            mockAdminChecker.mockResolvedValue(false);
+            const callbackData = JSON.parse(mockCtx.update.callback_query.data);
+            const nextAyaId = callbackData.currAya + 1;
+            mockNextAyaFn.mockReturnValue(nextAyaId);
+            mockAyaId2suraAyaFn.mockReturnValue({ sura: 5, aya: 50 }); // For URL construction
+
+            await handleCurrAyaAction(mockCtx, dependencies);
+
+            expect(localMockHelperAdminConditionalAction).toHaveBeenCalled();
+            expect(mockSendAyaFnDependency).not.toHaveBeenCalled();
+
+            // Check that nonAdminCb was called (indirectly, by checking its effects via ayaId2suraAyaFn and nextAyaFn)
+            expect(mockNextAyaFn).toHaveBeenCalledWith(callbackData.currAya);
+            expect(mockAyaId2suraAyaFn).toHaveBeenCalledWith(nextAyaId); // Called twice, once for nonAdminCb, once for nonAdminUrl
+
+            const expectedUrl = `t.me/TestBotCurrAya?start=5-50`;
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('', { url: expectedUrl });
+        });
+    });
+
+    describe('handleSurpriseAyaAction', () => {
+        let mockCtx;
+        let dependencies;
+        let mockSurpriseAyaFnDependency;
+
+        beforeEach(() => {
+            mockCtx = {
+                from: { id: 'userSurprise' },
+                chat: { id: 'chatSurprise', type: 'group' },
+                update: { callback_query: { data: JSON.stringify({ surpriseAyaAction: true }) } },
+                answerCbQuery: jest.fn().mockResolvedValue(true),
+            };
+            mockSurpriseAyaFnDependency = jest.fn();
+            dependencies = {
+                botTelegram: mockBotTelegramDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
+                surpriseAyaFn: mockSurpriseAyaFnDependency,
+            };
+            mockAdminChecker.mockClear();
+            mockHelperAdminProtectedAction.mockClear();
+            mockSurpriseAyaFnDependency.mockClear();
+            mockCtx.answerCbQuery.mockClear();
+        });
+
+        it('should call surpriseAyaFn if user is admin', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            await handleSurpriseAyaAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            // helperAdminProtectedAction calls surpriseAyaFn with the context
+            expect(mockSurpriseAyaFnDependency).toHaveBeenCalledWith(mockCtx);
+        });
+
+        it('should call answerCbQuery with alert if user is not admin', async () => {
+            mockAdminChecker.mockResolvedValue(false);
+            await handleSurpriseAyaAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('NON_ADMINS_ALERT_MOCK', { show_alert: true });
+            expect(mockSurpriseAyaFnDependency).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('handleInstructionsAction', () => {
+        let mockCtx;
+        let dependencies;
+        let mockInstructionsFnDependency;
+
+        beforeEach(() => {
+            mockCtx = {
+                from: { id: 'userInstructions' },
+                chat: { id: 'chatInstructions', type: 'group' },
+                update: { callback_query: { data: JSON.stringify({ instructionsAction: true }) } },
+                answerCbQuery: jest.fn().mockResolvedValue(true),
+            };
+            mockInstructionsFnDependency = jest.fn();
+            dependencies = {
+                botTelegram: mockBotTelegramDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
+                instructionsFn: mockInstructionsFnDependency,
+            };
+            mockAdminChecker.mockClear();
+            mockHelperAdminProtectedAction.mockClear();
+            mockInstructionsFnDependency.mockClear();
+            mockCtx.answerCbQuery.mockClear();
+        });
+
+        it('should call instructionsFn if user is admin', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            await handleInstructionsAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            expect(mockInstructionsFnDependency).toHaveBeenCalledWith('chatInstructions');
+        });
+
+        it('should call answerCbQuery with alert if user is not admin', async () => {
+            mockAdminChecker.mockResolvedValue(false);
+            await handleInstructionsAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('NON_ADMINS_ALERT_MOCK', { show_alert: true });
+            expect(mockInstructionsFnDependency).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('handleSetReciterAction', () => {
+        let mockCtx;
+        let dependencies;
+        let mockTelegrafMarkup;
+
+        beforeEach(() => {
+            mockCtx = {
+                from: { id: 'userSetReciter' },
+                chat: { id: 'chatSetReciter', type: 'group' },
+                update: { callback_query: { data: JSON.stringify({ setReciter: 'ar.alafasy', a: 123 }) } },
+                answerCbQuery: jest.fn().mockResolvedValue(true),
+                reply: jest.fn().mockResolvedValue(true),
+            };
+            mockTelegrafMarkup = {
+                // Local mock for Telegraf's Markup for this describe block
+                button: {
+                    callback: jest.fn((text, data) => ({ text, callback_data: data })),
+                },
+                inlineKeyboard: jest.fn((buttons) => ({ inline_keyboard: buttons })),
+            };
+            dependencies = {
+                botTelegram: mockBotTelegramDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction,
+                dbSetFavReciter: mockDbSetFavReciter,
+                getQuranDataFn: mockGetQuranDataFn,
+                TelegrafMarkup: mockTelegrafMarkup,
+            };
+            mockAdminChecker.mockClear();
+            mockHelperAdminProtectedAction.mockClear();
+            mockDbSetFavReciter.mockClear().mockResolvedValue({ success: true, reciter: 'ar.alafasy' });
+            mockGetQuranDataFn.mockClear().mockReturnValue({
+                arReciters: [{ identifier: 'ar.alafasy', name: 'العفاسي', englishName: 'Al Afasy' }],
+            });
+            mockCtx.answerCbQuery.mockClear();
+            mockCtx.reply.mockClear();
+            mockTelegrafMarkup.button.callback.mockClear();
+            mockTelegrafMarkup.inlineKeyboard.mockClear();
+        });
+
+        it('should set reciter and reply with success if user is admin', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            await handleSetReciterAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            expect(mockDbSetFavReciter).toHaveBeenCalledWith('chatSetReciter', 'ar.alafasy');
+            expect(mockCtx.reply).toHaveBeenCalledWith(expect.stringContaining('القارئ المفضل الحالي: العفاسي'), {
+                inline_keyboard: expect.any(Object),
+            });
+            expect(mockTelegrafMarkup.button.callback).toHaveBeenCalledWith(
+                '🎁',
+                JSON.stringify({ surpriseAyaAction: true, a: 123 })
+            );
+        });
+
+        it('should handle "surprise" reciter selection for admin', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            mockCtx.update.callback_query.data = JSON.stringify({ setReciter: 'surprise' });
+            await handleSetReciterAction(mockCtx, dependencies);
+
+            expect(mockDbSetFavReciter).toHaveBeenCalledWith('chatSetReciter', 'surprise');
+            expect(mockCtx.reply).toHaveBeenCalledWith(
+                expect.stringContaining('سيتم تغيير القارئ مع كل آية مفاجئة'),
+                expect.any(Object)
+            );
+        });
+
+        it('should reply with generic success if reciter details not found (admin path)', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            mockGetQuranDataFn.mockReturnValue({ arReciters: [] }); // No reciters in data
+            mockCtx.update.callback_query.data = JSON.stringify({ setReciter: 'unknown.reciter' });
+            await handleSetReciterAction(mockCtx, dependencies);
+
+            expect(mockDbSetFavReciter).toHaveBeenCalledWith('chatSetReciter', 'unknown.reciter');
+            expect(mockCtx.reply).toHaveBeenCalledWith('Favorite reciter set to: unknown.reciter', expect.any(Object));
+        });
+
+        it('should call answerCbQuery with alert if user is not admin', async () => {
+            mockAdminChecker.mockResolvedValue(false);
+            await handleSetReciterAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('NON_ADMINS_ALERT_MOCK', { show_alert: true });
+            expect(mockDbSetFavReciter).not.toHaveBeenCalled();
+            expect(mockCtx.reply).not.toHaveBeenCalled();
+        });
+
+        it('should reply with error message if dbSetFavReciter returns failure (admin path)', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            mockDbSetFavReciter.mockResolvedValue({ success: false });
+            await handleSetReciterAction(mockCtx, dependencies);
+
+            expect(mockDbSetFavReciter).toHaveBeenCalledWith('chatSetReciter', 'ar.alafasy');
+            expect(mockCtx.reply).toHaveBeenCalledWith(
+                expect.stringContaining('عذرا.. نواجه مشكلة أثناء حفظ القارئ المفضل'),
+                expect.any(Object)
+            );
+        });
+
+        it('should create inline keyboard without "a" if not in callback_data (admin path)', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            mockCtx.update.callback_query.data = JSON.stringify({ setReciter: 'ar.alafasy' }); // No 'a'
+            await handleSetReciterAction(mockCtx, dependencies);
+
+            expect(mockTelegrafMarkup.button.callback).toHaveBeenCalledWith(
+                '🎁',
+                JSON.stringify({ surpriseAyaAction: true })
+            );
+            expect(mockCtx.reply).toHaveBeenCalled();
+        });
+    });
+
     describe('handleReciteAction', () => {
         let rawMockCtx;
         let dependencies;
@@ -650,10 +958,149 @@ describe('Bot Action Handlers', () => {
             mockCtx.answerCbQuery.mockClear();
             mockCtx.editMessageReplyMarkup.mockClear();
             mockHelperAMenuButtonsFnDependency.mockClear();
+            mockAyaId2suraAyaFn.mockClear(); // Clear this global mock too
         });
-        it('should toggle menu from t0 to t1 and edit markup for admin', async () => {
+
+        it('should toggle menu from t0 to t1 and edit markup if admin', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            mockCtx.update.callback_query.data = JSON.stringify({ aMenu: 't0', a: 200, r: 'recY' });
+            mockAyaId2suraAyaFn.mockReturnValue({ sura: 1, aya: 1 }); // Ensure this is mocked for the call within handleAMenuAction
+
             await handleAMenuAction(mockCtx, dependencies);
+
             expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            expect(dependencies.helperAMenuButtonsFn).toHaveBeenCalledWith(
+                't1',
+                200,
+                'recY',
+                'TestBotForAMenu',
+                dependencies.ayaId2suraAyaFn
+            );
+            expect(mockCtx.editMessageReplyMarkup).toHaveBeenCalledWith({ inline_keyboard: [[{ text: 'NewMenu' }]] });
+        });
+
+        it('should toggle menu from t1 to t0 and edit markup if admin', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            mockCtx.update.callback_query.data = JSON.stringify({ aMenu: 't1', a: 201, r: 'recZ' });
+            mockAyaId2suraAyaFn.mockReturnValue({ sura: 2, aya: 2 });
+
+            await handleAMenuAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            expect(dependencies.helperAMenuButtonsFn).toHaveBeenCalledWith(
+                't0',
+                201,
+                'recZ',
+                'TestBotForAMenu',
+                dependencies.ayaId2suraAyaFn
+            );
+            expect(mockCtx.editMessageReplyMarkup).toHaveBeenCalledWith({ inline_keyboard: [[{ text: 'NewMenu' }]] });
+        });
+
+        it('should call answerCbQuery with alert if user is not admin', async () => {
+            mockAdminChecker.mockResolvedValue(false);
+            await handleAMenuAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('NON_ADMINS_ALERT_MOCK', { show_alert: true });
+            expect(dependencies.helperAMenuButtonsFn).not.toHaveBeenCalled();
+            expect(mockCtx.editMessageReplyMarkup).not.toHaveBeenCalled();
+        });
+
+        it('should log error if editMessageReplyMarkup fails (admin path)', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            mockCtx.editMessageReplyMarkup.mockRejectedValueOnce(new Error('Edit Failed'));
+            mockAyaId2suraAyaFn.mockReturnValue({ sura: 1, aya: 1 });
+
+            await handleAMenuAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            expect(mockLoggerLog).toHaveBeenCalledWith(
+                expect.stringContaining('Warning: Error toggling aMenu'),
+                expect.any(Error)
+            );
+            // answerCbQuery might still be called by the helper successfully
+            expect(mockCtx.answerCbQuery).toHaveBeenCalled();
+        });
+    });
+
+    describe('handleRecitersNavPageAction', () => {
+        let mockCtx;
+        let dependencies;
+        let mockRecitersNavPageFnDependency;
+
+        beforeEach(() => {
+            mockCtx = {
+                from: { id: 'userRecNav' },
+                chat: { id: 'chatRecNav', type: 'group' }, // group chat
+                update: { callback_query: { data: JSON.stringify({ recitersNavPage: 2 }) } },
+                answerCbQuery: jest.fn().mockResolvedValue(true),
+                editMessageReplyMarkup: jest.fn().mockResolvedValue(true),
+            };
+            mockRecitersNavPageFnDependency = jest
+                .fn()
+                .mockReturnValue([[{ text: 'Page 2 Reciter', callback_data: 'r_pg2' }]]);
+            dependencies = {
+                botTelegram: mockBotTelegramDependency,
+                recitersNavPageFn: mockRecitersNavPageFnDependency,
+                helperAdminProtectedAction: mockHelperAdminProtectedAction, // Uses the global mock
+            };
+            mockAdminChecker.mockClear(); // Clear admin checker for specific settings
+            mockHelperAdminProtectedAction.mockClear();
+            mockCtx.answerCbQuery.mockClear();
+            mockCtx.editMessageReplyMarkup.mockClear();
+            mockRecitersNavPageFnDependency.mockClear();
+        });
+
+        it('should call recitersNavPageFn and edit markup if user is admin', async () => {
+            mockAdminChecker.mockResolvedValue(true); // User is admin
+            await handleRecitersNavPageAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            // The actual logic inside helperAdminProtectedAction's callback:
+            expect(mockRecitersNavPageFnDependency).toHaveBeenCalledWith(2);
+            expect(mockCtx.editMessageReplyMarkup).toHaveBeenCalledWith({
+                inline_keyboard: [[{ text: 'Page 2 Reciter', callback_data: 'r_pg2' }]],
+            });
+            expect(mockCtx.answerCbQuery).toHaveBeenCalled(); // Should be called by the helper
+        });
+
+        it('should call answerCbQuery with alert if user is not admin', async () => {
+            mockAdminChecker.mockResolvedValue(false); // User is NOT admin
+            await handleRecitersNavPageAction(mockCtx, dependencies);
+
+            expect(mockHelperAdminProtectedAction).toHaveBeenCalled();
+            // Check that the non-admin path in the mocked helper was taken:
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('NON_ADMINS_ALERT_MOCK', { show_alert: true });
+            expect(mockRecitersNavPageFnDependency).not.toHaveBeenCalled();
+            expect(mockCtx.editMessageReplyMarkup).not.toHaveBeenCalled();
+        });
+
+        it('should handle JSON parse error for callback_data', async () => {
+            mockAdminChecker.mockResolvedValue(true); // Assume admin to reach parsing logic
+            mockCtx.update.callback_query.data = 'invalid-json';
+            await handleRecitersNavPageAction(mockCtx, dependencies);
+
+            // helperAdminProtectedAction calls the actionFn. Inside actionFn:
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('Error processing request.');
+            expect(mockRecitersNavPageFnDependency).not.toHaveBeenCalled();
+        });
+
+        it('should handle invalid page number type in callback_data', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            mockCtx.update.callback_query.data = JSON.stringify({ recitersNavPage: 'not-a-number' });
+            await handleRecitersNavPageAction(mockCtx, dependencies);
+
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('Error: Invalid page number.');
+            expect(mockRecitersNavPageFnDependency).not.toHaveBeenCalled();
+        });
+
+        it('should handle error when editing message reply markup', async () => {
+            mockAdminChecker.mockResolvedValue(true);
+            mockCtx.editMessageReplyMarkup.mockRejectedValueOnce(new Error('Edit failed'));
+            await handleRecitersNavPageAction(mockCtx, dependencies);
+
+            expect(mockCtx.answerCbQuery).toHaveBeenCalledWith('Error updating list.');
         });
     });
 

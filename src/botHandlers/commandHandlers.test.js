@@ -28,9 +28,9 @@ let currentConfigMock = {
     },
 };
 jest.unstable_mockModule('../config.js', () => {
-    console.log(
-        `****** unstable_mockModule for ../config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
-    );
+    // console.log( // Commented out
+    //     `****** unstable_mockModule for ../config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
+    // );
     return currentConfigMock;
 });
 
@@ -102,7 +102,7 @@ beforeAll(async () => {
     // Corrected path: from src/botHandlers/ to src/__mocks__/ is ../__mocks__/
     const globalMockDefault = (await import('../__mocks__/config.mock.js')).default;
     currentConfigMock = { __esModule: true, default: globalMockDefault };
-    console.log('****** Set currentConfigMock to GLOBAL MOCK values for commandHandlers.test.js ******');
+    // console.log('****** Set currentConfigMock to GLOBAL MOCK values for commandHandlers.test.js ******'); // Commented out
 
     const commandHandlersModule = await import('./commandHandlers.js');
     handleStartCommand = commandHandlersModule.handleStartCommand;

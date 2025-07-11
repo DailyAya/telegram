@@ -221,10 +221,22 @@ This file (`AGENTS.md`) is the primary source of development directives and guid
 
 _(This section should be updated by the AI agent to reflect the current development focus, key features being worked on, or major refactoring goals. Example: "Implementing user preferences for Quran reciters," or "Refactoring database interaction layer for improved error handling.")_
 
-**Initial Focus (as of AGENTS.md creation):**
+**Current Focus (as of last update):**
 
-- Establishing standardized AI agent interaction protocols (`AGENTS.md`, `AGENT_PROGRESS.md`).
-- Implementing timestamp-based versioning and pre-commit routines.
+1.  **Resolve Bot Username Retrieval Issues:**
+    *   Investigate and fix the underlying problems preventing `bot.telegram.getMe()` from reliably succeeding in `telegramBot.js`, even when other API calls (like `sendMessage` to `devChatId`) work.
+    *   Ensure the `bot.options.username` is correctly set and the `botUsernameReady` promise resolves appropriately.
+2.  **Achieve 100% Test Coverage for Username Logic:**
+    *   Stabilize and fix the `telegramBot.test.js` suite, addressing any memory or mocking issues.
+    *   Implement comprehensive tests specifically covering the `getMe()` call, username initialization, and the `botUsernameReady` promise resolution, aiming for 100% coverage for this critical startup logic.
+3.  **Broader Test Coverage Improvement:**
+    *   Continue enhancing test coverage across other modules (e.g., `actionHandlers.js`, `commandHandlers.js`, etc.) as per the "Enhanced Testing Standards".
+4.  **Maintain Core Functionality & Reliability:**
+    *   Ensure all fixes and new tests uphold the bot's core functionality and reliability.
+    *   Address any regressions or new issues that arise during development.
+5.  **Adherence to Project Protocols:**
+    *   Strictly follow versioning, pre-commit routines, and all other guidelines in `AGENTS.MD`.
+    *   Keep `AGENT_PROGRESS.md` and `CHANGELOG.md` updated.
 
 ---
 

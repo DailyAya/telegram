@@ -30,9 +30,9 @@ let currentConfigMock = {
 };
 jest.unstable_mockModule('./config.js', () => {
     // Path relative to database.test.js
-    console.log(
-        `****** unstable_mockModule for ./config.js (database.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
-    );
+    // console.log( // Commented out
+    //     `****** unstable_mockModule for ./config.js (database.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
+    // );
     return currentConfigMock;
 });
 
@@ -77,7 +77,7 @@ beforeAll(async () => {
     // Path from src/database.test.js to src/__mocks__/config.mock.js is './__mocks__/config.mock.js'
     const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
     currentConfigMock = { __esModule: true, default: globalMockDefault };
-    console.log('****** Set currentConfigMock to GLOBAL MOCK values for database.test.js ******');
+    // console.log('****** Set currentConfigMock to GLOBAL MOCK values for database.test.js ******'); // Commented out
 
     const dbModule = await import('./database.js');
     connectDB = dbModule.connectDB;

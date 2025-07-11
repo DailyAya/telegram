@@ -1,5 +1,5 @@
 // src/__mocks__/config.mock.js
-console.log('****** GLOBAL MOCK: src/__mocks__/config.mock.js loaded ******');
+// console.log('****** GLOBAL MOCK: src/__mocks__/config.mock.js loaded ******'); // Commented out
 export default {
     telegramToken: 'GLOBAL_MOCK_TOKEN_CONFIG_FILE',
     devChatId: 'GLOBAL_MOCK_DEV_CHAT_ID_CONFIG_FILE',

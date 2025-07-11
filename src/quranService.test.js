@@ -30,9 +30,9 @@ let currentConfigMock = {
 };
 jest.unstable_mockModule('./config.js', () => {
     // Path relative to quranService.test.js
-    console.log(
-        `****** unstable_mockModule for ./config.js (quranService.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
-    );
+    // console.log( // Commented out
+    //     `****** unstable_mockModule for ./config.js (quranService.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
+    // );
     return currentConfigMock;
 });
 
@@ -63,7 +63,7 @@ beforeAll(async () => {
     // Path from src/quranService.test.js to src/__mocks__/config.mock.js is './__mocks__/config.mock.js'
     const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
     currentConfigMock = { __esModule: true, default: globalMockDefault };
-    console.log('****** Set currentConfigMock to GLOBAL MOCK values for quranService.test.js ******');
+    // console.log('****** Set currentConfigMock to GLOBAL MOCK values for quranService.test.js ******'); // Commented out
 
     // Dynamically import the module under test AFTER mocks are set up
     const quranServiceModule = await import('./quranService.js');
@@ -100,6 +100,23 @@ beforeAll(async () => {
 // mockApiGet and mockApiHead are initialized at module scope.
 
 describe('Quran Service Tests', () => {
+    let originalConsoleError;
+    let originalConsoleWarn;
+
+    beforeAll(() => {
+        // Suppress console.error and console.warn for these tests
+        originalConsoleError = console.error;
+        originalConsoleWarn = console.warn;
+        console.error = jest.fn();
+        console.warn = jest.fn();
+    });
+
+    afterAll(() => {
+        // Restore console.error and console.warn
+        console.error = originalConsoleError;
+        console.warn = originalConsoleWarn;
+    });
+
     // No redundant beforeAll here.
 
     // beforeEach for resetting currentMockConfig is no longer needed as the mock is static.
@@ -111,10 +128,12 @@ describe('Quran Service Tests', () => {
         let quranData; // Declare here
 
         beforeAll(() => {
+            // This beforeAll is scoped to 'Data Loading and Basic Accessors'
             // Initialize after dynamic imports are done
             if (typeof actualGetQuranDataOriginal !== 'function') {
                 // This would indicate the dynamic import in the outer beforeAll failed.
-                console.error(
+                // Use the restored console.error for critical test setup issues
+                originalConsoleError(
                     "Error: actualGetQuranDataOriginal is not a function in 'Data Loading and Basic Accessors' beforeAll. Dynamic import might have failed."
                 );
                 // Potentially throw an error or ensure tests fail clearly.

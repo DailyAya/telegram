@@ -213,10 +213,9 @@ export async function helperAdminConditionalAction(
 
     if (isUserAdmin) {
         try {
-            // Pass the original `ctx` to adminFn.
-            // The adminFn (e.g., in handleReciteAction) is now designed to use primitives
-            // from its closure if possible, or this `ctx` if it needs Telegraf methods.
-            await adminFn(ctx);
+            // adminFn (e.g., in handleReciteAction) is designed to use primitives
+            // from its closure. It does not expect ctx to be passed here.
+            await adminFn(); // Call without arguments
             await ctx
                 .answerCbQuery()
                 .catch((e) => logger('Error answering CBQ after admin fn in conditional:', e.message));

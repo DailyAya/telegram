@@ -43,9 +43,9 @@ let currentConfigMock = {
 
 // unstable_mockModule's factory will return the content of currentConfigMock
 jest.unstable_mockModule('./config.js', () => {
-    console.log(
-        `****** unstable_mockModule for ./config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
-    );
+    // console.log( // Commented out noisy log
+    //     `****** unstable_mockModule for ./config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
+    // );
     return currentConfigMock;
 });
 
@@ -60,7 +60,7 @@ describe('Express App Tests', () => {
                 // Set currentConfigMock to the global mock values
                 const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
                 currentConfigMock = { __esModule: true, default: globalMockDefault };
-                console.log('****** Set currentConfigMock to GLOBAL MOCK values (branch: global-mock-branch) ******');
+                // console.log('****** Set currentConfigMock to GLOBAL MOCK values (branch: global-mock-branch) ******'); // Commented out
 
                 const app = (await import('./expressApp.js')).default;
                 const response = await request(app).get('/');
@@ -107,7 +107,7 @@ describe('Express App Tests', () => {
 
                 // Set currentConfigMock to the debug config values
                 currentConfigMock = { __esModule: true, default: mockDebugConfigData };
-                console.log('****** Set currentConfigMock to DEBUG values (branch: debug-branch) ******');
+                // console.log('****** Set currentConfigMock to DEBUG values (branch: debug-branch) ******'); // Commented out
 
                 const app = (await import('./expressApp.js')).default;
                 const response = await request(app).get('/');

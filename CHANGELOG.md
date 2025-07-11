@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.11-2217] - 2025-07-11
+
+### Changed
+- **Test Coverage for `actionHandlers.js`**: Significantly improved test coverage for `src/botHandlers/actionHandlers.js`. Added tests for admin/non-admin paths, error conditions, and specific logic branches for most action handlers. Coverage increased from (Stmts: 40%->82.1%, Branch: 48%->78%, Funcs: 20%->53%, Lines: 40%->81%).
+- **Test Console Noise Reduction**:
+    - Suppressed `console.error` and `console.warn` messages in `quranService.test.js` for expected error logging during tests.
+    - Commented out verbose `console.log` statements related to config mocking in `expressApp.test.js`, `database.test.js`, `commandHandlers.test.js`, `utils.test.js`, `quranService.test.js`, and `src/__mocks__/config.mock.js`. Test output is now much cleaner.
+- **Node Memory Limit for Tests**: Increased Node.js memory limit in `package.json` test script (`--max-old-space-size=4096`) to mitigate potential out-of-memory issues during Jest runs.
+- **`AGENTS.MD` Update**: Updated the "Current Project Focus / Features" section to prioritize resolving `telegramBot.js` `getMe()` / bot username issues and achieving 100% test coverage for that critical logic.
+
+### Added
+- New tests in `src/botHandlers/actionHandlers.test.js` for various handlers.
+
+### Removed
+- (No direct file removals)
+
+### Fixed
+- (No direct bug fixes in this set of changes, focus was on testing and dev experience)
+
+### Skipped (Technical Debt & Current Workarounds)
+- `src/telegramBot.test.js` remains skipped (renamed to `telegramBot.test.js.skip`) due to persistent JavaScript heap out-of-memory errors when attempting to fix ESM mocking issues within it. This will be addressed as a high-priority next step.
+
 ## [2025.07.10-2026] - 2025-07-10
 
 ### Changed
