@@ -328,7 +328,7 @@ export async function performBotPreLaunchChecks() {
     bootstrapLogger(`performBotPreLaunchChecks (in telegramBot.js): Pre-launch checks. Bot username: ${username || 'Not yet available'}.`);
 
     if (config.devChatId && username) {
-        const instStateMsg = `DailyAyaTelegram ${config.branch} instance ${config.inst}@${config.host} (of total ${config.totalInst}) is active in ${config.debugging ? 'debugging' : 'normal'} mode of version ${config.codeVer} until ${config.instActiveUntil}.\nMemory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB\nUptime: ${+(process.uptime() / 3600).toFixed(2)} hours`;
+        const instStateMsg = `DailyAyaTelegram ${config.branch} instance ${config.inst}@${config.host} (of total ${config.totalInst}) is active in ${config.debugging ? 'debugging' : 'normal'} mode of version ${config.codeVer} until ${config.instActiveUntil}. Memory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB Uptime: ${+(process.uptime() / 3600).toFixed(2)} hours`;
         try {
             await activeBotInstance.telegram.sendMessage(config.devChatId, instStateMsg);
             bootstrapLogger('performBotPreLaunchChecks: Startup state message successfully sent to dev group.');
