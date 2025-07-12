@@ -47,7 +47,10 @@ async function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation = f
     const targetAyaId = ayaId || randomAyaNumber();
 
     if (!activeBotInstance || !activeBotInstance.telegram || !activeBotInstance.options) {
-        logger('Error: sendAya called before bot is properly initialized/registered.', new Error('Bot not ready for sendAya'));
+        logger(
+            'Error: sendAya called before bot is properly initialized/registered.',
+            new Error('Bot not ready for sendAya')
+        );
         return;
     }
 
@@ -81,9 +84,10 @@ async function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation = f
     } catch (e) {
         logger(`sendAya: Error caught while sending Aya ${targetAyaId} to chat ${chatId}. Trigger: ${trigger}`, e);
         const errorDesc = e.response?.description?.toLowerCase() || '';
-        const blockKeywords = /blocked by the user|user is deactivated|need administrator rights|not enough rights|chat not found|TOPIC_CLOSED|bot was kicked|CHAT_SEND_PLAIN_FORBIDDEN/;
+        const blockKeywords =
+            /blocked by the user|user is deactivated|need administrator rights|not enough rights|chat not found|TOPIC_CLOSED|bot was kicked|CHAT_SEND_PLAIN_FORBIDDEN/;
         if (blockKeywords.test(errorDesc)) {
-             // Attempt to get chat type and lang from context if possible, otherwise use defaults or undefined
+            // Attempt to get chat type and lang from context if possible, otherwise use defaults or undefined
             const chatType = activeBotInstance.context?.chat?.type || 'unknown'; // Example fallback
             await lastAyaTime(chatId, 'blocked', undefined, chatType, lang, trigger);
         }
@@ -106,7 +110,7 @@ export async function handleText(ctx) {
     logger(`Message from chat ${chatId} (${ctx.from?.username}): ${originalText}. Normalized: ${normalizedTxt}`);
 
     let searchableTxt = normalizedTxt;
-    const rasmifiedSuraPrefix = rasmifize("سورة ");
+    const rasmifiedSuraPrefix = rasmifize('سورة ');
     if (normalizedTxt.startsWith(rasmifiedSuraPrefix)) {
         searchableTxt = normalizedTxt.substring(rasmifiedSuraPrefix.length).trim();
     }
@@ -150,7 +154,10 @@ export async function handleText(ctx) {
         if (ayaId === 0) reasonCode = 2;
         else if (ayaId === -1) reasonCode = 1;
         if (!activeBotInstance || !activeBotInstance.telegram) {
-            logger('Error: handleText trying to send unrecognized message but bot is not ready.', new Error('Bot not ready for sendUnrecognizedMessage in handleText'));
+            logger(
+                'Error: handleText trying to send unrecognized message but bot is not ready.',
+                new Error('Bot not ready for sendUnrecognizedMessage in handleText')
+            );
             return;
         }
         await helperSendUnrecognizedMessage(ctx, reasonCode, activeBotInstance.telegram);
@@ -161,7 +168,10 @@ servicePopulateRecitersButtons();
 
 export function registerHandlers(botToRegister, dependencies) {
     if (!botToRegister) {
-        logger('Error: registerHandlers called without a bot instance.', new Error('Bot instance not provided to registerHandlers'));
+        logger(
+            'Error: registerHandlers called without a bot instance.',
+            new Error('Bot instance not provided to registerHandlers')
+        );
         return;
     }
     activeBotInstance = botToRegister;
@@ -171,16 +181,24 @@ export function registerHandlers(botToRegister, dependencies) {
     console.log('[TELEGRAMBOT_SUT registerHandlers] ENTER. botToRegister defined?', !!botToRegister);
     console.log('[TELEGRAMBOT_SUT registerHandlers] activeBotInstance is now set. Is it defined?', !!activeBotInstance);
     if (activeBotInstance) {
-        console.log('[TELEGRAMBOT_SUT registerHandlers] typeof activeBotInstance.start:', typeof activeBotInstance.start);
+        console.log(
+            '[TELEGRAMBOT_SUT registerHandlers] typeof activeBotInstance.start:',
+            typeof activeBotInstance.start
+        );
     }
     // </DEBUG_LOGGING>
 
     const startHandlerWrapper = async (ctx) => {
         // <DEBUG_LOGGING>
-        console.log('[TELEGRAMBOT_SUT registerHandlers] Start handler WRAPPER invoked. commandHandlers.handleStartCommand is function?', typeof commandHandlers.handleStartCommand === 'function');
+        console.log(
+            '[TELEGRAMBOT_SUT registerHandlers] Start handler WRAPPER invoked. commandHandlers.handleStartCommand is function?',
+            typeof commandHandlers.handleStartCommand === 'function'
+        );
         // </DEBUG_LOGGING>
         if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, activeBotInstance.telegram))) {
-            logger(`Ignored /start command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+            logger(
+                `Ignored /start command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
+            );
             return;
         }
         await commandHandlers.handleStartCommand(ctx, {
@@ -190,27 +208,41 @@ export function registerHandlers(botToRegister, dependencies) {
         });
     };
     // <DEBUG_LOGGING>
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .start with startHandlerWrapper:', typeof startHandlerWrapper, startHandlerWrapper);
+    console.log(
+        '[TELEGRAMBOT_SUT registerHandlers] Registering .start with startHandlerWrapper:',
+        typeof startHandlerWrapper,
+        startHandlerWrapper
+    );
     // </DEBUG_LOGGING>
     activeBotInstance.start(startHandlerWrapper);
 
     // <DEBUG_LOGGING>
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .help handler with handler:', commandHandlers.handleHelpCommand);
+    console.log(
+        '[TELEGRAMBOT_SUT registerHandlers] Registering .help handler with handler:',
+        commandHandlers.handleHelpCommand
+    );
     // </DEBUG_LOGGING>
     activeBotInstance.help(async (ctx) => {
         if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, activeBotInstance.telegram))) {
-            logger(`Ignored /help command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+            logger(
+                `Ignored /help command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
+            );
             return;
         }
         await commandHandlers.handleHelpCommand(ctx, { telegram: activeBotInstance.telegram });
     });
 
     // <DEBUG_LOGGING>
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .command("surpriseme") with handler:', commandHandlers.handleSurpriseMeCommand);
+    console.log(
+        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("surpriseme") with handler:',
+        commandHandlers.handleSurpriseMeCommand
+    );
     // </DEBUG_LOGGING>
     activeBotInstance.command('surpriseme', async (ctx) => {
         if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, activeBotInstance.telegram))) {
-            logger(`Ignored /surpriseme command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+            logger(
+                `Ignored /surpriseme command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
+            );
             return;
         }
         await commandHandlers.handleSurpriseMeCommand(ctx, {
@@ -218,27 +250,44 @@ export function registerHandlers(botToRegister, dependencies) {
         });
     });
 
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .command("support") with handler:', commandHandlers.handleSupportCommand);
+    console.log(
+        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("support") with handler:',
+        commandHandlers.handleSupportCommand
+    );
     activeBotInstance.command('support', commandHandlers.handleSupportCommand); // Was wrapped, now direct
 
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .command("reciters") with handler:', commandHandlers.handleRecitersCommand);
+    console.log(
+        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("reciters") with handler:',
+        commandHandlers.handleRecitersCommand
+    );
     activeBotInstance.command('reciters', commandHandlers.handleRecitersCommand); // Was wrapped, now direct
 
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .command("channel") with handler:', commandHandlers.handleChannelCommand);
+    console.log(
+        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("channel") with handler:',
+        commandHandlers.handleChannelCommand
+    );
     activeBotInstance.command('channel', commandHandlers.handleChannelCommand); // Was wrapped, now direct
 
     // <DEBUG_LOGGING>
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .command("khatma") with handler:', commandHandlers.handleKhatmaCommand);
+    console.log(
+        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("khatma") with handler:',
+        commandHandlers.handleKhatmaCommand
+    );
     // </DEBUG_LOGGING>
     activeBotInstance.command('khatma', async (ctx) => {
         if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, activeBotInstance.telegram))) {
-            logger(`Ignored /khatma command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+            logger(
+                `Ignored /khatma command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
+            );
             return;
         }
         await commandHandlers.handleKhatmaCommand(ctx, Markup);
     });
 
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .command("commands") with handler:', commandHandlers.handleCommandsCommand);
+    console.log(
+        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("commands") with handler:',
+        commandHandlers.handleCommandsCommand
+    );
     activeBotInstance.command('commands', commandHandlers.handleCommandsCommand); // Was wrapped, now direct
 
     // <DEBUG_LOGGING>
@@ -256,31 +305,104 @@ export function registerHandlers(botToRegister, dependencies) {
         .catch((e) => logger('Error setting bot commands:', e));
 
     // Action Handlers
-    activeBotInstance.action(/^{"groupkhatma":\d+}$/, async (ctx) => actionHandlers.handleGroupKhatmaAction(ctx, { khatmaUpdateFn: khatmaServiceKhatmaUpdate }));
-    activeBotInstance.action(/^{"recitersNavPage":\s*\d+\s*}$/, async (ctx) => actionHandlers.handleRecitersNavPageAction(ctx, { botTelegram: activeBotInstance.telegram, recitersNavPageFn: serviceRecitersNavPage, helperAdminProtectedAction }));
+    activeBotInstance.action(/^{"groupkhatma":\d+}$/, async (ctx) =>
+        actionHandlers.handleGroupKhatmaAction(ctx, { khatmaUpdateFn: khatmaServiceKhatmaUpdate })
+    );
+    activeBotInstance.action(/^{"recitersNavPage":\s*\d+\s*}$/, async (ctx) =>
+        actionHandlers.handleRecitersNavPageAction(ctx, {
+            botTelegram: activeBotInstance.telegram,
+            recitersNavPageFn: serviceRecitersNavPage,
+            helperAdminProtectedAction,
+        })
+    );
     // For handleSetReciterAction, ensure all dependencies are passed. Markup is from dependencies.
-    activeBotInstance.action(/^{"setReciter":"[^"]+"(?:,"a":\d+)?}$/, async (ctx) => actionHandlers.handleSetReciterAction(ctx, { botTelegram: activeBotInstance.telegram, helperAdminProtectedAction, dbSetFavReciter: setFavReciter, getQuranDataFn: getQuranData, TelegrafMarkup: Markup }));
-    activeBotInstance.action(JSON.stringify({ instructionsAction: true }), async (ctx) => actionHandlers.handleInstructionsAction(ctx, { botTelegram: activeBotInstance.telegram, helperAdminProtectedAction, instructionsFn: helperInstructions }));
-    activeBotInstance.action(/^{"surpriseAyaAction":true(?:,"a":\d+)?}$/, async (ctx) => actionHandlers.handleSurpriseAyaAction(ctx, { botTelegram: activeBotInstance.telegram, helperAdminProtectedAction, surpriseAyaFn: surpriseAya }));
-    activeBotInstance.action(/^{"currAya":\d+,"r":"[^"]+"}$/, async (ctx) => actionHandlers.handleCurrAyaAction(ctx, { botTelegram: activeBotInstance.telegram, botOptions: activeBotInstance.options, helperAdminConditionalAction, sendAyaFn: sendAya, nextAyaFn: nextAya, ayaId2suraAyaFn: ayaId2suraAya }));
-    activeBotInstance.action(/^{"aMenu":"[^"]+","a":\d+,"r":"[^"]+"}$/, async (ctx) => actionHandlers.handleAMenuAction(ctx, { botTelegram: activeBotInstance.telegram, botOptions: activeBotInstance.options, helperAdminProtectedAction, helperAMenuButtonsFn: helperAMenuButtons, ayaId2suraAyaFn: ayaId2suraAya }));
+    activeBotInstance.action(/^{"setReciter":"[^"]+"(?:,"a":\d+)?}$/, async (ctx) =>
+        actionHandlers.handleSetReciterAction(ctx, {
+            botTelegram: activeBotInstance.telegram,
+            helperAdminProtectedAction,
+            dbSetFavReciter: setFavReciter,
+            getQuranDataFn: getQuranData,
+            TelegrafMarkup: Markup,
+        })
+    );
+    activeBotInstance.action(JSON.stringify({ instructionsAction: true }), async (ctx) =>
+        actionHandlers.handleInstructionsAction(ctx, {
+            botTelegram: activeBotInstance.telegram,
+            helperAdminProtectedAction,
+            instructionsFn: helperInstructions,
+        })
+    );
+    activeBotInstance.action(/^{"surpriseAyaAction":true(?:,"a":\d+)?}$/, async (ctx) =>
+        actionHandlers.handleSurpriseAyaAction(ctx, {
+            botTelegram: activeBotInstance.telegram,
+            helperAdminProtectedAction,
+            surpriseAyaFn: surpriseAya,
+        })
+    );
+    activeBotInstance.action(/^{"currAya":\d+,"r":"[^"]+"}$/, async (ctx) =>
+        actionHandlers.handleCurrAyaAction(ctx, {
+            botTelegram: activeBotInstance.telegram,
+            botOptions: activeBotInstance.options,
+            helperAdminConditionalAction,
+            sendAyaFn: sendAya,
+            nextAyaFn: nextAya,
+            ayaId2suraAyaFn: ayaId2suraAya,
+        })
+    );
+    activeBotInstance.action(/^{"aMenu":"[^"]+","a":\d+,"r":"[^"]+"}$/, async (ctx) =>
+        actionHandlers.handleAMenuAction(ctx, {
+            botTelegram: activeBotInstance.telegram,
+            botOptions: activeBotInstance.options,
+            helperAdminProtectedAction,
+            helperAMenuButtonsFn: helperAMenuButtons,
+            ayaId2suraAyaFn: ayaId2suraAya,
+        })
+    );
 
     activeBotInstance.action(/^{"recite":\d+,"r":"[^"]+"}$/, async (ctx) => {
-        let callbackData, chatId, fromId, messageId, rawCtxForAnswerCbQuery = ctx;
+        let callbackData,
+            chatId,
+            fromId,
+            messageId,
+            rawCtxForAnswerCbQuery = ctx;
         try {
-            if (!ctx || typeof ctx !== 'object' || Object.keys(ctx).length === 0) { throw new Error('Invalid ctx for recite action');}
-            if (!ctx.update?.callback_query?.data) { throw new Error('Missing callback_query data for recite action');}
+            if (!ctx || typeof ctx !== 'object' || Object.keys(ctx).length === 0) {
+                throw new Error('Invalid ctx for recite action');
+            }
+            if (!ctx.update?.callback_query?.data) {
+                throw new Error('Missing callback_query data for recite action');
+            }
             callbackData = JSON.parse(ctx.update.callback_query.data);
-            if (!ctx.chat?.id) { throw new Error('Missing chat ID for recite action');}
-            chatId = ctx.chat.id; fromId = ctx.from?.id; messageId = ctx.update.callback_query.message?.message_id;
+            if (!ctx.chat?.id) {
+                throw new Error('Missing chat ID for recite action');
+            }
+            chatId = ctx.chat.id;
+            fromId = ctx.from?.id;
+            messageId = ctx.update.callback_query.message?.message_id;
         } catch (e) {
             logger('Recite action wrapper: Error parsing ctx/data.', { error: e.message });
-            if (ctx?.answerCbQuery) await ctx.answerCbQuery('Error parsing request for recite.', { show_alert: true }).catch(ebq => logger('Error in answerCbQuery for recite parse fail:', ebq));
+            if (ctx?.answerCbQuery)
+                await ctx
+                    .answerCbQuery('Error parsing request for recite.', { show_alert: true })
+                    .catch((ebq) => logger('Error in answerCbQuery for recite parse fail:', ebq));
             return;
         }
         actionHandlers.handleReciteAction(
-            { chatId, fromId, messageId, callbackQueryData, rawCtx: rawCtxForAnswerCbQuery },
-            { botTelegram: activeBotInstance.telegram, botOptions: activeBotInstance.options, helperAdminConditionalAction, sendAyaRecitationFn: senderSendAyaRecitation, ayaId2suraAyaFn, isValidReciterFn: isValidReciter, getRecitationFn: getRecitation, getFavReciterDbFn: getFavReciter, getRandomReciterIdentifierFn: getRandomReciterIdentifier, helperSendSorryFn: helperSendSorry, helperAMenuButtonsFn: helperAMenuButtons, lastAyaTimeDbFn: lastAyaTime }
+            { chatId, fromId, messageId, callbackData, rawCtx: rawCtxForAnswerCbQuery },
+            {
+                botTelegram: activeBotInstance.telegram,
+                botOptions: activeBotInstance.options,
+                helperAdminConditionalAction,
+                sendAyaRecitationFn: senderSendAyaRecitation,
+                ayaId2suraAyaFn: ayaId2suraAya,
+                isValidReciterFn: isValidReciter,
+                getRecitationFn: getRecitation,
+                getFavReciterDbFn: getFavReciter,
+                getRandomReciterIdentifierFn: getRandomReciterIdentifier,
+                helperSendSorryFn: helperSendSorry,
+                helperAMenuButtonsFn: helperAMenuButtons,
+                lastAyaTimeDbFn: lastAyaTime,
+            }
         );
     });
 
@@ -288,7 +410,9 @@ export function registerHandlers(botToRegister, dependencies) {
     console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .on("text") with handleText wrapper');
     activeBotInstance.on('text', async (ctx) => {
         if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, activeBotInstance.telegram))) {
-            logger(`Ignored text message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`);
+            logger(
+                `Ignored text message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
+            );
             return;
         }
         await handleText(ctx);
@@ -299,33 +423,47 @@ export function registerHandlers(botToRegister, dependencies) {
         const newStatus = ctx.update.my_chat_member.new_chat_member.status;
         logger(`my_chat_member update for chat ${ctx.chat.id}: ${newStatus}`);
         switch (newStatus) {
-            case 'member': case 'administrator':
-                await commandHandlers.handleStartCommand(ctx, { telegram: activeBotInstance.telegram, options: activeBotInstance.options, handleTextFn: handleText });
+            case 'member':
+            case 'administrator':
+                await commandHandlers.handleStartCommand(ctx, {
+                    telegram: activeBotInstance.telegram,
+                    options: activeBotInstance.options,
+                    handleTextFn: handleText,
+                });
                 break;
-            case 'kicked': case 'left':
+            case 'kicked':
+            case 'left':
                 await lastAyaTime(ctx.chat.id, 'blocked');
                 break;
-            default: logger(`Unknown my_chat_member status: ${newStatus} for chat ${ctx.chat.id}`); break;
+            default:
+                logger(`Unknown my_chat_member status: ${newStatus} for chat ${ctx.chat.id}`);
+                break;
         }
     });
 
-    console.log(`[TELEGRAMBOT_SUT registerHandlers] Finished. Bot username from activeBotInstance: ${activeBotInstance.options?.username || 'UNKNOWN_BOT'}`);
+    console.log(
+        `[TELEGRAMBOT_SUT registerHandlers] Finished. Bot username from activeBotInstance: ${activeBotInstance.options?.username || 'UNKNOWN_BOT'}`
+    );
 }
 
 export async function performBotPreLaunchChecks() {
     if (!activeBotInstance) {
-        const errMsg = 'performBotPreLaunchChecks (in telegramBot.js) called but bot is not initialized. Ensure initializeBot() and registerHandlers() were called by app.js.';
+        const errMsg =
+            'performBotPreLaunchChecks (in telegramBot.js) called but bot is not initialized. Ensure initializeBot() and registerHandlers() were called by app.js.';
         bootstrapLogger(errMsg, new Error(errMsg));
         throw new Error(errMsg);
     }
     const username = activeBotInstance.options?.username;
 
     if (!username) {
-        const warnMsg = 'performBotPreLaunchChecks (in telegramBot.js): Bot username not available. Startup message to devChatId might be incomplete or fail.';
+        const warnMsg =
+            'performBotPreLaunchChecks (in telegramBot.js): Bot username not available. Startup message to devChatId might be incomplete or fail.';
         bootstrapLogger(warnMsg);
     }
 
-    bootstrapLogger(`performBotPreLaunchChecks (in telegramBot.js): Pre-launch checks. Bot username: ${username || 'Not yet available'}.`);
+    bootstrapLogger(
+        `performBotPreLaunchChecks (in telegramBot.js): Pre-launch checks. Bot username: ${username || 'Not yet available'}.`
+    );
 
     if (config.devChatId && username) {
         const instStateMsg = `DailyAyaTelegram ${config.branch} instance ${config.inst}@${config.host} (of total ${config.totalInst}) is active in ${config.debugging ? 'debugging' : 'normal'} mode of version ${config.codeVer} until ${config.instActiveUntil}. Memory Used: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB Uptime: ${+(process.uptime() / 3600).toFixed(2)} hours`;
@@ -333,15 +471,23 @@ export async function performBotPreLaunchChecks() {
             await activeBotInstance.telegram.sendMessage(config.devChatId, instStateMsg);
             bootstrapLogger('performBotPreLaunchChecks: Startup state message successfully sent to dev group.');
         } catch (e) {
-            bootstrapLogger('performBotPreLaunchChecks: Error sending startup state message to dev group (proceeding):', e);
+            bootstrapLogger(
+                'performBotPreLaunchChecks: Error sending startup state message to dev group (proceeding):',
+                e
+            );
         }
     } else if (config.devChatId && !username) {
-        bootstrapLogger('performBotPreLaunchChecks: Cannot send startup state message to dev group - bot username not available.');
+        bootstrapLogger(
+            'performBotPreLaunchChecks: Cannot send startup state message to dev group - bot username not available.'
+        );
     }
 
     if (!config.debugging) {
         if (activeBotInstance && activeBotInstance.telegram) {
-            console.log('[SUT performBotPreLaunchChecks] About to call checkSource. Is it a function?', typeof checkSource); // <--- DEBUG LOG
+            console.log(
+                '[SUT performBotPreLaunchChecks] About to call checkSource. Is it a function?',
+                typeof checkSource
+            ); // <--- DEBUG LOG
             checkSource((chatId, message) => activeBotInstance.telegram.sendMessage(chatId, message))
                 .then(() => logger('Initial Quran source check scheduled/done.'))
                 .catch((e) => logger('Error during initial Quran source check:', e));

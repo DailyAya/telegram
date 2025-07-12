@@ -144,8 +144,9 @@ This file (`AGENTS.md`) is the primary source of development directives and guid
             - Documenting this update in `AGENT_PROGRESS.md`.
     - This step ensures that tests are validated against the most current understanding of the Telegram API.
 11. **Run Linters/Tests (if configured):** Execute any project-defined linters (e.g., ESLint) and automated tests (e.g., Jest). Address any issues identified. The DailyAya project currently uses `npm run lint -- --fix` and `npm test`.
-12. **Prepare Commit Message:** Draft a descriptive commit message. The first line should be a concise summary (max 50 chars). Include the new version string (e.g., "Version: yyyy.mm.dd-HHMM") in the commit message body.
-13. **Submit Changes (MANDATORY TO `by_ai` BRANCH):** Commit all modified files, which typically include any changed source code files, `README.md` (if updated), `AGENT_PROGRESS.md` (if updated), `CHANGELOG.md` (if updated), `package.json`, and `package-lock.json`. **ALL COMMITS MUST BE TO A BRANCH NAMED `by_ai` UNLESS EXPLICITLY INSTRUCTED OTHERWISE BY THE USER FOR THE CURRENT SESSION/TASK. This is a primary directive.**
+12. **Application Smoke Test**: After all tests pass, run the application with `npm start` and monitor for any immediate startup errors. This is a final check to ensure the application is not crashing on startup.
+13. **Prepare Commit Message:** Draft a descriptive commit message. The first line should be a concise summary (max 50 chars). Include the new version string (e.g., "Version: yyyy.mm.dd-HHMM") in the commit message body.
+14. **Submit Changes (MANDATORY TO `by_ai` BRANCH):** Commit all modified files, which typically include any changed source code files, `README.md` (if updated), `AGENT_PROGRESS.md` (if updated), `CHANGELOG.md` (if updated), `package.json`, and `package-lock.json`. **ALL COMMITS MUST BE TO A BRANCH NAMED `by_ai` UNLESS EXPLICITLY INSTRUCTED OTHERWISE BY THE USER FOR THE CURRENT SESSION/TASK. This is a primary directive.**
 
 ## Code Quality and Style:
 

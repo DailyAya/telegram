@@ -7,8 +7,8 @@ import { startExpressServer } from './expressApp.js';
 import { initializeBot } from './botManager.js'; // New import
 import {
     registerHandlers,
-    launchBot as performBotPreLaunchChecks, // Renamed for clarity
-    sendAya // Direct import of sendAya
+    performBotPreLaunchChecks,
+    sendAya, // Direct import of sendAya
 } from './telegramBot.js';
 import { checkConnectivity, maskTokenInUrl } from './utils.js';
 
@@ -27,20 +27,27 @@ async function runTimerSend() {
     logger(`runTimerSend: timerSendHours: ${config.timerSendHours}, timerCheckMinutes: ${config.timerCheckMinutes}`);
     logger(`runTimerSend: Calculated sendMillisThreshold: ${sendMillisThreshold}`);
     logger(`runTimerSend: Current Date.now(): ${Date.now()}`);
-    logger(`runTimerSend: Querying for chats with lastAyaTime <= ${comparisonTimestamp} (i.e., older than ${new Date(comparisonTimestamp).toISOString()})`);
+    logger(
+        `runTimerSend: Querying for chats with lastAyaTime <= ${comparisonTimestamp} (i.e., older than ${new Date(comparisonTimestamp).toISOString()})`
+    );
 
     try {
         const db = getDB();
         if (!db) {
             logger('runTimerSend: Database not available, skipping cycle.');
-            bootstrapLogger(`runTimerSend: Cycle finished (DB not available). Processed ${numberOfChatsProcessed} chats.`);
+            bootstrapLogger(
+                `runTimerSend: Cycle finished (DB not available). Processed ${numberOfChatsProcessed} chats.`
+            );
             return;
         }
 
-        const chats = await db.collection('chats').find({
-            lastAyaTime: { $lte: comparisonTimestamp },
-            blocked: false,
-        }).toArray();
+        const chats = await db
+            .collection('chats')
+            .find({
+                lastAyaTime: { $lte: comparisonTimestamp },
+                blocked: false,
+            })
+            .toArray();
 
         numberOfChatsProcessed = chats.length;
         logger(`runTimerSend: Found ${numberOfChatsProcessed} eligible chats for this cycle.`);
@@ -48,7 +55,9 @@ async function runTimerSend() {
         if (chats.length > 0) {
             for (let i = 0; i < Math.min(chats.length, 5); i++) {
                 const chat = chats[i];
-                logger(`runTimerSend: Eligible chat[${i}]: chatId: ${chat.chatId}, lastAyaTime: ${chat.lastAyaTime} (${new Date(chat.lastAyaTime).toISOString()}), favReciter: ${chat.favReciter}`);
+                logger(
+                    `runTimerSend: Eligible chat[${i}]: chatId: ${chat.chatId}, lastAyaTime: ${chat.lastAyaTime} (${new Date(chat.lastAyaTime).toISOString()}), favReciter: ${chat.favReciter}`
+                );
             }
         }
 
@@ -57,7 +66,9 @@ async function runTimerSend() {
             const delay = i * (config.debugging ? 1000 : 50);
             setTimeout(async () => {
                 try {
-                    logger(`runTimerSend: Attempting to send timed Aya to chat ${chat.chatId} (FavReciter: ${chat.favReciter || 'surprise'}, withRecitation: false)`);
+                    logger(
+                        `runTimerSend: Attempting to send timed Aya to chat ${chat.chatId} (FavReciter: ${chat.favReciter || 'surprise'}, withRecitation: false)`
+                    );
                     // sendAya now correctly uses activeBotInstance set by registerHandlers
                     await sendAya(chat.chatId, null, chat.favReciter, null, 'timer', false);
                 } catch (e) {
@@ -92,12 +103,15 @@ function initializeTimer() {
         timerFirstDelay += config.timerCheckMinutes * 60 * 1000;
     }
 
-    bootstrapLogger(`Timer: Initializing. timerCheckMinutes: ${config.timerCheckMinutes}, timerCheckMillis: ${timerCheckMillis}, timerFirstDelay: ${timerFirstDelay}ms (${+(timerFirstDelay / 1000 / 60).toFixed(2)} minutes).`);
+    bootstrapLogger(
+        `Timer: Initializing. timerCheckMinutes: ${config.timerCheckMinutes}, timerCheckMillis: ${timerCheckMillis}, timerFirstDelay: ${timerFirstDelay}ms (${+(timerFirstDelay / 1000 / 60).toFixed(2)} minutes).`
+    );
 
     setTimeout(() => {
         bootstrapLogger('Timer: Initial setTimeout for first runTimerSend triggered.');
-        if (getDB() && globalBotInstance) { // Ensure DB and Bot are ready for timer
-             runTimerSend().catch((e) => {
+        if (getDB() && globalBotInstance) {
+            // Ensure DB and Bot are ready for timer
+            runTimerSend().catch((e) => {
                 bootstrapLogger('Error during initial runTimerSend():', e);
             });
         } else {
@@ -123,7 +137,9 @@ async function attemptBotLaunchAndSetup() {
 
     const username = await botUsernameReady; // Wait for getMe to complete
     if (!username) {
-        bootstrapLogger('CRITICAL: Bot username could not be retrieved after initialization. Bot cannot launch effectively.');
+        bootstrapLogger(
+            'CRITICAL: Bot username could not be retrieved after initialization. Bot cannot launch effectively.'
+        );
         // Decide if to throw or let retry logic handle this.
         // For now, let retry logic attempt to re-initialize if that's how initializeBot is designed,
         // or simply fail if initializeBot is a singleton initializer.
@@ -163,7 +179,9 @@ async function attemptBotLaunchAndSetup() {
             }
             const generalInternetStillOk = await checkConnectivity(config.pingTargetGeneral);
             if (!generalInternetStillOk) {
-                bootstrapLogger('CRITICAL: General internet connectivity lost during bot launch retries. Stopping retries.');
+                bootstrapLogger(
+                    'CRITICAL: General internet connectivity lost during bot launch retries. Stopping retries.'
+                );
                 return;
             }
             bootstrapLogger(`Will retry bot launch in ${config.botLaunchRetryDelay / 1000} seconds.`);
@@ -173,7 +191,9 @@ async function attemptBotLaunchAndSetup() {
 }
 
 async function sigHandler(signal) {
-    bootstrapLogger(`Exiting due to ${signal} after ${+(process.uptime() / 3600).toFixed(2)} hours. Memory: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`);
+    bootstrapLogger(
+        `Exiting due to ${signal} after ${+(process.uptime() / 3600).toFixed(2)} hours. Memory: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`
+    );
     if (timerIntervalId) {
         clearInterval(timerIntervalId);
         bootstrapLogger('Timer interval cleared.');
@@ -233,15 +253,25 @@ async function startApp() {
             bootstrapLogger(`Attempting primary connectivity check: ${config.pingTargetGeneral}`);
             if (await checkConnectivity(config.pingTargetGeneral)) {
                 internetConnected = true;
-                bootstrapLogger(`General internet connectivity established via primary target: ${config.pingTargetGeneral}`);
+                bootstrapLogger(
+                    `General internet connectivity established via primary target: ${config.pingTargetGeneral}`
+                );
             } else {
-                bootstrapLogger(`Primary connectivity check failed: ${config.pingTargetGeneral}. Attempting alternative: ${config.pingTargetAlternative}`);
+                bootstrapLogger(
+                    `Primary connectivity check failed: ${config.pingTargetGeneral}. Attempting alternative: ${config.pingTargetAlternative}`
+                );
                 if (await checkConnectivity(config.pingTargetAlternative)) {
                     internetConnected = true;
-                    bootstrapLogger(`General internet connectivity established via alternative target: ${config.pingTargetAlternative}`);
+                    bootstrapLogger(
+                        `General internet connectivity established via alternative target: ${config.pingTargetAlternative}`
+                    );
                 } else {
-                    bootstrapLogger(`Both primary and alternative general connectivity checks failed (attempt ${internetAttempt}).`);
-                    bootstrapLogger(`Retrying internet connectivity check in ${config.botLaunchRetryDelay / 1000} seconds...`);
+                    bootstrapLogger(
+                        `Both primary and alternative general connectivity checks failed (attempt ${internetAttempt}).`
+                    );
+                    bootstrapLogger(
+                        `Retrying internet connectivity check in ${config.botLaunchRetryDelay / 1000} seconds...`
+                    );
                     await new Promise((resolve) => setTimeout(resolve, config.botLaunchRetryDelay));
                 }
             }
@@ -252,7 +282,9 @@ async function startApp() {
         bootstrapLogger('All critical prerequisites met. Proceeding to bot launch and setup sequence...');
         await attemptBotLaunchAndSetup(); // This now handles initializeBot, registerHandlers, and bot.launch with retries
 
-        bootstrapLogger('Main startup sequence complete. Express server is running. Bot launch process initiated/completed.');
+        bootstrapLogger(
+            'Main startup sequence complete. Express server is running. Bot launch process initiated/completed.'
+        );
     } catch (error) {
         bootstrapLogger('CRITICAL: Application startup failed in main sequence due to an unexpected error:', error);
         await sigHandler('startupError');

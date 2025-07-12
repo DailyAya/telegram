@@ -2,33 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
-## [{{VERSION_PLACEHOLDER}}] - {{CURRENT_DATE_PLACEHOLDER_YYYY-MM-DD}}
-
-### Changed
-- **Architectural Refactor for Testability and Stability**:
-    - **Decoupled Bot Initialization**:
-        - Introduced `src/botManager.js` which now handles Telegraf bot instantiation and the initial `bot.telegram.getMe()` call. It exports `initializeBot()` and manages a `botUsernameReady` promise.
-    - **Refactored `src/telegramBot.js`**:
-        - No longer instantiates the bot or calls `getMe()` at the module level.
-        - Now exports `registerHandlers(bot, dependencies)` which receives an initialized bot instance and sets up all command, action, and event handlers.
-        - Core logic functions (e.g., `sendAya`, `surpriseAya`) updated to use the injected bot instance or its properties.
-        - `launchBot` function refactored to `performBotPreLaunchChecks`; actual `bot.launch()` moved to `app.js`.
-    - **Updated `src/app.js`**:
-        - Orchestrates the new initialization flow: calls `initializeBot()`, awaits `botUsernameReady`, calls `registerHandlers()`, then `bot.launch()`.
-- These changes are aimed at resolving long-standing issues with `getMe()` call reliability in tests (due to mock timing conflicts with Jest ESM) and significantly improving the unit-testability of `telegramBot.js` by removing side effects on import.
-
-### Added
-- `src/botManager.js`: New module for managing bot instance creation and initial `getMe()` call.
+## [2025.07.13-0237] - 2025-07-13
 
 ### Fixed
-- Potential underlying causes of "JavaScript heap out of memory" and `getMe` 401 Unauthorized errors in `telegramBot.test.js` by moving bot initialization out of `telegramBot.js` and controlling it explicitly. (Full verification pending test refactoring).
+- **Application Startup Crash**: Resolved a critical issue where the application would crash on startup due to an incorrect import in `src/app.js`. The import for `launchBot` was corrected to `performBotPreLaunchChecks`.
 
-### Removed
-- Direct Telegraf bot instantiation and top-level `getMe()` IIFE from `src/telegramBot.js`.
+### Added
+- **`app.js` Integration Test**: Created `src/app.test.js` to perform a basic integration test of the application startup sequence. This test mocks dependencies and verifies that key initialization functions are called, helping to prevent future startup-related regressions.
+- **Application Smoke Test**: Added a new step to the pre-commit routine in `AGENTS.md` to run `npm start` as a final check to ensure the application starts without crashing.
 
-### Skipped (Technical Debt & Current Workarounds)
-- `src/telegramBot.test.js` is currently failing extensively as its tests are based on the old architecture. This is expected and will be addressed by refactoring this test suite in subsequent steps.
+### Changed
+- **`AGENTS.md`**: Updated the pre-commit routine to include the new "Application Smoke Test" step.
+- **Linter Errors**: Fixed linter errors in `src/telegramBot.js`.
 
+---
 ## [2025.07.11-2217] - 2025-07-11
 
 ### Changed
@@ -40,7 +27,7 @@ All notable changes to this project will be documented in this file.
 - **`AGENTS.MD` Update**: Updated the "Current Project Focus / Features" section to prioritize resolving `telegramBot.js` `getMe()` / bot username issues and achieving 100% test coverage for that critical logic.
 
 ### Added
-- New tests in `src/botHandlers/actionHandlers.test.js` for various handlers.
+- New tests in `src/botHandlers/actionHandlers.js` for various handlers.
 
 ### Removed
 - (No direct file removals)
