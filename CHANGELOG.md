@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [2025.07.13-0237] - 2025-07-13
+
+### Fixed
+- **Application Startup Crash**: Resolved a critical issue where the application would crash on startup due to an incorrect import in `src/app.js`. The import for `launchBot` was corrected to `performBotPreLaunchChecks`.
+
+### Added
+- **`app.js` Integration Test**: Created `src/app.test.js` to perform a basic integration test of the application startup sequence. This test mocks dependencies and verifies that key initialization functions are called, helping to prevent future startup-related regressions.
+- **Application Smoke Test**: Added a new step to the pre-commit routine in `AGENTS.md` to run `npm start` as a final check to ensure the application starts without crashing.
+
+### Changed
+- **`AGENTS.md`**: Updated the pre-commit routine to include the new "Application Smoke Test" step.
+- **Linter Errors**: Fixed linter errors in `src/telegramBot.js`.
+
 ## [2025.07.13-0219] - 2025-07-13
 
 ### Fixed
@@ -10,8 +24,7 @@ All notable changes to this project will be documented in this file.
     - Corrected a failing test in `telegramBot.test.js` by updating an assertion to match the actual number of arguments passed to a mocked function.
 - All 11 test suites and 198 tests now pass successfully.
 
-## [2025.07.11-2217] - 2025-07-11
-
+---
 ## [2025.07.11-2217] - 2025-07-11
 
 ### Changed
@@ -23,7 +36,7 @@ All notable changes to this project will be documented in this file.
 - **`AGENTS.MD` Update**: Updated the "Current Project Focus / Features" section to prioritize resolving `telegramBot.js` `getMe()` / bot username issues and achieving 100% test coverage for that critical logic.
 
 ### Added
-- New tests in `src/botHandlers/actionHandlers.test.js` for various handlers.
+- New tests in `src/botHandlers/actionHandlers.js` for various handlers.
 
 ### Removed
 - (No direct file removals)

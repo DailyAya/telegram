@@ -7,7 +7,7 @@ import { startExpressServer } from './expressApp.js';
 import { initializeBot } from './botManager.js'; // New import
 import {
     registerHandlers,
-    launchBot as performBotPreLaunchChecks, // Renamed for clarity
+    performBotPreLaunchChecks,
     sendAya, // Direct import of sendAya
 } from './telegramBot.js';
 import { checkConnectivity, maskTokenInUrl } from './utils.js';

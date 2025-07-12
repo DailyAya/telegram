@@ -335,10 +335,7 @@ describe('performBotPreLaunchChecks', () => {
         expect(mockBotTelegramSendMessageSpy).toHaveBeenCalledTimes(1);
 
         // Assert with the fully predictable string
-        expect(mockBotTelegramSendMessageSpy).toHaveBeenCalledWith(
-            mockConfigModule.default.devChatId,
-            expectedMessage
-        );
+        expect(mockBotTelegramSendMessageSpy).toHaveBeenCalledWith(mockConfigModule.default.devChatId, expectedMessage);
 
         expect(mockCheckSource).toHaveBeenCalled();
 
