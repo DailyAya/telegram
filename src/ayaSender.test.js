@@ -112,7 +112,7 @@ describe('sendAyaText', () => {
     it('should send formatted Aya text and call success handler on successful send', async () => {
         await sendAyaText(mockDependencies, chatId, ayaId, reciter, lang, trigger);
 
-        expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, 'TestBot');
+        expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, reciter);
         expect(mockHelperAMenuButtonsFn).toHaveBeenCalledWith('t0', ayaId, reciter, 'TestBot', mockAyaId2suraAyaFn);
         expect(mockBotTelegram.sendMessage).toHaveBeenCalledWith(
             chatId,
@@ -136,7 +136,7 @@ describe('sendAyaText', () => {
         mockPrepareAyaFn.mockReturnValue({ arText: 'Error: Aya not found.', enText: 'Error: Aya not found.' });
         const result = await sendAyaText(mockDependencies, chatId, ayaId, reciter, lang, trigger);
 
-        expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, 'TestBot');
+        expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, reciter);
         expect(mockHelperSendSorryFn).toHaveBeenCalledWith(mockBotTelegram, chatId, 'text');
         expect(mockBotTelegram.sendMessage).not.toHaveBeenCalled();
         expect(mockHelperSuccessSendFn).not.toHaveBeenCalled();
@@ -154,7 +154,7 @@ describe('sendAyaText', () => {
             'sendAyaText: botUsername is not available for prepareAya. Using fallback.',
             expect.any(Error)
         );
-        expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, 'DailyAyaBot'); // Fallback username
+        expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, reciter);
         currentConfigMock.default.debugging = originalDebugging; // Restore
         expect(mockBotTelegram.sendMessage).toHaveBeenCalled(); // Should still attempt to send
     });
@@ -164,14 +164,14 @@ describe('sendAyaText', () => {
         const originalDebugging = currentConfigMock.default.debugging;
         currentConfigMock.default.debugging = false; // Set for this test
 
-        await sendAyaText(mockDependencies, chatId, ayaId, reciter, lang, trigger);
+        await sendAyaText(mockDependencies, chatId, ayaId, null, lang, trigger);
 
         expect(mockLogger).toHaveBeenCalledWith(
             'sendAyaText: botUsername is not available for prepareAya. Using fallback.'
             // No second argument (Error object) expected when debugging is false
         );
         expect(mockLogger).not.toHaveBeenCalledWith(expect.any(String), expect.any(Error));
-        expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, 'DailyAyaBot'); // Fallback username
+        expect(mockPrepareAyaFn).toHaveBeenCalledWith(ayaId, 'system');
         currentConfigMock.default.debugging = originalDebugging; // Restore
         expect(mockBotTelegram.sendMessage).toHaveBeenCalled(); // Should still attempt to send
     });

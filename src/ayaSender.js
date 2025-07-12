@@ -54,7 +54,7 @@ export async function sendAyaText(dependencies, chatId, ayaId, reciter, lang, tr
         }
         botUsername = 'DailyAyaBot'; // Fallback
     }
-    const preparedAya = prepareAyaFn(ayaId, botUsername); // Use botUsername which now has fallback
+    const preparedAya = prepareAyaFn(ayaId, reciter || 'system');
 
     if (preparedAya.arText.startsWith('Error:')) {
         logger(`sendAyaText: Error preparing Aya ${ayaId}: ${preparedAya.arText}`);

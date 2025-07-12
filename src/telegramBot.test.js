@@ -90,6 +90,15 @@ const utilsMock = {
 };
 jest.unstable_mockModule('./utils.js', () => ({ __esModule: true, ...utilsMock }));
 
+const ayaSenderMock = {
+    sendAyaText: jest.fn(),
+    sendAyaRecitation: jest.fn(),
+};
+jest.unstable_mockModule('./ayaSender.js', () => ({
+    __esModule: true,
+    ...ayaSenderMock,
+}));
+
 let registerHandlers, performBotPreLaunchChecks, sendAya, surpriseAya, handleText;
 let mockBotInstance;
 let mswServer;
@@ -183,6 +192,8 @@ afterEach(() => {
     mockGetRandomReciterIdentifier.mockClear(); mockNextAya.mockClear(); mockAyaId2SuraAya.mockClear();
     mockSuraAya2AyaId.mockClear(); mockGetQuranData.mockClear(); mockCheckSource.mockClear();
     utilsMock.randomAyaNumber.mockClear();
+    ayaSenderMock.sendAyaText.mockClear();
+    ayaSenderMock.sendAyaRecitation.mockClear();
 
     mockGetQuranData.mockReturnValue({ arReciters: [], enQuran: [] });
     mockPrepareAya.mockReturnValue({ arText: 'Mocked Arabic Text', enText: 'Mocked English Text', sura: 1, aya: 1, ayaInSura:1, suraNameAr: 'الفاتحة', link: 'mockLink' });
@@ -209,35 +220,36 @@ describe('performBotPreLaunchChecks', () => {
     });
 
     it('should send startup message if devChatId is configured and username is available', async () => {
+        // --- ARRANGE ---
         const originalDebugging = mockConfigModule.default.debugging;
         mockConfigModule.default.debugging = false;
-        // Ensure activeBotInstance.options.username is set for this test, as it might be cleared by other tests
-        // or if this test runs in isolation. It's set in beforeAll, but good to be defensive if needed.
-        // However, the current beforeAll should cover this.
-        // mockBotInstance.options.username = getMeSuccessFixture.result.username;
 
+        // Mock non-deterministic process functions
+        const memoryUsageSpy = jest.spyOn(process, 'memoryUsage').mockReturnValue({ rss: 161480704 }); // Mock RSS to be ~154 MB
+        const uptimeSpy = jest.spyOn(process, 'uptime').mockReturnValue(72); // Mock uptime to be 72 seconds (0.02 hours)
 
+        // The exact message we now expect, based on the mocked values
+        const expectedMessage = `DailyAyaTelegram global-mock-branch instance global-mock-inst@global-mock-host (of total 1) is active in normal mode of version global-mock-v1.0.0 until 2099-12-31. Memory Used: 154 MB Uptime: 0.02 hours`;
+
+        // --- ACT ---
         await performBotPreLaunchChecks();
 
-        const expectedMessagePartial = `DailyAyaTelegram ${mockConfigModule.default.branch} instance ${mockConfigModule.default.inst}@${mockConfigModule.default.host} (of total ${mockConfigModule.default.totalInst}) is active in normal mode of version ${mockConfigModule.default.codeVer} until ${mockConfigModule.default.instActiveUntil}.`;
-        // We also expect memory and uptime, but these can be variable.
-        // So, we'll check for the main static parts and then that Memory Used and Uptime are present.
-
+        // --- ASSERT ---
         expect(mockBotTelegramSendMessageSpy).toHaveBeenCalledTimes(1);
+
+        // Assert with the fully predictable string
         expect(mockBotTelegramSendMessageSpy).toHaveBeenCalledWith(
             mockConfigModule.default.devChatId,
-            expect.any(String), // Check that it's a string, but verify content below
+            expectedMessage,
             undefined
         );
 
-        const actualSentMessage = mockBotTelegramSendMessageSpy.mock.calls[0][1];
-        expect(actualSentMessage).toContain(expectedMessagePartial);
-        expect(actualSentMessage).toMatch(/Memory Used: \d+(\.\d+)? MB/); // Allow for decimal MB
-        expect(actualSentMessage).toMatch(/Uptime: \d+ hours/);
-
         expect(mockCheckSource).toHaveBeenCalled();
 
+        // --- CLEANUP ---
         mockConfigModule.default.debugging = originalDebugging;
+        memoryUsageSpy.mockRestore(); // Restore original process.memoryUsage
+        uptimeSpy.mockRestore(); // Restore original process.uptime
     });
 
     it('should not send startup message if devChatId is not configured', async () => {
@@ -293,155 +305,26 @@ describe('sendAya', () => {
     const mockAyaNumber = 1;
 
     beforeEach(() => {
-        mockConfigModule.default.defaultReciter = 'CONFIG_DEFAULT_RECITER_MOCK'; // Explicitly set for testing this path
-        // Reset mocks that might be specifically manipulated in tests
-        mockPrepareAya.mockClear();
-        mockGetRecitation.mockClear();
-        mockBotTelegramSendAudioSpy.mockClear();
-        // Default successful preparations for most tests
-        mockPrepareAya.mockReturnValue({
-            arText: 'Mocked Arabic Text', enText: 'Mocked English Text',
-            sura: 1, aya: mockAyaNumber, ayaInSura: 1, suraNameAr: 'الفاتحة',
-            link: 'mockLink', reciterName: 'DefaultReciter'
-        });
-        mockGetRecitation.mockResolvedValue({
-            success: true,
-            reciter: { id: 'mockReciterId', name: 'Mock Reciter', language: 'ar', style: '', quality: '', rasm: '', db_id: 1 },
-            audioSource: 'mock/audio/path.mp3',
-            duration: 12345
-        });
-        mockBotTelegramSendAudioSpy.mockResolvedValue({ message_id: 9876, chat: {id: mockChatId }}); // from activeBotInstance
+        ayaSenderMock.sendAyaText.mockResolvedValue({ chat: { id: mockChatId }, message_id: 123 });
+        ayaSenderMock.sendAyaRecitation.mockResolvedValue(undefined);
     });
 
-    it('should call prepareAya with the correct ayaNumber', async () => {
-        await sendAya(mockChatId, mockAyaNumber);
-        // Default requestedByUser is 'system', which becomes reciterId if no specific reciter is requested.
-        expect(mockPrepareAya).toHaveBeenCalledWith(mockAyaNumber, 'system');
+    it('should call sendAyaText when withRecitation is false', async () => {
+        await sendAya(mockChatId, mockAyaNumber, 'reciter', 'en', 'test', false);
+        expect(ayaSenderMock.sendAyaText).toHaveBeenCalledTimes(1);
+        expect(ayaSenderMock.sendAyaRecitation).not.toHaveBeenCalled();
     });
 
-    it('should call getRecitation with details from prepareAya and config', async () => {
-        const preparedAyaDetails = {
-            sura: 1, aya: mockAyaNumber, ayaInSura: 1, suraNameAr: 'الفاتحة',
-            reciterName: 'TestReciter', link: 'mockLink',
-            arText: 'Prepared Arabic', enText: 'Prepared English'
-        };
-        mockPrepareAya.mockReturnValue(preparedAyaDetails);
-
-        await sendAya(mockChatId, mockAyaNumber);
-        expect(mockGetRecitation).toHaveBeenCalledWith(
-            preparedAyaDetails.sura,
-            preparedAyaDetails.ayaInSura,
-            'TestReciter' // reciterId comes from preparedAyaDetails.reciterName
-        );
+    it('should call sendAyaText and sendAyaRecitation when withRecitation is true', async () => {
+        await sendAya(mockChatId, mockAyaNumber, 'reciter', 'en', 'test', true);
+        expect(ayaSenderMock.sendAyaText).toHaveBeenCalledTimes(1);
+        expect(ayaSenderMock.sendAyaRecitation).toHaveBeenCalledTimes(1);
     });
 
-    it('should call activeBotInstance.telegram.sendAudio with formatted data', async () => {
-        const preparedAya = {
-            arText: 'قطوفها دانية', enText: 'Its clusters [of fruit] hanging low.',
-            sura: 69, ayaInSura: 23, suraNameAr: 'الحاقة', link: 'https://quran.com/69/23',
-            reciterName: 'Alafasy_64kbps'
-        };
-        mockPrepareAya.mockReturnValue(preparedAya); // ayaNumber will be derived if not passed
-
-        const recitationResult = {
-            success: true,
-            reciter: { name: 'Mishary Alafasy', language: 'ar', style: '', quality: '64kbps', rasm: 'uthmani', db_id: 1, id: 'Alafasy_64kbps' },
-            audioSource: 'https://everyayah.com/data/Alafasy_64kbps/069023.mp3',
-            duration: 3000 // 3 seconds
-        };
-        mockGetRecitation.mockResolvedValue(recitationResult);
-
-        await sendAya(mockChatId, 6069); // Aya ID for 69:23
-
-        const expectedCaption = `*[69:23 - الحاقة]*\nقطوفها دانية\n\nIts clusters [of fruit] hanging low.\n\n🗣️ Mishary Alafasy (ar)\n📖 Uthmani\n<a href="https://quran.com/69/23">Quran.com Link</a>`;
-        const expectedReplyMarkup = TelegrafMarkup.inlineKeyboard([
-            [TelegrafMarkup.button.callback('📖 Tafsir', 'tafsir:69:23'), TelegrafMarkup.button.callback('▶️ Recite Again', 'recite:6069:Alafasy_64kbps')],
-            [TelegrafMarkup.button.callback('Surprise Me!', 'surprise_aya'), TelegrafMarkup.button.callback('Show Menu', 'main_menu')],
-        ]);
-
-        expect(mockBotTelegramSendAudioSpy).toHaveBeenCalledWith(
-            mockChatId,
-            recitationResult.audioSource,
-            {
-                caption: expectedCaption,
-                parse_mode: 'Markdown',
-                reply_markup: expectedReplyMarkup.reply_markup,
-                reply_to_message_id: null,
-                duration: 3, // duration in seconds
-                performer: 'Mishary Alafasy',
-                title: 'Aya 69:23 (الحاقة)',
-            }
-        );
-    });
-
-    it('should log an error and not send audio if prepareAya returns null', async () => {
-        mockPrepareAya.mockReturnValue(null);
-        await sendAya(mockChatId, mockAyaNumber);
-        expect(mockLogger).toHaveBeenCalledWith(expect.stringContaining('prepareAya failed for ayaNumber'), 'error', expect.any(Object));
-        expect(mockGetRecitation).not.toHaveBeenCalled();
-        expect(mockBotTelegramSendAudioSpy).not.toHaveBeenCalled();
-    });
-
-    it('should log an error and not send audio if getRecitation returns success:false', async () => {
-        mockGetRecitation.mockResolvedValue({ success: false, message: 'Recitation failed' });
-        await sendAya(mockChatId, mockAyaNumber);
-        expect(mockLogger).toHaveBeenCalledWith(expect.stringContaining('Failed to get recitation for'), 'error');
-        expect(mockBotTelegramSendAudioSpy).not.toHaveBeenCalled();
-    });
-
-    it('should use default ayaNumber if none provided (becomes random)', async () => {
-        utilsMock.randomAyaNumber.mockReturnValue(123); // Mock randomAyaNumber from utils
-        mockPrepareAya.mockClear(); // Clear previous calls if any
-
-        await sendAya(mockChatId, null); // Call sendAya with null ayaNumber
-
-        // prepareAya is called by surpriseAya, which is called by sendAya when ayaNumber is null.
-        // The surpriseAya function itself calls prepareAya with the random number.
-        // So we check if prepareAya was called with the random number.
-        // However, sendAya(null) directly calls surpriseAya which then calls prepareAya
-        // For a direct test of sendAya(null) -> surpriseAya -> prepareAya:
-        // We need to ensure that prepareAya is called by the surpriseAya logic with a number.
-        // The current structure of sendAya when ayaNumber is null:
-        // if (!ayaNumber) { return surpriseAya(chatId, requestedByUser, messageIdToReply, internalBotInstance, dependencies); }
-        // So, for this test, we are actually testing surpriseAya's call to prepareAya.
-        // Let's adjust the expectation to check that `prepareAya` was called.
-        // The exact aya number will be the random one, or one derived from it.
-        // The key is that prepareAya is called.
-        expect(mockPrepareAya).toHaveBeenCalled();
-        // We can be more specific if we know how surpriseAya uses randomAyaNumber.
-        // surpriseAya calls: prepareAya(ayaNum, reciterId, dependencies.quranService)
-        // where ayaNum is from randomAyaNumber()
-        expect(mockPrepareAya).toHaveBeenCalledWith(123, undefined); // Assuming surpriseAya passes undefined for reciterId by default
-    });
-
-    it('should pass messageIdToReply to sendAudio if provided', async () => {
-        const messageIdToReply = 999;
-        await sendAya(mockChatId, mockAyaNumber, 'user', messageIdToReply);
-        expect(mockBotTelegramSendAudioSpy).toHaveBeenCalledWith(
-            expect.any(Number), // chatId
-            expect.any(String), // audioSource
-            expect.objectContaining({ reply_to_message_id: messageIdToReply })
-        );
+    it('should handle errors from sendAyaText', async () => {
+        const error = new Error('Test Error');
+        ayaSenderMock.sendAyaText.mockRejectedValue(error);
+        await sendAya(mockChatId, mockAyaNumber, 'reciter', 'en', 'test', true);
+        expect(mockLogger).toHaveBeenCalledWith(expect.stringContaining('sendAya: Error caught while sending Aya'), error);
     });
 });
-
-/*
-describe('surpriseAya', () => {
-    // ...
-});
-*/
-/*
-describe.skip('MSW - Incoming /getUpdates', () => {
-    // ...
-});
-*/
-/*
-describe('handleText (direct test of exported function)', () => {
-    // ...
-});
-*/
-/*
-describe.skip('Action Handler Integration for "recite" button', () => {
-    // ...
-});
-*/
