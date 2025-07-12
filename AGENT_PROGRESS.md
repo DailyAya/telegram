@@ -1,3 +1,41 @@
+## Session Summary: Jules - {{CURRENT_DATE_PLACEHOLDER}} (Architectural Refactor for Testability)
+
+**Goal:** Refactor the bot's initialization and core logic handling to improve testability, address persistent `getMe()` issues, and stabilize the testing environment for `telegramBot.js`. This involved decoupling bot instantiation and initial API calls from the main `telegramBot.js` module.
+
+**Work Done & Key Changes:**
+
+1.  **Introduced `src/botManager.js`:**
+    *   Created a new module `src/botManager.js` responsible for:
+        *   Instantiating the Telegraf `bot` object.
+        *   Performing the initial `bot.telegram.getMe()` call to retrieve the bot's username.
+        *   Managing a `botUsernameReady` promise that resolves with the username or handles errors.
+    *   This module exports an `initializeBot()` function.
+
+2.  **Refactored `src/telegramBot.js`:**
+    *   Removed top-level Telegraf bot instantiation and the immediate `getMe()` call (IIFE).
+    *   The module now exports a `registerHandlers(bot, dependencies)` function, which receives an initialized `bot` instance. All command, action, and event handlers (`bot.command()`, `bot.action()`, etc.) are registered within this function using the provided `bot` instance.
+    *   Core logic functions (e.g., `sendAya`, `surpriseAya`, `handleText`) were updated to use the `activeBotInstance` (set within `registerHandlers`) or receive necessary bot properties/methods as parameters.
+    *   The `launchBot` function was refactored into `performBotPreLaunchChecks`, focusing on pre-launch logging and checks, as the actual `bot.launch()` is now handled in `app.js`.
+    *   Corrected module exports to prevent duplicate export errors.
+
+3.  **Updated `src/app.js` (Main Application Entry Point):**
+    *   Modified to import `initializeBot` from `src/botManager.js` and `registerHandlers` (and other necessary functions like `performBotPreLaunchChecks`) from `src/telegramBot.js`.
+    *   The application startup sequence is now:
+        1.  Call `initializeBot()` to get the `bot` instance and `botUsernameReady` promise.
+        2.  Await `botUsernameReady`.
+        3.  Call `registerHandlers(botInstance, { Markup })` to set up all bot event listeners.
+        4.  Call `performBotPreLaunchChecks()`.
+        5.  Call `botInstance.launch()` to start the bot.
+    *   Global bot instance management for signal handling was updated.
+
+**Outcome & Current Status:**
+*   The core architectural refactoring for bot initialization and handler registration is complete.
+*   This change is intended to resolve previous issues with `getMe()` calls failing due to timing conflicts with mock setups in Jest ESM environments and to make `telegramBot.js` significantly more unit-testable.
+*   `npm test` currently shows extensive failures in `telegramBot.test.js` as expected, because its tests are based on the old architecture. Other test suites are passing.
+*   The immediate next steps are to update project documentation (`AGENT_PROGRESS.md`, `CHANGELOG.md`), then create tests for `src/botManager.js`, and subsequently refactor `src/telegramBot.test.js` to align with the new design.
+
+---
+
 ## Session Summary: Jules - 2025-07-06 (Finalized @ 2025.07.06-1454 Africa/Cairo)
 
 **Goal:** Refactor `telegramBot.js` for modularity and testability, stabilize Jest ESM testing environment, and address any resulting test failures.
@@ -404,3 +442,17 @@ Lingering Minor Issues (at that time):
 - `telegramBot.test.js` is currently skipped and needs dedicated attention to resolve its memory/mocking problems.
 - All other tests (9 suites, 178 tests) are passing.
 - Ready for next pre-commit steps.
+
+## Current Project Focus / Features:
+
+1.  **Update Project Documentation:**
+    *   Accurately update `AGENT_PROGRESS.md` and `CHANGELOG.md` to reflect the recent major architectural refactoring.
+2.  **Test `src/botManager.js`:**
+    *   Create comprehensive unit tests for the new `src/botManager.js` module, ensuring the `initializeBot` function, `getMe` call handling, and `botUsernameReady` promise behavior are thoroughly tested.
+3.  **Refactor and Stabilize `src/telegramBot.test.js`:**
+    *   Rewrite tests in `src/telegramBot.test.js` to align with the new architecture where `telegramBot.js` exports handlers and logic functions but does not self-initialize the bot.
+    *   Ensure all tests for `telegramBot.js` pass and cover its functionality adequately.
+4.  **Overall Test Suite Health:**
+    *   Ensure all test suites in the project pass after the refactoring and test updates.
+5.  **Adherence to Project Protocols:**
+    *   Strictly follow versioning, pre-commit routines, and all other guidelines in `AGENTS.MD`.
