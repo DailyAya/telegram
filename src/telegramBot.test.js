@@ -45,7 +45,10 @@ const mockLogger = jest.fn();
 const mockSetBotInstance = jest.fn();
 const mockBootstrapLogger = jest.fn();
 jest.unstable_mockModule('./logger.js', () => ({
-    __esModule: true, logger: mockLogger, setBotInstance: mockSetBotInstance, bootstrapLogger: mockBootstrapLogger,
+    __esModule: true,
+    logger: mockLogger,
+    setBotInstance: mockSetBotInstance,
+    bootstrapLogger: mockBootstrapLogger,
 }));
 
 // Mock other SUT direct dependencies
@@ -53,30 +56,53 @@ const databaseMock = { lastAyaTime: jest.fn(), setFavReciter: jest.fn(), getFavR
 jest.unstable_mockModule('./database.js', () => ({ __esModule: true, ...databaseMock }));
 
 const commandHandlersMock = {
-    handleStartCommand: jest.fn(), handleHelpCommand: jest.fn(), handleSurpriseMeCommand: jest.fn(),
-    handleSupportCommand: jest.fn(), handleRecitersCommand: jest.fn(), handleChannelCommand: jest.fn(),
-    handleKhatmaCommand: jest.fn(), handleCommandsCommand: jest.fn(),
+    handleStartCommand: jest.fn(),
+    handleHelpCommand: jest.fn(),
+    handleSurpriseMeCommand: jest.fn(),
+    handleSupportCommand: jest.fn(),
+    handleRecitersCommand: jest.fn(),
+    handleChannelCommand: jest.fn(),
+    handleKhatmaCommand: jest.fn(),
+    handleCommandsCommand: jest.fn(),
 };
 jest.unstable_mockModule('./botHandlers/commandHandlers.js', () => ({ __esModule: true, ...commandHandlersMock }));
 
 const actionHandlersMock = {
-    handleGroupKhatmaAction: jest.fn(), handleRecitersNavPageAction: jest.fn(), handleSetReciterAction: jest.fn(),
-    handleInstructionsAction: jest.fn(), handleSurpriseAyaAction: jest.fn(), handleCurrAyaAction: jest.fn(),
-    handleAMenuAction: jest.fn(), handleReciteAction: jest.fn(),
+    handleGroupKhatmaAction: jest.fn(),
+    handleRecitersNavPageAction: jest.fn(),
+    handleSetReciterAction: jest.fn(),
+    handleInstructionsAction: jest.fn(),
+    handleSurpriseAyaAction: jest.fn(),
+    handleCurrAyaAction: jest.fn(),
+    handleAMenuAction: jest.fn(),
+    handleReciteAction: jest.fn(),
 };
 jest.unstable_mockModule('./botHandlers/actionHandlers.js', () => ({ __esModule: true, ...actionHandlersMock }));
 
 jest.unstable_mockModule('./botFeatures/khatmaService.js', () => ({ __esModule: true, khatmaUpdate: jest.fn() }));
 
-const mockPrepareAya = jest.fn(); const mockGetRecitation = jest.fn(); const mockIsValidReciter = jest.fn();
-const mockGetRandomReciterIdentifier = jest.fn(); const mockNextAya = jest.fn(); const mockAyaId2SuraAya = jest.fn();
-const mockSuraAya2AyaId = jest.fn(); const mockGetQuranData = jest.fn(); const mockCheckSource = jest.fn();
+const mockPrepareAya = jest.fn();
+const mockGetRecitation = jest.fn();
+const mockIsValidReciter = jest.fn();
+const mockGetRandomReciterIdentifier = jest.fn();
+const mockNextAya = jest.fn();
+const mockAyaId2SuraAya = jest.fn();
+const mockSuraAya2AyaId = jest.fn();
+const mockGetQuranData = jest.fn();
+const mockCheckSource = jest.fn();
 import rasmifizeActualImport from 'rasmify.js';
 
 jest.unstable_mockModule('./quranService.js', () => ({
-    __esModule: true, prepareAya: mockPrepareAya, getRecitation: mockGetRecitation, isValidReciter: mockIsValidReciter,
-    getRandomReciterIdentifier: mockGetRandomReciterIdentifier, nextAya: mockNextAya, ayaId2suraAya: mockAyaId2SuraAya,
-    suraAya2ayaId: mockSuraAya2AyaId, getQuranData: mockGetQuranData, checkSource: mockCheckSource,
+    __esModule: true,
+    prepareAya: mockPrepareAya,
+    getRecitation: mockGetRecitation,
+    isValidReciter: mockIsValidReciter,
+    getRandomReciterIdentifier: mockGetRandomReciterIdentifier,
+    nextAya: mockNextAya,
+    ayaId2suraAya: mockAyaId2SuraAya,
+    suraAya2ayaId: mockSuraAya2AyaId,
+    getQuranData: mockGetQuranData,
+    checkSource: mockCheckSource,
     rasmifize: rasmifizeActualImport,
     normalizedSurasArNames: [],
 }));
@@ -85,8 +111,11 @@ const reciterServiceMock = { populateRecitersButtons: jest.fn(), recitersNavPage
 jest.unstable_mockModule('./botFeatures/reciterService.js', () => ({ __esModule: true, ...reciterServiceMock }));
 
 const utilsMock = {
-    randomAyaNumber: jest.fn(), numArabicToEnglish: jest.fn(text => text), maskTokenInUrl: jest.fn(url => url),
-    checkConnectivity: jest.fn().mockResolvedValue({ success: true }), sendEmergencyNotification: jest.fn().mockResolvedValue(undefined),
+    randomAyaNumber: jest.fn(),
+    numArabicToEnglish: jest.fn((text) => text),
+    maskTokenInUrl: jest.fn((url) => url),
+    checkConnectivity: jest.fn().mockResolvedValue({ success: true }),
+    sendEmergencyNotification: jest.fn().mockResolvedValue(undefined),
 };
 jest.unstable_mockModule('./utils.js', () => ({ __esModule: true, ...utilsMock }));
 
@@ -103,26 +132,51 @@ let registerHandlers, performBotPreLaunchChecks, sendAya, surpriseAya, handleTex
 let mockBotInstance;
 let mswServer;
 let mockBotCommandSpy, mockBotActionSpy, mockBotOnSpy, mockBotHelpSpy, mockBotStartSpy;
-let mockBotTelegramSendMessageSpy, mockBotTelegramSendAudioSpy, mockBotTelegramGetChatMemberSpy, mockBotTelegramCallApiSpy;
+let mockBotTelegramSendMessageSpy,
+    mockBotTelegramSendAudioSpy,
+    mockBotTelegramGetChatMemberSpy,
+    mockBotTelegramCallApiSpy;
 
 beforeAll(async () => {
     jest.resetModules();
     await import('./config.js');
 
     mswServer = setupServer(
-        http.get(`https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/getMe`, () => HttpResponse.json(getMeSuccessFixture)),
-        http.post(`https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/sendMessage`, async ({ request }) => {
-            const reqBody = await request.json();
-            const resp = { ...baseSendMessageSuccessFixture.result, chat: { id: reqBody.chat_id, type: 'private' }, text: reqBody.text, message_id: nextTestUpdateId++ };
-            return HttpResponse.json({ok: true, result: resp});
-        }),
-        http.post(`https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/sendAudio`, async ({request}) => {
-             const reqBody = await request.json();
-            return HttpResponse.json({ ok: true, result: { message_id: nextTestUpdateId++, chat: {id: reqBody.chat_id}}});
-        }),
-        http.post(`https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/setMyCommands`, () => HttpResponse.json({ ok: true, result: true })),
-        http.post(`https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/getChatMember`, () => HttpResponse.json({ ok: true, result: {user: {id:123, is_bot:false}, status: 'member'} })),
-        http.post(`https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/answerCallbackQuery`, () => HttpResponse.json({ ok: true, result: true }))
+        http.get(`https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/getMe`, () =>
+            HttpResponse.json(getMeSuccessFixture)
+        ),
+        http.post(
+            `https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/sendMessage`,
+            async ({ request }) => {
+                const reqBody = await request.json();
+                const resp = {
+                    ...baseSendMessageSuccessFixture.result,
+                    chat: { id: reqBody.chat_id, type: 'private' },
+                    text: reqBody.text,
+                    message_id: nextTestUpdateId++,
+                };
+                return HttpResponse.json({ ok: true, result: resp });
+            }
+        ),
+        http.post(
+            `https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/sendAudio`,
+            async ({ request }) => {
+                const reqBody = await request.json();
+                return HttpResponse.json({
+                    ok: true,
+                    result: { message_id: nextTestUpdateId++, chat: { id: reqBody.chat_id } },
+                });
+            }
+        ),
+        http.post(`https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/setMyCommands`, () =>
+            HttpResponse.json({ ok: true, result: true })
+        ),
+        http.post(`https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/getChatMember`, () =>
+            HttpResponse.json({ ok: true, result: { user: { id: 123, is_bot: false }, status: 'member' } })
+        ),
+        http.post(`https://api.telegram.org/bot${mockConfigModule.default.telegramToken}/answerCallbackQuery`, () =>
+            HttpResponse.json({ ok: true, result: true })
+        )
     );
     mswServer.listen({ onUnhandledRequest: 'warn' });
 
@@ -144,14 +198,20 @@ beforeAll(async () => {
 
     mockBotInstance.command = jest.fn((commandName, handler) => {
         const names = Array.isArray(commandName) ? commandName : [commandName];
-        names.forEach(name => global.registeredCommandHandlers.set(name, handler));
+        names.forEach((name) => global.registeredCommandHandlers.set(name, handler));
         return mockBotInstance;
     });
-    mockBotInstance.start = jest.fn((handler) => { global.registeredCommandHandlers.set('start', handler); return mockBotInstance; });
-    mockBotInstance.help = jest.fn((handler) => { global.registeredCommandHandlers.set('help', handler); return mockBotInstance; });
+    mockBotInstance.start = jest.fn((handler) => {
+        global.registeredCommandHandlers.set('start', handler);
+        return mockBotInstance;
+    });
+    mockBotInstance.help = jest.fn((handler) => {
+        global.registeredCommandHandlers.set('help', handler);
+        return mockBotInstance;
+    });
     mockBotInstance.on = jest.fn((updateType, handler) => {
         const types = Array.isArray(updateType) ? updateType : [updateType];
-        types.forEach(type => global.registeredEventListeners.set(type, handler));
+        types.forEach((type) => global.registeredEventListeners.set(type, handler));
         return mockBotInstance;
     });
     mockBotInstance.action = jest.fn((triggers, handler) => {
@@ -166,10 +226,18 @@ beforeAll(async () => {
     mockBotOnSpy = mockBotInstance.on;
     mockBotActionSpy = mockBotInstance.action;
 
-    mockBotTelegramSendMessageSpy = jest.spyOn(mockBotInstance.telegram, 'sendMessage').mockResolvedValue(baseSendMessageSuccessFixture.result);
-    mockBotTelegramSendAudioSpy = jest.spyOn(mockBotInstance.telegram, 'sendAudio').mockResolvedValue({ message_id: 1000, chat: {id: 123}});
-    mockBotTelegramGetChatMemberSpy = jest.spyOn(mockBotInstance.telegram, 'getChatMember').mockResolvedValue({user: {id: 123, first_name: "Test", is_bot: false}, status: 'member'});
-    mockBotTelegramCallApiSpy = jest.spyOn(mockBotInstance.telegram, 'callApi').mockResolvedValue({ ok: true, result: true });
+    mockBotTelegramSendMessageSpy = jest
+        .spyOn(mockBotInstance.telegram, 'sendMessage')
+        .mockResolvedValue(baseSendMessageSuccessFixture.result);
+    mockBotTelegramSendAudioSpy = jest
+        .spyOn(mockBotInstance.telegram, 'sendAudio')
+        .mockResolvedValue({ message_id: 1000, chat: { id: 123 } });
+    mockBotTelegramGetChatMemberSpy = jest
+        .spyOn(mockBotInstance.telegram, 'getChatMember')
+        .mockResolvedValue({ user: { id: 123, first_name: 'Test', is_bot: false }, status: 'member' });
+    mockBotTelegramCallApiSpy = jest
+        .spyOn(mockBotInstance.telegram, 'callApi')
+        .mockResolvedValue({ ok: true, result: true });
 
     mockBotInstance.options.username = getMeSuccessFixture.result.username;
     registerHandlers(mockBotInstance, { Markup: TelegrafMarkup });
@@ -181,33 +249,62 @@ afterEach(() => {
     mswServer.resetHandlers();
     mockLogger.mockClear();
     mockBootstrapLogger.mockClear();
-    mockBotStartSpy?.mockClear(); mockBotHelpSpy?.mockClear(); mockBotCommandSpy?.mockClear();
-    mockBotOnSpy?.mockClear(); mockBotActionSpy?.mockClear();
-    mockBotTelegramSendMessageSpy?.mockClear(); mockBotTelegramSendAudioSpy?.mockClear();
-    mockBotTelegramGetChatMemberSpy?.mockClear(); mockBotTelegramCallApiSpy?.mockClear();
-    Object.values(databaseMock).forEach(fn => fn.mockClear());
-    Object.values(commandHandlersMock).forEach(fn => fn.mockClear());
-    Object.values(actionHandlersMock).forEach(fn => fn.mockClear());
-    mockPrepareAya.mockClear(); mockGetRecitation.mockClear(); mockIsValidReciter.mockClear();
-    mockGetRandomReciterIdentifier.mockClear(); mockNextAya.mockClear(); mockAyaId2SuraAya.mockClear();
-    mockSuraAya2AyaId.mockClear(); mockGetQuranData.mockClear(); mockCheckSource.mockClear();
+    mockBotStartSpy?.mockClear();
+    mockBotHelpSpy?.mockClear();
+    mockBotCommandSpy?.mockClear();
+    mockBotOnSpy?.mockClear();
+    mockBotActionSpy?.mockClear();
+    mockBotTelegramSendMessageSpy?.mockClear();
+    mockBotTelegramSendAudioSpy?.mockClear();
+    mockBotTelegramGetChatMemberSpy?.mockClear();
+    mockBotTelegramCallApiSpy?.mockClear();
+    Object.values(databaseMock).forEach((fn) => fn.mockClear());
+    Object.values(commandHandlersMock).forEach((fn) => fn.mockClear());
+    Object.values(actionHandlersMock).forEach((fn) => fn.mockClear());
+    mockPrepareAya.mockClear();
+    mockGetRecitation.mockClear();
+    mockIsValidReciter.mockClear();
+    mockGetRandomReciterIdentifier.mockClear();
+    mockNextAya.mockClear();
+    mockAyaId2SuraAya.mockClear();
+    mockSuraAya2AyaId.mockClear();
+    mockGetQuranData.mockClear();
+    mockCheckSource.mockClear();
     utilsMock.randomAyaNumber.mockClear();
     ayaSenderMock.sendAyaText.mockClear();
     ayaSenderMock.sendAyaRecitation.mockClear();
 
     mockGetQuranData.mockReturnValue({ arReciters: [], enQuran: [] });
-    mockPrepareAya.mockReturnValue({ arText: 'Mocked Arabic Text', enText: 'Mocked English Text', sura: 1, aya: 1, ayaInSura:1, suraNameAr: 'الفاتحة', link: 'mockLink' });
-    mockGetRecitation.mockResolvedValue({ success: true,
-        reciter: { id: 'mockReciterId', name: 'Mock Reciter', language: 'ar', style: '', quality: '', rasm: '', db_id: 1 },
+    mockPrepareAya.mockReturnValue({
+        arText: 'Mocked Arabic Text',
+        enText: 'Mocked English Text',
+        sura: 1,
+        aya: 1,
+        ayaInSura: 1,
+        suraNameAr: 'الفاتحة',
+        link: 'mockLink',
+    });
+    mockGetRecitation.mockResolvedValue({
+        success: true,
+        reciter: {
+            id: 'mockReciterId',
+            name: 'Mock Reciter',
+            language: 'ar',
+            style: '',
+            quality: '',
+            rasm: '',
+            db_id: 1,
+        },
         audioSource: 'mock/audio/path.mp3',
-        duration: 12345
+        duration: 12345,
     });
 });
 
 afterAll(() => mswServer?.close());
 
 describe('Telegram Bot - Exported Functions Structure', () => {
-    it('performBotPreLaunchChecks should be a function', () => expect(typeof performBotPreLaunchChecks).toBe('function'));
+    it('performBotPreLaunchChecks should be a function', () =>
+        expect(typeof performBotPreLaunchChecks).toBe('function'));
     it('sendAya should be a function', () => expect(typeof sendAya).toBe('function'));
     it('surpriseAya should be a function', () => expect(typeof surpriseAya).toBe('function'));
     it('handleText should be a function', () => expect(typeof handleText).toBe('function'));
@@ -240,8 +337,7 @@ describe('performBotPreLaunchChecks', () => {
         // Assert with the fully predictable string
         expect(mockBotTelegramSendMessageSpy).toHaveBeenCalledWith(
             mockConfigModule.default.devChatId,
-            expectedMessage,
-            undefined
+            expectedMessage
         );
 
         expect(mockCheckSource).toHaveBeenCalled();
@@ -258,7 +354,10 @@ describe('performBotPreLaunchChecks', () => {
         await performBotPreLaunchChecks();
 
         const startupMessageCall = mockBotTelegramSendMessageSpy.mock.calls.find(
-            callArgs => callArgs[0] === originalDevChatId && typeof callArgs[1] === 'string' && callArgs[1].includes(`DailyAyaTelegram ${mockConfigModule.default.branch} instance`)
+            (callArgs) =>
+                callArgs[0] === originalDevChatId &&
+                typeof callArgs[1] === 'string' &&
+                callArgs[1].includes(`DailyAyaTelegram ${mockConfigModule.default.branch} instance`)
         );
         expect(startupMessageCall).toBeUndefined();
         mockConfigModule.default.devChatId = originalDevChatId;
@@ -269,7 +368,9 @@ describe('performBotPreLaunchChecks', () => {
         mockBotInstance.options.username = null;
         await performBotPreLaunchChecks();
         expect(mockBootstrapLogger).toHaveBeenCalledWith(
-            expect.stringContaining('performBotPreLaunchChecks: Cannot send startup state message to dev group - bot username not available')
+            expect.stringContaining(
+                'performBotPreLaunchChecks: Cannot send startup state message to dev group - bot username not available'
+            )
         );
         mockBotInstance.options.username = originalUsername;
     });
@@ -293,7 +394,8 @@ describe('performBotPreLaunchChecks', () => {
 
 describe('Handler Registrations', () => {
     // This block will be added back incrementally
-    it('should have basic spies defined', () => { // Placeholder
+    it('should have basic spies defined', () => {
+        // Placeholder
         expect(mockBotStartSpy).toBeDefined();
     });
 });
@@ -325,6 +427,9 @@ describe('sendAya', () => {
         const error = new Error('Test Error');
         ayaSenderMock.sendAyaText.mockRejectedValue(error);
         await sendAya(mockChatId, mockAyaNumber, 'reciter', 'en', 'test', true);
-        expect(mockLogger).toHaveBeenCalledWith(expect.stringContaining('sendAya: Error caught while sending Aya'), error);
+        expect(mockLogger).toHaveBeenCalledWith(
+            expect.stringContaining('sendAya: Error caught while sending Aya'),
+            error
+        );
     });
 });
