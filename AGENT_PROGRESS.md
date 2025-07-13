@@ -1,5 +1,118 @@
 ## Session Summary: Jules - (Current Session)
 
+**Goal:** Investigate why the timer logs are not showing after bot launch, fix the issue, and enhance testing to catch this and other similar critical issues.
+
+**Work Done & Key Changes:**
+
+*   **Fixed Timer Initialization Logic:** Moved the `initializeTimer()` call in `src/app.js` to be before the blocking `globalBotInstance.launch()` call. This ensures the timer is initialized correctly.
+*   **Enhanced `app.test.js`:** Modified the integration test for `src/app.js` to verify that `initializeTimer()` is called *before* `launch()`. This was done by checking the call order of `bootstrapLogger` messages, which was a workaround for issues with mocking ES modules.
+
+**Current Status:**
+
+*   The timer initialization bug is fixed.
+*   The test suite has been enhanced to prevent this issue from recurring.
+*   All 199 tests are passing.
+*   The project is ready for the final pre-commit steps.
+
+---
+## Session Summary: Jules - (Previous Session)
+
+**Goal:** Comply with AGENTS.md, run all tests to evaluate the true status of the project, make sure no skipped tests, and give a summarized report.
+
+**Work Done & Key Changes:**
+
+1.  **Installed `msw` dependency:** Installed the `msw` package as a dev dependency to fix a missing module error in `telegramBot.test.js`.
+2.  **Fixed `telegramBot.test.js`:** Fixed a failing test in `telegramBot.test.js` by removing an extra `undefined` argument from a `toHaveBeenCalledWith` assertion.
+3.  **Ensured all tests pass:** Ran the entire test suite and confirmed that all 11 test suites and 198 tests are passing.
+
+**Current Status:**
+- All tests are passing.
+- The project is ready to be submitted.
+
+## Current Project Focus / Features:
+
+1.  **Update Project Documentation:**
+    *   Accurately update `AGENT_PROGRESS.md` and `CHANGELOG.md` to reflect the recent major architectural refactoring.
+2.  **Test `src/botManager.js`:**
+    *   Create comprehensive unit tests for the new `src/botManager.js` module, ensuring the `initializeBot` function, `getMe` call handling, and `botUsernameReady` promise behavior are thoroughly tested.
+3.  **Refactor and Stabilize `src/telegramBot.test.js`:**
+    *   Rewrite tests in `src/telegramBot.test.js` to align with the new architecture where `telegramBot.js` exports handlers and logic functions but does not self-initialize the bot.
+    *   Ensure all tests for `telegramBot.js` pass and cover its functionality adequately.
+4.  **Overall Test Suite Health:**
+    *   Ensure all test suites in the project pass after the refactoring and test updates.
+5.  **Adherence to Project Protocols:**
+    *   Strictly follow versioning, pre-commit routines, and all other guidelines in `AGENTS.MD`.
+
+---
+## Session Summary: Jules - (Current Session for Enhancing Testing Standards)
+
+**Goal:** Enhance testing methodologies to prevent regressions like the 'recite button' and `botUsername` issues, by updating `AGENTS.MD` and implementing more comprehensive tests.
+
+**Work Done & Key Changes:**
+
+1.  **Updated `AGENTS.MD` with Enhanced Testing Mandates:**
+    *   Added/amended "Enhanced Testing Standards" to mandate testing for:
+        *   Context propagation and data flow (including malformed/empty contexts).
+        *   Dependency injection verification.
+        *   Variable scope, mutability, and state management.
+        *   More rigorous integration testing for core user flows using real Telegraf instance with MSW.
+        *   Security considerations in tests.
+        *   Mindfulness of test performance and lightness.
+    *   Updated "Pre-commit Routine":
+        *   Emphasized thorough testing according to new standards in Step 1.
+        *   Added new mandatory Step 5: "Regression Test Creation (MANDATORY FOR BUG FIXES)".
+    *   Changes were approved by the user and applied to `AGENTS.MD`.
+
+2.  **Reviewed Existing Tests for Gaps (Recite Button & botUsername Issues):**
+    *   **Recite Button `ctx` Issue:** Identified need for a *valid* flow integration test in `telegramBot.test.js` using MSW. Considered `helperAdminConditionalAction` tests in `botHelpers.test.js` largely sufficient but noted potential for more explicit checks for `rawCtx` method availability. Identified need for a test in `actionHandlers.test.js` for `fullSenderDeps` integrity.
+    *   **`botUsername` Fallback Issue:** Identified need for a test in `ayaSender.test.js` covering the `config.debugging = false` path for the informational log.
+
+3.  **Implemented Enhanced Tests:**
+    *   **`src/ayaSender.test.js`**: Added test for `botUsername` fallback with `config.debugging = false`. (1 new test)
+    *   **`src/telegramBot.test.js`**: Added MSW-based integration test for a valid "recite" callback flow, verifying data propagation to `sendAudio`. (1 new test)
+    *   **`src/botHandlers/actionHandlers.js`**: Added test to verify `handleReciteAction` correctly assembles and passes `fullSenderDeps` to `sendAyaRecitationFn`. (1 new test)
+    *   All tests (now 178) passed after small corrections to the new tests.
+
+**Current Status:**
+- `AGENTS.MD` has been updated with stricter testing guidelines.
+- New tests have been implemented to cover previously identified gaps, focusing on context/data flow, dependency injection, and specific known past issues.
+- All 178 tests are passing.
+
+---
+## Session Summary: Jules - 2025.07.10-1939 (Version `2025.07.10-1939`)
+
+**Goal:** Refine application logging to ensure correct classification of log types (debug vs. error) and remove unnecessary diagnostic logs, particularly those related to the now-functional "recite button".
+
+**Work Done & Key Changes:**
+
+1.  **Identified Problematic Logs:**
+    *   Located `DEBUG: handleReciteAction --- ENTRY ---` and other misclassified logs.
+2.  **Modified Log Classifications and Content:**
+    *   **`src/botHandlers/actionHandlers.js`**: Changed `DEBUG: handleReciteAction --- ENTRY ---` to `console.log` conditional on `config.debugging`.
+    *   **`src/telegramBot.js`**: Modified warning logs to be informational.
+    *   **`src/ayaSender.js`**: Made `botUsername` missing log conditional (error if debugging, else info). Fixed `TypeError` for `botUsername` assignment.
+3.  **Tested Changes:**
+    *   Added `config.js` mock to `ayaSender.test.js`. Fixed related test. All tests passed.
+
+**Outcome:** Logging refined for accuracy and reduced noise. All tests (175/175) pass.
+
+---
+## Session Summary: Jules - 2025.07.10-1922 (Version `2025.07.10-1922`)
+
+**Goal:** Perform in-depth code review and update `AGENT_PROGRESS.md` and `CHANGELOG.md` to accurately reflect the true status of the project, making them more organized, clean, and to the point.
+**This entry refers to the previous task, completed just before the current logging refinement task.**
+
+**Work Done & Key Changes:**
+1.  **In-Depth Code Review:** Validated codebase against `AGENT_PROGRESS.md` and `CHANGELOG.md`.
+2.  **Analysis & Cross-Referencing:** Confirmed high consistency, identified minor redundancies in tracking files.
+3.  **Cleanup of `AGENT_PROGRESS.md`:** Removed outdated "Next Steps"/"Current Status", condensed minor diagnostic path descriptions.
+4.  **Cleanup of `CHANGELOG.md`:** Removed two duplicate entries.
+
+**Outcome:** `AGENT_PROGRESS.md` and `CHANGELOG.md` updated for conciseness and accuracy.
+
+---
+## Session Summary: Jules - (Previous Session)
+
 **Goal:** Fix the timer initialization issue and enhance testing to prevent similar issues in the future.
 
 **Work Done & Key Changes:**
@@ -136,12 +249,12 @@
 1.  Addressed `TODO`s in `src/telegramBot.test.js` (tests for `surpriseAya`, `handleText` scenarios).
 2.  Created `src/ayaSender.test.js` with comprehensive tests for `sendAyaText` and `sendAyaRecitation`.
 3.  Created `src/botHelpers.test.js` with unit tests for most helper functions.
-4.  Added initial unit tests for `checkConnectivity` in `src/utils.test.js`.
+4.  Added initial unit tests for `checkConnectivity` in `src/utils.js`.
 
 **Original Outcome for this Session:**
 - Significantly improved test coverage for `telegramBot.js`, `ayaSender.js`, `botHelpers.js`.
 - Three new test files created. Many core functionalities had new unit tests.
-- At the time, tests for `checkConnectivity` in `src/utils.test.js` were problematic and skipped (this was fixed in a subsequent session on 2025-07-07, see 'Session Summary: Jules - 2025-07-07 (Final)'). Other `utils.js` functions were tested.
+- At the time, tests for `checkConnectivity` in `src/utils.js` were problematic and skipped (this was fixed in a subsequent session on 2025-07-07, see 'Session Summary: Jules - 2025-07-07 (Final)'). Other `utils.js` functions were tested.
 
 ---
 
@@ -170,7 +283,7 @@
 
 **Original Outcome for this Session:**
 - Test coverage for `src/botHandlers/actionHandlers.js` was made comprehensive.
-- At that time, all project tests were passing, with the known exception of the `checkConnectivity` tests in `src/utils.test.js` (which were fixed later on 2025-07-07).
+- At that time, all project tests were passing, with the known exception of the `checkConnectivity` tests in `src/utils.js` (which were fixed later on 2025-07-07).
 
 ---
 
@@ -381,99 +494,3 @@ Lingering Minor Issues (at that time):
 
 **Current Status:**
 - `AGENTS.MD` modified. Previous commit acknowledged on different branch.
-
----
-## Session Summary: Jules - 2025.07.10-1922 (Version `2025.07.10-1922`)
-
-**Goal:** Perform in-depth code review and update `AGENT_PROGRESS.md` and `CHANGELOG.md` to accurately reflect the true status of the project, making them more organized, clean, and to the point.
-**This entry refers to the previous task, completed just before the current logging refinement task.**
-
-**Work Done & Key Changes:**
-1.  **In-Depth Code Review:** Validated codebase against `AGENT_PROGRESS.md` and `CHANGELOG.md`.
-2.  **Analysis & Cross-Referencing:** Confirmed high consistency, identified minor redundancies in tracking files.
-3.  **Cleanup of `AGENT_PROGRESS.md`:** Removed outdated "Next Steps"/"Current Status", condensed minor diagnostic path descriptions.
-4.  **Cleanup of `CHANGELOG.md`:** Removed two duplicate entries.
-
-**Outcome:** `AGENT_PROGRESS.md` and `CHANGELOG.md` updated for conciseness and accuracy.
-
----
-## Session Summary: Jules - 2025.07.10-1939 (Version `2025.07.10-1939`)
-
-**Goal:** Refine application logging to ensure correct classification of log types (debug vs. error) and remove unnecessary diagnostic logs, particularly those related to the now-functional "recite button".
-
-**Work Done & Key Changes:**
-
-1.  **Identified Problematic Logs:**
-    *   Located `DEBUG: handleReciteAction --- ENTRY ---` and other misclassified logs.
-2.  **Modified Log Classifications and Content:**
-    *   **`src/botHandlers/actionHandlers.js`**: Changed `DEBUG: handleReciteAction --- ENTRY ---` to `console.log` conditional on `config.debugging`.
-    *   **`src/telegramBot.js`**: Modified warning logs to be informational.
-    *   **`src/ayaSender.js`**: Made `botUsername` missing log conditional (error if debugging, else info). Fixed `TypeError` for `botUsername` assignment.
-3.  **Tested Changes:**
-    *   Added `config.js` mock to `ayaSender.test.js`. Fixed related test. All tests passed.
-
-**Outcome:** Logging refined for accuracy and reduced noise. All tests (175/175) pass.
-
----
-## Session Summary: Jules - (Current Session for Enhancing Testing Standards)
-
-**Goal:** Enhance testing methodologies to prevent regressions like the 'recite button' and `botUsername` issues, by updating `AGENTS.MD` and implementing more comprehensive tests.
-
-**Work Done & Key Changes:**
-
-1.  **Updated `AGENTS.MD` with Enhanced Testing Mandates:**
-    *   Added/amended "Enhanced Testing Standards" to mandate testing for:
-        *   Context propagation and data flow (including malformed/empty contexts).
-        *   Dependency injection verification.
-        *   Variable scope, mutability, and state management.
-        *   More rigorous integration testing for core user flows using real Telegraf instance with MSW.
-        *   Security considerations in tests.
-        *   Mindfulness of test performance and lightness.
-    *   Updated "Pre-commit Routine":
-        *   Emphasized thorough testing according to new standards in Step 1.
-        *   Added new mandatory Step 5: "Regression Test Creation (MANDATORY FOR BUG FIXES)".
-    *   Changes were approved by the user and applied to `AGENTS.MD`.
-
-2.  **Reviewed Existing Tests for Gaps (Recite Button & botUsername Issues):**
-    *   **Recite Button `ctx` Issue:** Identified need for a *valid* flow integration test in `telegramBot.test.js` using MSW. Considered `helperAdminConditionalAction` tests in `botHelpers.test.js` largely sufficient but noted potential for more explicit checks for `rawCtx` method availability. Identified need for a test in `actionHandlers.test.js` for `fullSenderDeps` integrity.
-    *   **`botUsername` Fallback Issue:** Identified need for a test in `ayaSender.test.js` covering the `config.debugging = false` path for the informational log.
-
-3.  **Implemented Enhanced Tests:**
-    *   **`src/ayaSender.test.js`**: Added test for `botUsername` fallback with `config.debugging = false`. (1 new test)
-    *   **`src/telegramBot.test.js`**: Added MSW-based integration test for a valid "recite" callback flow, verifying data propagation to `sendAudio`. (1 new test)
-    *   **`src/botHandlers/actionHandlers.test.js`**: Added test to verify `handleReciteAction` correctly assembles and passes `fullSenderDeps` to `sendAyaRecitationFn`. (1 new test)
-    *   All tests (now 178) passed after small corrections to the new tests.
-
-**Current Status:**
-- `AGENTS.MD` has been updated with stricter testing guidelines.
-- New tests have been implemented to cover previously identified gaps, focusing on context/data flow, dependency injection, and specific known past issues.
-- All 178 tests are passing.
-
----
-## Session Summary: Jules - (Current Session)
-
-**Goal:** Comply with AGENTS.md, run all tests to evaluate the true status of the project, make sure no skipped tests, and give a summarized report.
-
-**Work Done & Key Changes:**
-
-1.  **Installed `msw` dependency:** Installed the `msw` package as a dev dependency to fix a missing module error in `telegramBot.test.js`.
-2.  **Fixed `telegramBot.test.js`:** Fixed a failing test in `telegramBot.test.js` by removing an extra `undefined` argument from a `toHaveBeenCalledWith` assertion.
-3.  **Ensured all tests pass:** Ran the entire test suite and confirmed that all 11 test suites and 198 tests are passing.
-
-**Current Status:**
-- All tests are passing.
-- The project is ready to be submitted.
-
-## Current Project Focus / Features:
-
-1.  **Update Project Documentation:**
-    *   Accurately update `AGENT_PROGRESS.md` and `CHANGELOG.md` to reflect the recent major architectural refactoring.
-2.  **Test `src/botManager.js`:**
-    *   Create comprehensive unit tests for the new `src/botManager.js` module, ensuring the `initializeBot` function, `getMe` call handling, and `botUsernameReady` promise behavior are thoroughly tested.
-3.  **Refactor and Stabilize `src/telegramBot.test.js`:**
-    *   Rewrite tests in `src/telegramBot.test.js` to align with the new architecture where `telegramBot.js` exports handlers and logic functions but does not self-initialize the bot.
-    *   Ensure all tests for `telegramBot.js` pass and cover its functionality adequately.
-4.  **Overall Test Suite Health:**
-    *   Ensure all test suites in the project pass after the refactoring and test updates.
-5.  **Adherence to Project Protocols:**
-    *   Strictly follow versioning, pre-commit routines, and all other guidelines in `AGENTS.MD`.

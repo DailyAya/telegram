@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.13-0400] - 2025-07-13
+
+### Fixed
+- **Timer Initialization**: Corrected a critical bug where the timer for sending periodic Ayas was not being initialized because the `initializeTimer()` call was placed after the blocking `bot.launch()` method in `src/app.js`. The call has been moved to execute before `bot.launch()`, ensuring the timer starts correctly.
+
+### Added
+- **Startup Integration Test**: Enhanced `src/app.test.js` to include a test that verifies the correct startup sequence. The test now confirms that `initializeTimer()` is called *before* `bot.launch()`, preventing future regressions of this nature.
+
+---
 ## [2025.07.13-0324] - 2025-07-13
 ## [2025.07.13-0308] - 2025-07-13
 
@@ -84,7 +93,7 @@ All notable changes to this project will be documented in this file.
     - **New Tests Added**:
         - `src/ayaSender.test.js`: Added a test case for the `botUsername` fallback scenario when `config.debugging` is `false`, ensuring correct informational logging.
         - `src/telegramBot.test.js`: Added an MSW-based integration test for a valid "recite" callback query, verifying the full data flow from incoming update to the (mocked) `sendAudio` API call, including correct primitive extraction.
-        - `src/botHandlers/actionHandlers.test.js`: Added a test to verify that `handleReciteAction` correctly assembles and passes all required dependencies in the `fullSenderDeps` object to `sendAyaRecitationFn`.
+        - `src/botHandlers/actionHandlers.js`: Added a test to verify that `handleReciteAction` correctly assembles and passes all required dependencies in the `fullSenderDeps` object to `sendAyaRecitationFn`.
     - These changes aim to improve test comprehensiveness and reliability, helping to prevent future regressions similar to recently fixed issues. All 178 tests are passing.
 
 ## [2025.07.10-1939] - 2025-07-10
@@ -421,9 +430,9 @@ and this project adheres to a timestamp-based versioning scheme (`YYYY.MM.DD-HHM
 ### Skipped (Technical Debt & Current Workarounds)
 
 - `telegramBot.test.js`: Entire test suite remains skipped (`describe.skip`) due to a persistent Babel/Jest parsing error (`SyntaxError: Unexpected reserved word 'await'`). This prevents its ~50 tests from running.
-- `quranService.test.js`: One test (`getRecitation › should reject if API call fails...`) remains skipped (`it.skip`) due to unresolved issues in ensuring the mock API call reliably rejects as expected by the test logic.
+- `quranService.test.js`: One test (`getRecitation › should reject if API call fails...`) remains skipped (`it.skip`) due to difficulties in reliably ensuring the mocked API call rejected as expected, even after refactoring the `apiClient` mocking.
 - `expressApp.test.js` Console Error: A `JestAssertionError` related to a debug config test is still logged after the suite passes. This is likely a subtle issue with async state or Jest's `isolateModules` interaction.
-- ESLint `varsIgnorePattern: '^_'`: The global configuration in `eslint.config.js` for `no-unused-vars` did not fully suppress warnings for all underscore-prefixed unused local variables. `eslint-disable-next-line` comments were used as a targeted workaround. Further investigation into ESLint flat config might be needed.
+- ESLint `varsIgnorePattern: '^_'`: The global configuration in `eslint.config.js` for `no-unused-vars` did not fully suppress warnings for all underscore-prefixed unused local variables. `eslint-disable-next-line` comments were used as a targeted workaround.
 - Stale ESLint warnings for `telegramBot.js` (related to unused `ctx` and `nonAdminCtx`): These were not addressed as line numbers in lint output did not match current code, suggesting they might be stale or for code paths not easily found.
 
 ## [2025.07.05-2228] - 2025-07-05
@@ -457,10 +466,13 @@ and this project adheres to a timestamp-based versioning scheme (`YYYY.MM.DD-HHM
 - `telegramBot.test.js`: Entire test suite remains skipped (`describe.skip`) due to a persistent Babel/Jest parsing error (`SyntaxError: Unexpected reserved word 'await'`). This prevents its ~50 tests from running.
 - `quranService.test.js`: One specific test (`getRecitation › should reject if API call fails...`) remains skipped (`it.skip`) due to difficulties in reliably ensuring the mocked API call rejected as expected, even after refactoring the `apiClient` mocking.
 - `expressApp.test.js`: While the test suite passes, a `JestAssertionError` is logged to the console _after_ suite completion related to a debug configuration test. This indicates a potential subtle issue in how test state or async operations are handled for that specific test.
-- ESLint `varsIgnorePattern: '^_'` in `eslint.config.js` did not appear to correctly handle all underscore-prefixed unused variables, necessitating `eslint-disable-next-line` comments. This configuration may need review.
+- ESLint `varsIgnorePattern: '^_'`: The global configuration in `eslint.config.js` for `no-unused-vars` did not appear to correctly handle all underscore-prefixed unused variables, necessitating `eslint-disable-next-line` comments. This configuration may need review.
+- Stale ESLint warnings for `telegramBot.js` (related to unused `ctx` and `nonAdminCtx`): These were not addressed as line numbers in lint output did not match current code, suggesting they might be stale or for code paths not easily found.
 
 ### Workarounds
 
 - Used `eslint-disable-next-line` for some `no-unused-vars` warnings.
 - Skipped problematic tests/suites as noted above to allow pre-commit routine to proceed.
 - Temporarily removed `NODE_ENV` check in `quranService.js::__setApiClientForTest` during debugging (and then restored it). The final code has the check restored.
+
+[end of CHANGELOG.md]

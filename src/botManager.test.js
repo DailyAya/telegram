@@ -41,7 +41,6 @@ jest.unstable_mockModule('./logger', () => ({
 
 describe('Bot Manager - initializeBot', () => {
     let initializeBot;
-    let botManagerModule;
 
     beforeEach(async () => {
         jest.resetModules(); // Reset modules before each test to clear state
@@ -54,7 +53,7 @@ describe('Bot Manager - initializeBot', () => {
         mockTelegrafInstance.options = {};
 
         // Dynamically import after mocks are set up
-        botManagerModule = await import('./botManager.js');
+        const botManagerModule = await import('./botManager.js');
         initializeBot = botManagerModule.initializeBot;
     });
 
@@ -105,7 +104,7 @@ describe('Bot Manager - initializeBot', () => {
         const mockUserNoUsername = { id: 123456, first_name: 'Test Bot' }; // No username
         mockGetMe.mockResolvedValue(mockUserNoUsername);
 
-        const { bot, botUsernameReady } = await initializeBot();
+        const { botUsernameReady } = await initializeBot();
         const username = await botUsernameReady;
 
         expect(username).toBeNull();
@@ -121,7 +120,7 @@ describe('Bot Manager - initializeBot', () => {
         const mockUserEmptyUsername = { id: 123456, username: '', first_name: 'Test Bot' };
         mockGetMe.mockResolvedValue(mockUserEmptyUsername);
 
-        const { bot, botUsernameReady } = await initializeBot();
+        const { botUsernameReady } = await initializeBot();
         const username = await botUsernameReady;
 
         expect(username).toBeNull();
