@@ -206,7 +206,8 @@ export async function helperAdminConditionalAction(
     adminFn,
     nonAdminCb,
     nonAdminAlert = false,
-    nonAdminUrl = null
+    nonAdminUrl = null,
+    adminFnCtx = null
 ) {
     // adminChecker will use the passed `ctx`.
     const isUserAdmin = await adminChecker(ctx, botTelegram);
@@ -215,7 +216,7 @@ export async function helperAdminConditionalAction(
         try {
             // adminFn (e.g., in handleReciteAction) is designed to use primitives
             // from its closure. It does not expect ctx to be passed here.
-            await adminFn(); // Call without arguments
+            await adminFn(adminFnCtx || ctx); // Call with context
             await ctx
                 .answerCbQuery()
                 .catch((e) => logger('Error answering CBQ after admin fn in conditional:', e.message));

@@ -203,7 +203,8 @@ export async function handleCurrAyaAction(
             return `t.me/${botOptions.username || 'DailyAyaBot'}?start=${ayaIndex.sura}-${ayaIndex.aya}`;
         },
         false,
-        `t.me/${botOptions.username || 'DailyAyaBot'}?start=${ayaId2suraAyaFn(nextAyaFn(callbackData.currAya)).sura}-${ayaId2suraAyaFn(nextAyaFn(callbackData.currAya)).aya}`
+        `t.me/${botOptions.username || 'DailyAyaBot'}?start=${ayaId2suraAyaFn(nextAyaFn(callbackData.currAya)).sura}-${ayaId2suraAyaFn(nextAyaFn(callbackData.currAya)).aya}`,
+        ctx
     );
 }
 

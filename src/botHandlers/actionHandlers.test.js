@@ -293,11 +293,12 @@ describe('Bot Action Handlers', () => {
                     adminFnInternal,
                     nonAdminCbInternal,
                     nonAdminAlertInternal,
-                    nonAdminUrlInternal
+                    nonAdminUrlInternal,
+                    adminFnCtx
                 ) => {
                     const isAdmin = await mockAdminChecker(ctxInternal, _botTelegramInternal); // Uses global mockAdminChecker
                     if (isAdmin) {
-                        await adminFnInternal(ctxInternal);
+                        await adminFnInternal(adminFnCtx || ctxInternal);
                         if (ctxInternal.answerCbQuery) await ctxInternal.answerCbQuery().catch(() => {});
                     } else {
                         const urlToOpen =
