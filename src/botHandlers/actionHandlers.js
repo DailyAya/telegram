@@ -222,26 +222,34 @@ export async function handleCurrAyaAction(
  */
 export async function handleAMenuAction(
     ctx,
-    { botTelegram, botOptions, helperAdminProtectedAction, helperAMenuButtonsFn, ayaId2suraAyaFn }
+    { botTelegram, botOptions, helperAdminConditionalAction, helperAMenuButtonsFn, ayaId2suraAyaFn }
 ) {
-    await helperAdminProtectedAction(ctx, botTelegram, async (adminCtx) => {
-        const callbackData = JSON.parse(adminCtx.update.callback_query.data);
-        const menu = callbackData.aMenu.includes('1')
-            ? callbackData.aMenu.replace('1', '0')
-            : callbackData.aMenu.replace('0', '1');
-        const buttons = helperAMenuButtonsFn(
-            menu,
-            callbackData.a,
-            callbackData.r,
-            botOptions.username,
-            ayaId2suraAyaFn
-        );
-        try {
-            await adminCtx.editMessageReplyMarkup(buttons);
-        } catch (e) {
-            logger(`Warning: Error toggling aMenu (MESSAGE_ID_INVALID or other non-critical): `, e);
-        }
-    });
+    const callbackData = JSON.parse(ctx.update.callback_query.data);
+    await helperAdminConditionalAction(
+        ctx,
+        botTelegram,
+        async (adminCtx) => {
+            const menu = callbackData.aMenu.includes('1')
+                ? callbackData.aMenu.replace('1', '0')
+                : callbackData.aMenu.replace('0', '1');
+            const buttons = helperAMenuButtonsFn(
+                menu,
+                callbackData.a,
+                callbackData.r,
+                botOptions.username,
+                ayaId2suraAyaFn
+            );
+            try {
+                await adminCtx.editMessageReplyMarkup(buttons);
+            } catch (e) {
+                logger(`Warning: Error toggling aMenu (MESSAGE_ID_INVALID or other non-critical): `, e);
+            }
+        },
+        null,
+        false,
+        null,
+        ctx
+    );
 }
 
 /**
@@ -333,7 +341,8 @@ export async function handleReciteAction(
             // nonAdminUrl
             const ayaIndex = dependencies.ayaId2suraAyaFn(callbackQueryData.recite);
             return `t.me/${dependencies.botOptions?.username || 'DailyAyaBot'}?start=r${ayaIndex.sura}-${ayaIndex.aya}`;
-        })()
+        })(),
+        rawCtx
     );
 }
 

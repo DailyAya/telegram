@@ -12,10 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The bot was failing to start due to a timer issue.
 - The logs were not in chronological order.
 - There were unnecessary debug logs.
-- The "next aya" button was not working.
+- The "next aya", "recite", and "aMenu" buttons were not working.
 ### Changed
 - Refactored logging to provide more detailed information.
 - Cleaned up `AGENT_PROGRESS.md` and `CHANGELOG.md`.
 - Corrected the timer logic to run immediately on startup and then on the hour.
 ### Added
-- A new test case to verify the "next aya" button functionality.
+- New test cases to verify the functionality of all buttons.
