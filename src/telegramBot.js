@@ -2,7 +2,7 @@
 import { Markup } from 'telegraf';
 // [TELEGRAMBOT_SUT] Telegraf (Markup) imported. (Original log)
 import config from './config.js';
-import { logger, bootstrapLogger } from './logger.js';
+import logger from './logger.js';
 import { lastAyaTime, setFavReciter, getFavReciter } from './database.js';
 import {
     adminChecker as helperAdminChecker,
@@ -41,13 +41,13 @@ let activeBotInstance = null;
 const quranData = getQuranData();
 
 async function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation = false) {
-    logger(
+    logger.log(
         `Initiating sending an Aya to chat ${chatId}. AyaID: ${ayaId || 'random'}, Reciter: ${reciter || 'default/random'}, Trigger: ${trigger}, Recitation: ${withRecitation}`
     );
     const targetAyaId = ayaId || randomAyaNumber();
 
     if (!activeBotInstance || !activeBotInstance.telegram || !activeBotInstance.options) {
-        logger(
+        logger.log(
             'Error: sendAya called before bot is properly initialized/registered.',
             new Error('Bot not ready for sendAya')
         );
@@ -82,7 +82,7 @@ async function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation = f
             );
         }
     } catch (e) {
-        logger(`sendAya: Error caught while sending Aya ${targetAyaId} to chat ${chatId}. Trigger: ${trigger}`, e);
+        logger.log(`sendAya: Error caught while sending Aya ${targetAyaId} to chat ${chatId}. Trigger: ${trigger}`, e);
         const errorDesc = e.response?.description?.toLowerCase() || '';
         const blockKeywords =
             /blocked by the user|user is deactivated|need administrator rights|not enough rights|chat not found|TOPIC_CLOSED|bot was kicked|CHAT_SEND_PLAIN_FORBIDDEN/;
@@ -107,7 +107,7 @@ export async function handleText(ctx) {
     let ayaId = -2;
     let foundArSuraNum = 0;
 
-    logger(`Message from chat ${chatId} (${ctx.from?.username}): ${originalText}. Normalized: ${normalizedTxt}`);
+    logger.log(`Message from chat ${chatId} (${ctx.from?.username}): ${originalText}. Normalized: ${normalizedTxt}`);
 
     let searchableTxt = normalizedTxt;
     const rasmifiedSuraPrefix = rasmifize('سورة ');
@@ -128,7 +128,7 @@ export async function handleText(ctx) {
                 );
                 if (regex.test(searchableTxt)) {
                     foundArSuraNum = index + 1;
-                    logger(`Found Arabic Sura name: ${quranData.enQuran[index].englishName} (Num: ${foundArSuraNum})`);
+                    logger.log(`Found Arabic Sura name: ${quranData.enQuran[index].englishName} (Num: ${foundArSuraNum})`);
                     break;
                 }
             }
@@ -154,7 +154,7 @@ export async function handleText(ctx) {
         if (ayaId === 0) reasonCode = 2;
         else if (ayaId === -1) reasonCode = 1;
         if (!activeBotInstance || !activeBotInstance.telegram) {
-            logger(
+            logger.log(
                 'Error: handleText trying to send unrecognized message but bot is not ready.',
                 new Error('Bot not ready for sendUnrecognizedMessage in handleText')
             );
@@ -177,24 +177,7 @@ export function registerHandlers(botToRegister, dependencies) {
     activeBotInstance = botToRegister;
     const { Markup } = dependencies;
 
-    // <DEBUG_LOGGING>
-    console.log('[TELEGRAMBOT_SUT registerHandlers] ENTER. botToRegister defined?', !!botToRegister);
-    console.log('[TELEGRAMBOT_SUT registerHandlers] activeBotInstance is now set. Is it defined?', !!activeBotInstance);
-    if (activeBotInstance) {
-        console.log(
-            '[TELEGRAMBOT_SUT registerHandlers] typeof activeBotInstance.start:',
-            typeof activeBotInstance.start
-        );
-    }
-    // </DEBUG_LOGGING>
-
     const startHandlerWrapper = async (ctx) => {
-        // <DEBUG_LOGGING>
-        console.log(
-            '[TELEGRAMBOT_SUT registerHandlers] Start handler WRAPPER invoked. commandHandlers.handleStartCommand is function?',
-            typeof commandHandlers.handleStartCommand === 'function'
-        );
-        // </DEBUG_LOGGING>
         if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, activeBotInstance.telegram))) {
             logger(
                 `Ignored /start command from non-admin user ${ctx.from.id} in chat ${ctx.chat.id} (${ctx.chat.title}).`
@@ -207,21 +190,8 @@ export function registerHandlers(botToRegister, dependencies) {
             handleTextFn: handleText,
         });
     };
-    // <DEBUG_LOGGING>
-    console.log(
-        '[TELEGRAMBOT_SUT registerHandlers] Registering .start with startHandlerWrapper:',
-        typeof startHandlerWrapper,
-        startHandlerWrapper
-    );
-    // </DEBUG_LOGGING>
     activeBotInstance.start(startHandlerWrapper);
 
-    // <DEBUG_LOGGING>
-    console.log(
-        '[TELEGRAMBOT_SUT registerHandlers] Registering .help handler with handler:',
-        commandHandlers.handleHelpCommand
-    );
-    // </DEBUG_LOGGING>
     activeBotInstance.help(async (ctx) => {
         if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, activeBotInstance.telegram))) {
             logger(
@@ -232,12 +202,6 @@ export function registerHandlers(botToRegister, dependencies) {
         await commandHandlers.handleHelpCommand(ctx, { telegram: activeBotInstance.telegram });
     });
 
-    // <DEBUG_LOGGING>
-    console.log(
-        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("surpriseme") with handler:',
-        commandHandlers.handleSurpriseMeCommand
-    );
-    // </DEBUG_LOGGING>
     activeBotInstance.command('surpriseme', async (ctx) => {
         if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, activeBotInstance.telegram))) {
             logger(
@@ -250,30 +214,12 @@ export function registerHandlers(botToRegister, dependencies) {
         });
     });
 
-    console.log(
-        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("support") with handler:',
-        commandHandlers.handleSupportCommand
-    );
     activeBotInstance.command('support', commandHandlers.handleSupportCommand); // Was wrapped, now direct
 
-    console.log(
-        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("reciters") with handler:',
-        commandHandlers.handleRecitersCommand
-    );
     activeBotInstance.command('reciters', commandHandlers.handleRecitersCommand); // Was wrapped, now direct
 
-    console.log(
-        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("channel") with handler:',
-        commandHandlers.handleChannelCommand
-    );
     activeBotInstance.command('channel', commandHandlers.handleChannelCommand); // Was wrapped, now direct
 
-    // <DEBUG_LOGGING>
-    console.log(
-        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("khatma") with handler:',
-        commandHandlers.handleKhatmaCommand
-    );
-    // </DEBUG_LOGGING>
     activeBotInstance.command('khatma', async (ctx) => {
         if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, activeBotInstance.telegram))) {
             logger(
@@ -284,15 +230,8 @@ export function registerHandlers(botToRegister, dependencies) {
         await commandHandlers.handleKhatmaCommand(ctx, Markup);
     });
 
-    console.log(
-        '[TELEGRAMBOT_SUT registerHandlers] Registering .command("commands") with handler:',
-        commandHandlers.handleCommandsCommand
-    );
     activeBotInstance.command('commands', commandHandlers.handleCommandsCommand); // Was wrapped, now direct
 
-    // <DEBUG_LOGGING>
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Setting my commands with activeBotInstance.telegram.setMyCommands');
-    // </DEBUG_LOGGING>
     activeBotInstance.telegram
         .setMyCommands([
             { command: 'surpriseme', description: '🎁 Surprise Me فاجئني' },
@@ -407,7 +346,6 @@ export function registerHandlers(botToRegister, dependencies) {
     });
 
     // Event Handlers
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .on("text") with handleText wrapper');
     activeBotInstance.on('text', async (ctx) => {
         if (ctx.chat.type !== 'private' && !(await helperAdminChecker(ctx, activeBotInstance.telegram))) {
             logger(
@@ -418,7 +356,6 @@ export function registerHandlers(botToRegister, dependencies) {
         await handleText(ctx);
     });
 
-    console.log('[TELEGRAMBOT_SUT registerHandlers] Registering .on("my_chat_member") with handler function');
     activeBotInstance.on('my_chat_member', async (ctx) => {
         const newStatus = ctx.update.my_chat_member.new_chat_member.status;
         logger(`my_chat_member update for chat ${ctx.chat.id}: ${newStatus}`);
@@ -440,10 +377,6 @@ export function registerHandlers(botToRegister, dependencies) {
                 break;
         }
     });
-
-    console.log(
-        `[TELEGRAMBOT_SUT registerHandlers] Finished. Bot username from activeBotInstance: ${activeBotInstance.options?.username || 'UNKNOWN_BOT'}`
-    );
 }
 
 export async function performBotPreLaunchChecks() {
@@ -484,10 +417,6 @@ export async function performBotPreLaunchChecks() {
 
     if (!config.debugging) {
         if (activeBotInstance && activeBotInstance.telegram) {
-            console.log(
-                '[SUT performBotPreLaunchChecks] About to call checkSource. Is it a function?',
-                typeof checkSource
-            ); // <--- DEBUG LOG
             checkSource((chatId, message) => activeBotInstance.telegram.sendMessage(chatId, message))
                 .then(() => logger('Initial Quran source check scheduled/done.'))
                 .catch((e) => logger('Error during initial Quran source check:', e));
