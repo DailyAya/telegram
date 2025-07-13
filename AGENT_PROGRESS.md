@@ -8,6 +8,7 @@
 2.  **Added Timer Test:** Added a test to `src/app.test.js` to verify that the timer is initialized correctly on application startup.
 3.  **Updated `AGENTS.md`:** Added a new "Application Smoke Test" step to the pre-commit routine to mandate running the application with `npm start` as a final check before committing.
 4.  **Fixed Linter Errors:** Corrected linter errors in `src/telegramBot.js`.
+5.  **Created `.env` file:** Created a `.env` file to provide the necessary environment variables for the application to run.
 
 **Current Status:**
 - The timer initialization issue is resolved.
