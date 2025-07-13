@@ -1,5 +1,5 @@
 // src/botFeatures/reciterService.js
-import logger from '../logger.js';
+import { logger } from '../logger.js';
 import { getQuranData } from '../quranService.js'; // To get arReciters
 
 /**
@@ -20,7 +20,7 @@ let recitersInlineButtonsCache = [];
 export function populateRecitersButtons() {
     const quranData = getQuranData(); // Get data when needed
     if (!quranData.arReciters || quranData.arReciters.length === 0) {
-        logger.log('populateRecitersButtons: No Arabic reciters loaded.', new Error('arReciters data missing'));
+        logger('populateRecitersButtons: No Arabic reciters loaded.', new Error('arReciters data missing'));
         recitersInlineButtonsCache = [];
         return;
     }
@@ -30,7 +30,7 @@ export function populateRecitersButtons() {
             callback_data: JSON.stringify({ setReciter: reciter.identifier }),
         },
     ]);
-    logger.log('Reciters buttons populated and cached.');
+    logger('Reciters buttons populated and cached.');
 }
 
 /**
@@ -45,7 +45,7 @@ export function populateRecitersButtons() {
 export function recitersNavPage(page) {
     const recitersPerPage = 5;
     if (!recitersInlineButtonsCache || recitersInlineButtonsCache.length === 0) {
-        logger.log('recitersNavPage: recitersInlineButtonsCache is empty or not initialized.');
+        logger('recitersNavPage: recitersInlineButtonsCache is empty or not initialized.');
         return [
             [
                 { text: `🎲`, callback_data: JSON.stringify({ setReciter: 'surprise' }) },

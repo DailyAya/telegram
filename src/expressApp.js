@@ -1,6 +1,6 @@
 import express from 'express';
 import config from './config.js';
-import logger from './logger.js';
+import { logger, bootstrapLogger } from './logger.js';
 
 /**
  * @module expressApp
@@ -49,7 +49,7 @@ app.get('/', (req, res) => {
         res.send(message);
     } catch (error) {
         // Log the error and send a generic error message to the client
-        logger.log('Error in GET / route while generating instance state message:', error);
+        logger('Error in GET / route while generating instance state message:', error);
         res.status(500).send('Error generating instance status.');
     }
 });
@@ -58,11 +58,11 @@ export function startExpressServer() {
     const port = config.port; // Already defaults to 3000 in config.js if not set
     try {
         app.listen(port, () => {
-            // Use logger.log for this initial server start message as it's part of app setup
-            logger.log(`Express server listening on port ${port}`);
+            // Use bootstrapLogger for this initial server start message as it's part of app setup
+            bootstrapLogger(`Express server listening on port ${port}`);
         });
     } catch (error) {
-        logger.log(`Failed to start Express server on port ${port}:`, error);
+        bootstrapLogger(`Failed to start Express server on port ${port}:`, error);
         // Depending on severity, might want to process.exit(1)
         throw error; // Re-throw for app.js to potentially handle
     }

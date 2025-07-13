@@ -1,5 +1,5 @@
 // src/botHelpers.js
-import logger from './logger.js';
+import { logger } from './logger.js';
 
 // --- Constants ---
 export const NON_ADMINS_ALERT = `عذرا، هذه الخاصية في المجموعات والقنوات متاحة للمشرفين فقط.\n\nSorry, this feature in groups and channels is only available for admins.`;
@@ -8,7 +8,7 @@ export const NON_ADMINS_ALERT = `عذرا، هذه الخاصية في المج�
 
 export async function adminChecker(ctx, botTelegram) {
     if (!ctx || !ctx.chat || !ctx.from) {
-        logger.log('adminChecker: Invalid context received.', ctx);
+        logger('adminChecker: Invalid context received.', ctx);
         return false;
     }
     if (ctx.chat.type === 'private') {
@@ -23,11 +23,11 @@ export async function adminChecker(ctx, botTelegram) {
             typeof error.response.description === 'string' &&
             error.response.description.includes('CHAT_ADMIN_REQUIRED')
         ) {
-            logger.log(
+            logger(
                 `adminChecker: Bot lacks admin rights in chat ${ctx.chat.id} to check member status for user ${ctx.from.id}. Assuming user is not admin for this check.`
             );
         } else {
-            logger.log(
+            logger(
                 `Error in adminChecker while calling getChatMember for chat ${ctx.chat.id}, user ${ctx.from.id}:`,
                 error
             );
@@ -51,9 +51,9 @@ Example: 2   255
 Or Sura number only: 2`;
     try {
         await botTelegram.sendMessage(chatId, msg);
-        logger.log('Sent instructions message to chat ' + chatId);
+        logger('Sent instructions message to chat ' + chatId);
     } catch (e) {
-        logger.log('Failed to send instructions message to chat ' + chatId, e);
+        logger('Failed to send instructions message to chat ' + chatId, e);
     }
 }
 
@@ -62,9 +62,9 @@ export async function successSend(ctx, ayaId, lang, trigger, lastAyaTimeDbFn) {
         const chatType = ctx.chat.type;
         const chatName = chatType === 'private' ? ctx.chat.first_name || ctx.from?.first_name : ctx.chat.title;
         await lastAyaTimeDbFn(ctx.chat.id, 'success', chatName, chatType, lang, trigger);
-        logger.log(`Successfully sent Aya ${ayaId} to chat ${ctx.chat.id} (${chatName}). Trigger: ${trigger}`);
+        logger(`Successfully sent Aya ${ayaId} to chat ${ctx.chat.id} (${chatName}). Trigger: ${trigger}`);
     } catch (e) {
-        logger.log(`Error in successSend for chat ${ctx.chat.id}:`, e);
+        logger(`Error in successSend for chat ${ctx.chat.id}:`, e);
     }
 }
 
@@ -83,15 +83,15 @@ export async function sendSorry(botTelegram, chatId, reason) {
     }
     try {
         await botTelegram.sendMessage(chatId, msg, { disable_notification: true });
-        logger.log(`Sorry message sent to ${chatId} due to ${reason}.`);
+        logger(`Sorry message sent to ${chatId} due to ${reason}.`);
     } catch (e) {
-        logger.log(`Failed to send sorry message to ${chatId}:`, e);
+        logger(`Failed to send sorry message to ${chatId}:`, e);
     }
 }
 
 export function aMenuButtons(menuState, ayaId, reciter, botUsername, ayaId2suraAyaFn) {
     if (!botUsername) {
-        logger.log('aMenuButtons: botUsername is not set. Using default.', new Error('botUsername missing'));
+        logger('aMenuButtons: botUsername is not set. Using default.', new Error('botUsername missing'));
         botUsername = 'DailyAyaBot';
     }
 
@@ -142,7 +142,7 @@ export async function sendUnrecognizedMessage(ctx, reason, botTelegram) {
     const chatId = ctx.chat.id;
     const isUserAdmin = await adminChecker(ctx, botTelegram);
     if (!isUserAdmin) {
-        logger.log(`Ignored unrecognized message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`);
+        logger(`Ignored unrecognized message from non-admin user ${ctx.from.id} in chat ${ctx.chat.id}.`);
         return;
     }
 
@@ -173,9 +173,9 @@ export async function sendUnrecognizedMessage(ctx, reason, botTelegram) {
                 ],
             },
         });
-        logger.log('Sent reason of unrecognized request to chat ' + chatId);
+        logger('Sent reason of unrecognized request to chat ' + chatId);
     } catch (e) {
-        logger.log('Failed to send reason of unrecognized request to chat ' + chatId, e);
+        logger('Failed to send reason of unrecognized request to chat ' + chatId, e);
     }
 }
 
@@ -185,18 +185,18 @@ export async function helperAdminProtectedAction(ctx, botTelegram, actionFn, ale
         if (alertIfNotAdmin)
             await ctx
                 .answerCbQuery(NON_ADMINS_ALERT, { show_alert: true })
-                .catch((e) => logger.log('Error answering CBQ for non-admin:', e));
-        else await ctx.answerCbQuery().catch((e) => logger.log('Error answering CBQ (silent) for non-admin:', e));
+                .catch((e) => logger('Error answering CBQ for non-admin:', e));
+        else await ctx.answerCbQuery().catch((e) => logger('Error answering CBQ (silent) for non-admin:', e));
         return;
     }
     try {
         await actionFn(ctx);
-        await ctx.answerCbQuery().catch((e) => logger.log('Error answering CBQ after admin action:', e));
+        await ctx.answerCbQuery().catch((e) => logger('Error answering CBQ after admin action:', e));
     } catch (error) {
-        logger.log('Error in helperAdminProtectedAction executing actionFn:', error);
+        logger('Error in helperAdminProtectedAction executing actionFn:', error);
         await ctx
             .answerCbQuery('An error occurred.', { show_alert: true })
-            .catch((e) => logger.log('Error answering CBQ after actionFn error:', e));
+            .catch((e) => logger('Error answering CBQ after actionFn error:', e));
     }
 }
 
@@ -218,12 +218,12 @@ export async function helperAdminConditionalAction(
             await adminFn(); // Call without arguments
             await ctx
                 .answerCbQuery()
-                .catch((e) => logger.log('Error answering CBQ after admin fn in conditional:', e.message));
+                .catch((e) => logger('Error answering CBQ after admin fn in conditional:', e.message));
         } catch (error) {
-            logger.log('Error in helperAdminConditionalAction executing adminFn:', error);
+            logger('Error in helperAdminConditionalAction executing adminFn:', error);
             await ctx
                 .answerCbQuery('An error occurred.', { show_alert: true })
-                .catch((e) => logger.log('Error answering CBQ after adminFn error in conditional:', e.message));
+                .catch((e) => logger('Error answering CBQ after adminFn error in conditional:', e.message));
         }
     } else {
         // Pass the original `ctx` to nonAdminCb.
@@ -231,11 +231,11 @@ export async function helperAdminConditionalAction(
         if (urlToOpen) {
             await ctx
                 .answerCbQuery(nonAdminAlert ? NON_ADMINS_ALERT : '', { url: urlToOpen })
-                .catch((e) => logger.log('Error answering CBQ with URL for non-admin:', e.message));
+                .catch((e) => logger('Error answering CBQ with URL for non-admin:', e.message));
         } else {
             await ctx
                 .answerCbQuery(nonAdminAlert ? NON_ADMINS_ALERT : '', { show_alert: nonAdminAlert })
-                .catch((e) => logger.log('Error answering CBQ for non-admin (no URL):', e.message));
+                .catch((e) => logger('Error answering CBQ for non-admin (no URL):', e.message));
         }
     }
 }

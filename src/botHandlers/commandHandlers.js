@@ -1,5 +1,5 @@
 // src/botHandlers/commandHandlers.js
-import logger from '../logger.js';
+import { logger } from '../logger.js';
 import { getDB, lastAyaTime as lastAyaTimeDbFn } from '../database.js';
 // Correctly import `successSend` and alias it to `helperSuccessSend`
 import { successSend as helperSuccessSend, instructions as helperInstructions } from '../botHelpers.js';
@@ -22,13 +22,13 @@ async function summaryStats(botTelegram) {
         const totalBlockedChats = await db.collection('chats').countDocuments({ blocked: true });
 
         const totalChatsMsg = `Total Active: ${privateActiveChats + otherActiveChats} | Blocked: ${totalBlockedChats}\nPrivate Active: ${privateActiveChats} | Others: ${otherActiveChats}`;
-        logger.log(totalChatsMsg);
+        logger(totalChatsMsg);
 
         if (config.devChatId) {
             await botTelegram.sendMessage(config.devChatId, totalChatsMsg);
         }
     } catch (e) {
-        logger.log('Error while getting total chats for summaryStats:', e);
+        logger('Error while getting total chats for summaryStats:', e);
     }
 }
 
@@ -57,7 +57,7 @@ For available commands: /commands`;
         await helperSuccessSend(sentMsgCtx, 0, ctx.from?.language_code || '', 'request', lastAyaTimeDbFn);
         if (ctx) await summaryStats(botTelegram);
     } catch (e) {
-        logger.log(`Error while sending start message to chat ${chatId}:`, e);
+        logger(`Error while sending start message to chat ${chatId}:`, e);
     }
 }
 
@@ -76,7 +76,7 @@ For available commands: /commands`;
 export async function handleStartCommand(ctx, { telegram, /* options, */ handleTextFn }) {
     // options removed
     if (ctx.startPayload && ctx.startPayload.length) {
-        logger.log(`/start with payload: ${ctx.startPayload} from chat ${ctx.chat.id}`);
+        logger(`/start with payload: ${ctx.startPayload} from chat ${ctx.chat.id}`);
         return handleTextFn(ctx);
     }
     await startCommandLogic(ctx, telegram);
@@ -123,7 +123,7 @@ export async function handleSupportCommand(ctx, Markup) {
                 [Markup.button.url('Support Us 🌱 دعم استمرارنا', 'https://www.paypal.me/sherbeeny/10')],
             ])
         )
-        .catch((e) => logger.log('Error sending /support message:', e));
+        .catch((e) => logger('Error sending /support message:', e));
 }
 
 /**
@@ -137,7 +137,7 @@ export async function handleRecitersCommand(ctx, recitersNavPageFn) {
     const msg = `من هو قارئك المفضل؟\n\nWho is your favorite Reciter?`;
     await ctx
         .reply(msg, { reply_markup: { inline_keyboard: recitersNavPageFn(1) } })
-        .catch((e) => logger.log('Error sending /reciters message:', e));
+        .catch((e) => logger('Error sending /reciters message:', e));
 }
 
 /**
@@ -147,7 +147,7 @@ export async function handleRecitersCommand(ctx, recitersNavPageFn) {
  * @param {import('telegraf').Context} ctx - The Telegraf context object.
  */
 export async function handleChannelCommand(ctx) {
-    await ctx.reply('https://t.me/DailyAyaGlobal').catch((e) => logger.log('Error sending /channel message:', e));
+    await ctx.reply('https://t.me/DailyAyaGlobal').catch((e) => logger('Error sending /channel message:', e));
 }
 
 /**
@@ -167,7 +167,7 @@ export async function handleKhatmaCommand(ctx, Markup) {
         }
         quran30btns.push(row);
     }
-    await ctx.reply(msg, Markup.inlineKeyboard(quran30btns)).catch((e) => logger.log('Error sending /khatma message:', e));
+    await ctx.reply(msg, Markup.inlineKeyboard(quran30btns)).catch((e) => logger('Error sending /khatma message:', e));
 }
 
 /**
@@ -184,9 +184,9 @@ export async function handleCommandsCommand(ctx, botTelegram) {
         if (!msg) msg = 'No commands found or an error occurred.';
         await ctx.reply(msg);
     } catch (e) {
-        logger.log('Error fetching/sending commands:', e);
+        logger('Error fetching/sending commands:', e);
         await ctx
             .reply("Sorry, couldn't fetch commands at the moment.")
-            .catch((eCb) => logger.log('Error replying to /commands after fetch error:', eCb));
+            .catch((eCb) => logger('Error replying to /commands after fetch error:', eCb));
     }
 }

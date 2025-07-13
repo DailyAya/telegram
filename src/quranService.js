@@ -1,6 +1,6 @@
 import axios from 'axios';
 import rasmifize from 'rasmify.js';
-import logger from './logger.js';
+import { logger } from './logger.js';
 import config from './config.js';
 import fs from 'fs';
 
@@ -162,14 +162,14 @@ function toArabicNumerals(numberString) {
  */
 export function prepareAya(ayaId, botUsername) {
     if (!botUsername) {
-        logger.log('prepareAya: botUsername is required for generating links.', new Error('botUsername missing'));
+        logger('prepareAya: botUsername is required for generating links.', new Error('botUsername missing'));
         botUsername = 'DailyAyaBot'; // Defaulting as a fallback
     }
 
     const { sura: suraNum, aya: ayaNum } = ayaId2suraAya(ayaId);
 
     if (suraNum === 0 || ayaNum === 0) {
-        logger.log(`prepareAya: Could not find Sura/Aya for ayaId ${ayaId}`);
+        logger(`prepareAya: Could not find Sura/Aya for ayaId ${ayaId}`);
         return { arText: 'Error: Aya not found.', enText: 'Error: Aya not found.' };
     }
 
@@ -181,7 +181,7 @@ export function prepareAya(ayaId, botUsername) {
     const enSuraNameTranslation = enQuran[suraNum - 1]?.englishNameTranslation;
 
     if (!arAya || !enTranslatedAya || !arSuraName || !enSuraName || !enSuraNameTranslation) {
-        logger.log(`prepareAya: Missing data for ayaId ${ayaId}, Sura ${suraNum}, Aya ${ayaNum}`);
+        logger(`prepareAya: Missing data for ayaId ${ayaId}, Sura ${suraNum}, Aya ${ayaNum}`);
         return { arText: 'Error: Aya data incomplete.', enText: 'Error: Aya data incomplete.' };
     }
 
@@ -211,7 +211,7 @@ export function isValidReciter(reciterIdentifier) {
  */
 export function getRandomReciterIdentifier() {
     if (!arReciters || arReciters.length === 0) {
-        logger.log('getRandomReciterIdentifier: No reciters available.', new Error('arReciters empty'));
+        logger('getRandomReciterIdentifier: No reciters available.', new Error('arReciters empty'));
         return null;
     }
     const randomIndex = Math.floor(Math.random() * arReciters.length);
@@ -240,10 +240,10 @@ export function nextAya(ayaId) {
 export async function audioUrlCheck(url) {
     try {
         const response = await currentApiClient.head(url, { timeout: 5000 }); // Use specific timeout for HEAD
-        logger.log(`audioUrlCheck: HEAD request to ${url} status: ${response.status}`);
+        logger(`audioUrlCheck: HEAD request to ${url} status: ${response.status}`);
         return response.status >= 200 && response.status < 300;
     } catch (error) {
-        logger.log(`audioUrlCheck: Failed HEAD request to ${url}`, error.message);
+        logger(`audioUrlCheck: Failed HEAD request to ${url}`, error.message);
         return false;
     }
 }
@@ -354,7 +354,7 @@ export async function getRecitation(ayaId, reciterIdentifier) {
  */
 export async function checkSource(botTelegramSendMsgFunc) {
     if (typeof botTelegramSendMsgFunc !== 'function') {
-        logger.log(
+        logger(
             'checkSource: botTelegramSendMsgFunc is not a function. Cannot send update messages.',
             new Error('Invalid argument')
         );
@@ -363,7 +363,7 @@ export async function checkSource(botTelegramSendMsgFunc) {
 
     const devChatId = config.devChatId;
     if (!devChatId) {
-        logger.log('checkSource: devChatId is not configured. Cannot send update messages.');
+        logger('checkSource: devChatId is not configured. Cannot send update messages.');
         return;
     }
 
@@ -396,17 +396,17 @@ export async function checkSource(botTelegramSendMsgFunc) {
 
             if (JSON.stringify(remoteData) !== JSON.stringify(source.localData)) {
                 const message = `Remote ${source.name} has changed. Please update the cached JSON file.`;
-                logger.log(message);
+                logger(message);
                 botTelegramSendMsgFunc(devChatId, message).catch((e) =>
-                    logger.log(`checkSource: Error sending Telegram message for ${source.name}`, e)
+                    logger(`checkSource: Error sending Telegram message for ${source.name}`, e)
                 );
             } else {
-                logger.log(
+                logger(
                     `Remote ${source.name} is the same as the cached JSON file. Checked in ${((Date.now() - downloadStart) / 1000).toFixed(2)} seconds.`
                 );
             }
         } catch (error) {
-            logger.log(`Error while checking ${source.name} cached vs remote:`, error.message);
+            logger(`Error while checking ${source.name} cached vs remote:`, error.message);
         }
     }
 }

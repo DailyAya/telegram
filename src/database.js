@@ -1,6 +1,6 @@
 import { MongoClient, ServerApiVersion } from 'mongodb';
 import config from './config.js';
-import logger from './logger.js';
+import { logger, bootstrapLogger } from './logger.js';
 
 /**
  * @module database
@@ -23,7 +23,7 @@ const CHATS_COLLECTION = 'chats';
  */
 export async function connectDB() {
     if (dbInstance) {
-        logger.log('Database already connected.');
+        bootstrapLogger('Database already connected.');
         return dbInstance;
     }
     try {
@@ -36,11 +36,11 @@ export async function connectDB() {
         });
         await client.connect();
         dbInstance = client.db(DB_NAME);
-        logger.log('MongoDB connected successfully!');
+        bootstrapLogger('MongoDB connected successfully!');
         // The original code called timerSend() here. That will be moved to app.js.
         return dbInstance;
     } catch (e) {
-        logger.log('MongoDB connection ERROR:', e);
+        bootstrapLogger('MongoDB connection ERROR:', e);
         // Consider if process.exit(1) is desired for critical DB connection failure on startup
         throw e; // Re-throw to allow app.js (or calling module) to handle startup failure
     }
@@ -49,7 +49,7 @@ export async function connectDB() {
 export function getDB() {
     if (!dbInstance) {
         const err = new Error('Database not connected. Ensure connectDB() is called and awaited on startup.');
-        logger.log('Database not connected yet. Call connectDB first.', err);
+        logger('Database not connected yet. Call connectDB first.', err);
         throw err;
     }
     return dbInstance;
@@ -96,17 +96,17 @@ export async function lastAyaTime(chatId, status, chatName, chatType, lang, trig
             [{ $set: setObj }], // Using aggregation pipeline for $set to allow $literal and $cond
             { upsert: true }
         );
-        logger.log(`Recorded Last Aya Time for chat ${chatId} as ${setObj.blocked ? 'blocked.' : 'successful.'}`);
+        logger(`Recorded Last Aya Time for chat ${chatId} as ${setObj.blocked ? 'blocked.' : 'successful.'}`);
         return { success: true };
     } catch (e) {
-        logger.log('Failed to record Last Aya Time for chat ' + chatId, e);
+        logger('Failed to record Last Aya Time for chat ' + chatId, e);
         return { success: false, error: e };
     }
 }
 
 export async function setFavReciter(chatId, reciterIdentifier) {
     const db = getDB();
-    logger.log(`Database: Chat ${chatId} fav reciter request: ${reciterIdentifier}`); // Validation happens upstream
+    logger(`Database: Chat ${chatId} fav reciter request: ${reciterIdentifier}`); // Validation happens upstream
 
     const setObj = { favReciter: reciterIdentifier };
 
@@ -116,22 +116,22 @@ export async function setFavReciter(chatId, reciterIdentifier) {
             [{ $set: setObj }], // Using aggregation pipeline for $set
             { upsert: true }
         );
-        logger.log(`Database: Favorite reciter "${reciterIdentifier}" has been set for chat ${chatId}.`);
+        logger(`Database: Favorite reciter "${reciterIdentifier}" has been set for chat ${chatId}.`);
         // Return success and the reciter that was set.
         // The calling function will handle sending Telegram messages.
         return { success: true, reciter: reciterIdentifier };
     } catch (e) {
-        logger.log(`Database: Error while setting favorite reciter "${reciterIdentifier}" for chat ${chatId}:`, e);
+        logger(`Database: Error while setting favorite reciter "${reciterIdentifier}" for chat ${chatId}:`, e);
         return { success: false, error: e, reciter: reciterIdentifier };
     }
 }
 
 export async function getFavReciter(chatId) {
     const db = getDB();
-    logger.log(`Database: Getting fav reciter for Chat ${chatId}`);
+    logger(`Database: Getting fav reciter for Chat ${chatId}`);
 
     if (!chatId) {
-        logger.log('Database: getFavReciter called without chatId.');
+        logger('Database: getFavReciter called without chatId.');
         return { success: false, error: new Error('No chatId provided'), data: null };
     }
 
@@ -139,10 +139,10 @@ export async function getFavReciter(chatId) {
         const result = await db.collection(CHATS_COLLECTION).findOne({ chatId: chatId });
         // Default to "surprise" if favReciter is not found or not set in the document
         const favReciter = result?.favReciter ?? 'surprise';
-        logger.log(`Database: Found favReciter "${favReciter}" for chat ${chatId}.`);
+        logger(`Database: Found favReciter "${favReciter}" for chat ${chatId}.`);
         return { success: true, data: favReciter };
     } catch (e) {
-        logger.log(`Database: Error while getting favReciter for chat ${chatId}:`, e);
+        logger(`Database: Error while getting favReciter for chat ${chatId}:`, e);
         return { success: false, error: e, data: null };
     }
 }

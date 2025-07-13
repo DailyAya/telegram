@@ -1,6 +1,6 @@
 // src/botHandlers/actionHandlers.js
 // import { Markup } from 'telegraf'; // Removed unused import
-import logger from '../logger.js';
+import { logger } from '../logger.js';
 import config from '../config.js'; // Import config
 // ayaId2suraAya, nextAya are imported by functions that use these handlers (e.g. in telegramBot.js) and passed as Fn dependencies
 // import { getQuranData, ayaId2suraAya, nextAya } from '../quranService.js'; // Not needed directly here
@@ -8,7 +8,7 @@ import config from '../config.js'; // Import config
 
 export function initializeActionHandlers(/*dependencies*/) {
     // Removed unused parameter
-    logger.log('Action handlers initialized with dependencies (or rather, this function is a placeholder).');
+    logger('Action handlers initialized with dependencies (or rather, this function is a placeholder).');
 }
 
 /**
@@ -24,21 +24,21 @@ export async function handleGroupKhatmaAction(ctx, { khatmaUpdateFn }) {
     try {
         callbackData = JSON.parse(ctx.update.callback_query.data);
     } catch (parseError) {
-        logger.log('groupkhatma action: Failed to parse callback_data', parseError);
+        logger('groupkhatma action: Failed to parse callback_data', parseError);
         ctx.answerCbQuery('Error processing your request.').catch((e) =>
-            logger.log('groupkhatma action: CbQ error on parse fail', e)
+            logger('groupkhatma action: CbQ error on parse fail', e)
         );
         return;
     }
 
     const juz = callbackData.groupkhatma;
     if (typeof juz !== 'number' || juz < 1 || juz > 30) {
-        logger.log(
+        logger(
             'groupkhatma action: Invalid Juz number in callback.',
             new Error(`Data: ${JSON.stringify(callbackData)}`)
         );
         ctx.answerCbQuery('Error: Invalid Juz number.').catch((e) =>
-            logger.log('groupkhatma action: CbQ error on invalid Juz', e)
+            logger('groupkhatma action: CbQ error on invalid Juz', e)
         );
         return;
     }
@@ -56,7 +56,7 @@ export async function handleGroupKhatmaAction(ctx, { khatmaUpdateFn }) {
             .answerCbQuery(`هذا الجزء هو اختيارك الحالي بالفعل ⚠️\n\n⚠️ This Juz is already your current selection.`, {
                 show_alert: true,
             })
-            .catch((e) => logger.log('Error CBQ khatma no change:', e));
+            .catch((e) => logger('Error CBQ khatma no change:', e));
     }
 
     try {
@@ -69,19 +69,19 @@ export async function handleGroupKhatmaAction(ctx, { khatmaUpdateFn }) {
                 `<a href="tg://user?id=${ctx.from.id}">${ctx.from.first_name || `User${ctx.from.id}`}</a> ➔ ${juz} ${juz === 30 ? '🏆' : '💪'}`,
                 { disable_notification: true, reply_to_message_id: ctx.update.callback_query.message.message_id }
             )
-            .catch((e) => logger.log('Error replying to Khatma update:', e));
+            .catch((e) => logger('Error replying to Khatma update:', e));
         await ctx.answerCbQuery(
             `تم التحديث ✔️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n✔️ Updated!\n🤲 May Allah accept from us and you.`,
             { show_alert: true }
         );
     } catch (e) {
-        logger.log(`Error while updating khatma message or replying:`, e);
+        logger(`Error while updating khatma message or replying:`, e);
         await ctx
             .answerCbQuery(
                 `تم الإرسال ✔️\nالملخص قد يكون ممتلئ ⚠️\nنسأل الله أن يتقبل منا ومنكم 🤲\n\n✔️ Sent!\n⚠️ Summary might be full.\n🤲 May Allah accept from us and you.`,
                 { show_alert: true }
             )
-            .catch((eCb) => logger.log('Error CBQ khatma update error:', eCb));
+            .catch((eCb) => logger('Error CBQ khatma update error:', eCb));
     }
 }
 
@@ -101,39 +101,39 @@ export async function handleRecitersNavPageAction(ctx, { botTelegram, recitersNa
         try {
             callbackData = JSON.parse(adminCtx.update.callback_query.data);
         } catch (e) {
-            logger.log('recitersNavPage (action): Failed to parse callback_data', e);
+            logger('recitersNavPage (action): Failed to parse callback_data', e);
             adminCtx
                 .answerCbQuery('Error processing request.')
-                .catch((eAns) => logger.log('recitersNavPage (action): Error answering CBQ on parse fail', eAns));
+                .catch((eAns) => logger('recitersNavPage (action): Error answering CBQ on parse fail', eAns));
             return;
         }
 
         const requestedRecitersNavPage = callbackData.recitersNavPage;
         if (typeof requestedRecitersNavPage !== 'number') {
-            logger.log(
+            logger(
                 'recitersNavPage (action): requestedRecitersNavPage is not a number.',
                 new Error(`Callback data: ${JSON.stringify(callbackData)}`)
             );
             adminCtx
                 .answerCbQuery('Error: Invalid page number.')
-                .catch((eAns) => logger.log('recitersNavPage (action): Error answering CBQ on invalid page type', eAns));
+                .catch((eAns) => logger('recitersNavPage (action): Error answering CBQ on invalid page type', eAns));
             return;
         }
 
-        logger.log(`recitersNavPage (action): Navigating to page ${requestedRecitersNavPage}`);
+        logger(`recitersNavPage (action): Navigating to page ${requestedRecitersNavPage}`);
         try {
             const newKeyboard = recitersNavPageFn(requestedRecitersNavPage);
             await adminCtx.editMessageReplyMarkup({ inline_keyboard: newKeyboard });
             adminCtx
                 .answerCbQuery()
                 .catch((eAns) =>
-                    logger.log('recitersNavPage (action): Error answering CBQ post-edit (non-critical)', eAns)
+                    logger('recitersNavPage (action): Error answering CBQ post-edit (non-critical)', eAns)
                 );
         } catch (e) {
-            logger.log('recitersNavPage (action): Error editing message reply markup', e);
+            logger('recitersNavPage (action): Error editing message reply markup', e);
             adminCtx
                 .answerCbQuery('Error updating list.')
-                .catch((eAns) => logger.log('recitersNavPage (action): Error answering CBQ on edit error', eAns));
+                .catch((eAns) => logger('recitersNavPage (action): Error answering CBQ on edit error', eAns));
         }
     });
 }
@@ -188,7 +188,7 @@ export async function handleCurrAyaAction(
         ctx,
         botTelegram,
         async (adminCtx) => {
-            logger.log(`Next Aya after ${callbackData.currAya} by ${callbackData.r} for chat ${adminCtx.chat.id}`);
+            logger(`Next Aya after ${callbackData.currAya} by ${callbackData.r} for chat ${adminCtx.chat.id}`);
             await sendAyaFn(
                 adminCtx.chat.id,
                 nextAyaFn(callbackData.currAya),
@@ -238,7 +238,7 @@ export async function handleAMenuAction(
         try {
             await adminCtx.editMessageReplyMarkup(buttons);
         } catch (e) {
-            logger.log(`Warning: Error toggling aMenu (MESSAGE_ID_INVALID or other non-critical): `, e);
+            logger(`Warning: Error toggling aMenu (MESSAGE_ID_INVALID or other non-critical): `, e);
         }
     });
 }
@@ -295,15 +295,15 @@ export async function handleReciteAction(
         // Takes no arguments, relies on closure
         if (!chatId) {
             // Uses chatId from handleReciteAction's parameters
-            logger.log('Button reciter: CHAT_ID IS MISSING (in handleReciteAction adminFn). Cannot send recitation.');
+            logger('Button reciter: CHAT_ID IS MISSING (in handleReciteAction adminFn). Cannot send recitation.');
             if (rawCtx && typeof rawCtx.answerCbQuery === 'function') {
                 await rawCtx
                     .answerCbQuery('Error: Chat ID missing.', { show_alert: true })
-                    .catch((e) => logger.log('Error answering CBQ for missing chatId in adminFn:', e));
+                    .catch((e) => logger('Error answering CBQ for missing chatId in adminFn:', e));
             }
             return;
         }
-        logger.log(`Button reciter: ${callbackQueryData.r} for Aya ${callbackQueryData.recite} in chat ${chatId}`);
+        logger(`Button reciter: ${callbackQueryData.r} for Aya ${callbackQueryData.recite} in chat ${chatId}`);
 
         // adminFn now uses the pre-constructed fullSenderDeps from its closure
         await dependencies.sendAyaRecitationFn(
@@ -377,6 +377,6 @@ export async function handleSetReciterAction(
 
         await adminCtx
             .reply(replyMsg, TelegrafMarkup.inlineKeyboard(inlineKeyboard))
-            .catch((e) => logger.log('Error replying to setReciter action:', e));
+            .catch((e) => logger('Error replying to setReciter action:', e));
     });
 }

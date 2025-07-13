@@ -1,7 +1,7 @@
 import { Telegraf } from 'telegraf';
 import https from 'https';
 import config from './config.js';
-import logger from './logger.js';
+import { logger, setBotInstance as setLoggerBotInstance, bootstrapLogger } from './logger.js'; // Renamed setBotInstance to avoid conflict
 
 let bot = null;
 let botUsernameReadyPromise = null;
@@ -18,7 +18,7 @@ let isInitialized = false;
  */
 export function initializeBot() {
     if (isInitialized && bot && botUsernameReadyPromise) {
-        logger.log('[BOT_MANAGER] initializeBot: Already initialized.');
+        bootstrapLogger('[BOT_MANAGER] initializeBot: Already initialized.');
         return { bot, botUsernameReady: botUsernameReadyPromise };
     }
 
@@ -29,16 +29,16 @@ export function initializeBot() {
     isInitialized = true; // Mark as initialized to prevent re-entry for this attempt path
 
     try {
-        logger.log('[BOT_MANAGER] Initializing Telegraf bot...');
+        bootstrapLogger('[BOT_MANAGER] Initializing Telegraf bot...');
         const agent = new https.Agent({ timeout: 60000 });
-        logger.log(
+        bootstrapLogger(
             `[BOT_MANAGER] Telegraf HTTPS agent configured. Token: ${config.telegramToken ? config.telegramToken.substring(0, 6) + '...' : 'NOT_SET'}`
         );
 
         bot = new Telegraf(config.telegramToken, { telegram: { agent } });
-        logger.setBotInstance(bot); // Pass the bot instance to the logger (assuming logger handles null bot if necessary)
+        setLoggerBotInstance(bot); // Pass the bot instance to the logger (assuming logger handles null bot if necessary)
 
-        logger.log(
+        bootstrapLogger(
             `[BOT_MANAGER] Attempting bot.telegram.getMe() with token from config: ${config.telegramToken ? config.telegramToken.substring(0, 6) + '...' : 'NOT_SET'}`
         );
         bot.telegram
@@ -46,7 +46,7 @@ export function initializeBot() {
             .then((botInfo) => {
                 if (botInfo && botInfo.username) {
                     bot.options.username = botInfo.username;
-                    logger.log(
+                    bootstrapLogger(
                         `[BOT_MANAGER] bot.telegram.getMe() successful. Bot username set to: ${bot.options.username}`
                     );
                     if (botUsernamePromiseResolve) {
@@ -55,7 +55,7 @@ export function initializeBot() {
                 } else {
                     // Ensure bot.options.username is not set if getMe response is not as expected
                     if (bot && bot.options) bot.options.username = undefined;
-                    logger.log(
+                    bootstrapLogger(
                         '[BOT_MANAGER] bot.telegram.getMe() did not return expected botInfo or username.',
                         botInfo || 'botInfo is null/undefined'
                     );
@@ -66,14 +66,14 @@ export function initializeBot() {
             })
             .catch((err) => {
                 if (bot && bot.options) bot.options.username = undefined;
-                logger.log(`[BOT_MANAGER] CRITICAL - bot.telegram.getMe() failed. Error:`, err);
+                bootstrapLogger(`[BOT_MANAGER] CRITICAL - bot.telegram.getMe() failed. Error:`, err);
                 if (err.response && err.response.description) {
-                    logger.log(
+                    bootstrapLogger(
                         `[BOT_MANAGER] getMe() failure details - Code: ${err.code}, Description: ${err.response.description}, Parameters: ${JSON.stringify(err.response.parameters)}`
                     );
                 }
                 if (err.response && err.response.data) {
-                    logger.log(
+                    bootstrapLogger(
                         `[BOT_MANAGER] getMe() failure - err.response.data: ${JSON.stringify(err.response.data)}`
                     );
                 }
@@ -82,7 +82,7 @@ export function initializeBot() {
                 }
             });
     } catch (instantiationError) {
-        logger.log(`[BOT_MANAGER] CRITICAL: Failed to initialize Telegraf bot instance`, instantiationError);
+        bootstrapLogger(`[BOT_MANAGER] CRITICAL: Failed to initialize Telegraf bot instance`, instantiationError);
         bot = null; // Ensure bot is null if instantiation failed
         if (botUsernamePromiseResolve) {
             botUsernamePromiseResolve(null); // Resolve the promise with null
@@ -90,7 +90,7 @@ export function initializeBot() {
         // isInitialized is true, but bot is null, promise resolves to null.
     }
 
-    logger.log('[BOT_MANAGER] Bot initialization sequence attempt complete.');
+    bootstrapLogger('[BOT_MANAGER] Bot initialization sequence attempt complete.');
     return { bot, botUsernameReady: botUsernameReadyPromise };
 }
 
@@ -101,7 +101,7 @@ export function initializeBot() {
 export function getBotInstance() {
     if (!bot) {
         // Use module-scoped 'bot'
-        logger.log(
+        logger(
             '[BOT_MANAGER] getBotInstance: initializeBot() must be called before getting the bot instance.',
             new Error('Bot not initialized')
         );
@@ -116,7 +116,7 @@ export function getBotInstance() {
  */
 export function getBotUsernameReadyPromise() {
     if (!botUsernameReadyPromise) {
-        logger.log(
+        logger(
             '[BOT_MANAGER] getBotUsernameReadyPromise: initializeBot() must be called first.',
             new Error('Bot not initialized for username promise')
         );

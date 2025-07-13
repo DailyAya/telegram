@@ -1,7 +1,7 @@
 import os from 'os';
 import { Markup } from 'telegraf';
 import config from './config.js';
-import logger from './logger.js';
+import { logger, bootstrapLogger } from './logger.js';
 import { connectDB, getDB } from './database.js';
 import { startExpressServer } from './expressApp.js';
 import { initializeBot } from './botManager.js'; // New import
@@ -12,30 +12,30 @@ import {
 } from './telegramBot.js';
 import { checkConnectivity } from './utils.js';
 
-logger.log(`Number of CPUs: ${os.cpus().length}`);
-logger.log(`Starting DailyAya Telegram Bot - Version ${config.codeVer}`);
+bootstrapLogger(`Number of CPUs: ${os.cpus().length}`);
+bootstrapLogger(`Starting DailyAya Telegram Bot - Version ${config.codeVer}`);
 
 let timerIntervalId = null;
 let globalBotInstance = null; // To store the bot instance for sigHandler
 
 async function runTimerSend() {
     let numberOfChatsProcessed = 0;
-    logger.log('runTimerSend: Cycle started.');
+    bootstrapLogger('runTimerSend: Cycle started.');
     const sendMillisThreshold = (config.timerSendHours - 1) * 60 * 60 * 1000;
     const comparisonTimestamp = Date.now() - sendMillisThreshold;
 
-    logger.log(`runTimerSend: timerSendHours: ${config.timerSendHours}, timerCheckMinutes: ${config.timerCheckMinutes}`);
-    logger.log(`runTimerSend: Calculated sendMillisThreshold: ${sendMillisThreshold}`);
-    logger.log(`runTimerSend: Current Date.now(): ${Date.now()}`);
-    logger.log(
+    logger(`runTimerSend: timerSendHours: ${config.timerSendHours}, timerCheckMinutes: ${config.timerCheckMinutes}`);
+    logger(`runTimerSend: Calculated sendMillisThreshold: ${sendMillisThreshold}`);
+    logger(`runTimerSend: Current Date.now(): ${Date.now()}`);
+    logger(
         `runTimerSend: Querying for chats with lastAyaTime <= ${comparisonTimestamp} (i.e., older than ${new Date(comparisonTimestamp).toISOString()})`
     );
 
     try {
         const db = getDB();
         if (!db) {
-            logger.log('runTimerSend: Database not available, skipping cycle.');
-            logger.log(
+            logger('runTimerSend: Database not available, skipping cycle.');
+            bootstrapLogger(
                 `runTimerSend: Cycle finished (DB not available). Processed ${numberOfChatsProcessed} chats.`
             );
             return;
@@ -50,12 +50,12 @@ async function runTimerSend() {
             .toArray();
 
         numberOfChatsProcessed = chats.length;
-        logger.log(`runTimerSend: Found ${numberOfChatsProcessed} eligible chats for this cycle.`);
+        logger(`runTimerSend: Found ${numberOfChatsProcessed} eligible chats for this cycle.`);
 
         if (chats.length > 0) {
             for (let i = 0; i < Math.min(chats.length, 5); i++) {
                 const chat = chats[i];
-                logger.log(
+                logger(
                     `runTimerSend: Eligible chat[${i}]: chatId: ${chat.chatId}, lastAyaTime: ${chat.lastAyaTime} (${new Date(chat.lastAyaTime).toISOString()}), favReciter: ${chat.favReciter}`
                 );
             }
@@ -66,28 +66,28 @@ async function runTimerSend() {
             const delay = i * (config.debugging ? 1000 : 50);
             setTimeout(async () => {
                 try {
-                    logger.log(
+                    logger(
                         `runTimerSend: Attempting to send timed Aya to chat ${chat.chatId} (FavReciter: ${chat.favReciter || 'surprise'}, withRecitation: false)`
                     );
                     // sendAya now correctly uses activeBotInstance set by registerHandlers
                     await sendAya(chat.chatId, null, chat.favReciter, null, 'timer', false);
                 } catch (e) {
-                    logger.log(`runTimerSend: Error sending timed Aya to chat ${chat.chatId} individually:`, e);
+                    logger(`runTimerSend: Error sending timed Aya to chat ${chat.chatId} individually:`, e);
                 }
             }, delay);
         }
     } catch (e) {
-        logger.log('runTimerSend: General error during timer cycle:', e);
+        logger('runTimerSend: General error during timer cycle:', e);
     }
-    logger.log(`runTimerSend: Cycle finished. Processed ${numberOfChatsProcessed} chats.`);
+    bootstrapLogger(`runTimerSend: Cycle finished. Processed ${numberOfChatsProcessed} chats.`);
 }
 
 function initializeTimer() {
-    logger.log('Timer: initializeTimer() called.');
+    bootstrapLogger('Timer: initializeTimer() called.');
     if (timerIntervalId) {
         clearInterval(timerIntervalId);
         timerIntervalId = null;
-        logger.log('Timer: Cleared existing timer interval.');
+        bootstrapLogger('Timer: Cleared existing timer interval.');
     }
 
     const timerCheckMillis = config.timerCheckMinutes * 60 * 1000;
@@ -103,22 +103,22 @@ function initializeTimer() {
         timerFirstDelay += config.timerCheckMinutes * 60 * 1000;
     }
 
-    logger.log(
+    bootstrapLogger(
         `Timer: Initializing. timerCheckMinutes: ${config.timerCheckMinutes}, timerCheckMillis: ${timerCheckMillis}, timerFirstDelay: ${timerFirstDelay}ms (${+(timerFirstDelay / 1000 / 60).toFixed(2)} minutes).`
     );
 
     setTimeout(() => {
-        logger.log('Timer: Initial setTimeout for first runTimerSend triggered.');
+        bootstrapLogger('Timer: Initial setTimeout for first runTimerSend triggered.');
         if (getDB() && globalBotInstance) {
             // Ensure DB and Bot are ready for timer
             runTimerSend().catch((e) => {
-                logger.log('Error during initial runTimerSend():', e);
+                bootstrapLogger('Error during initial runTimerSend():', e);
             });
         } else {
-            logger.log('Timer: DB or Bot not ready, skipping initial runTimerSend.');
+            bootstrapLogger('Timer: DB or Bot not ready, skipping initial runTimerSend.');
         }
         timerIntervalId = setInterval(runTimerSend, timerCheckMillis);
-        logger.log('Timer: setInterval for subsequent runTimerSend calls established.');
+        bootstrapLogger('Timer: setInterval for subsequent runTimerSend calls established.');
     }, timerFirstDelay);
 }
 
@@ -137,7 +137,7 @@ async function attemptBotLaunchAndSetup() {
 
     const username = await botUsernameReady; // Wait for getMe to complete
     if (!username) {
-        logger.log(
+        bootstrapLogger(
             'CRITICAL: Bot username could not be retrieved after initialization. Bot cannot launch effectively.'
         );
         // Decide if to throw or let retry logic handle this.
@@ -146,99 +146,99 @@ async function attemptBotLaunchAndSetup() {
         // Given initializeBot is singleton, if username is null, subsequent launch attempts will also fail here.
         throw new Error('Bot username resolution failed. Cannot launch.');
     }
-    logger.log(`Bot username '${username}' retrieved. Proceeding with launch sequence.`);
+    bootstrapLogger(`Bot username '${username}' retrieved. Proceeding with launch sequence.`);
 
     // Perform pre-launch checks (this is the refactored launchBot from telegramBot.js)
     await performBotPreLaunchChecks();
 
-    // Initialize timer before launch, as launch is a blocking call
-    if (getDB()) {
-        logger.log('DB available, initializing timer...');
-        initializeTimer();
-    } else {
-        logger.log('DB not available, skipping timer initialization.');
-    }
-
     while (attempt < maxAttempts) {
         attempt++;
-        logger.log(`Bot launch attempt ${attempt}${maxAttempts === Infinity ? '' : `/${maxAttempts}`}...`);
+        bootstrapLogger(`Bot launch attempt ${attempt}${maxAttempts === Infinity ? '' : `/${maxAttempts}`}...`);
         try {
             // No need to check Telegram API again here, initializeBot already did getMe
 
+            // Initialize timer before launch, as launch is a blocking call
+            if (getDB()) {
+                bootstrapLogger('DB available, initializing timer...');
+                initializeTimer();
+            } else {
+                bootstrapLogger('DB not available, skipping timer initialization.');
+            }
+
             await globalBotInstance.launch(); // Actual Telegraf launch
-            logger.log('Bot launched successfully and polling started.');
+            bootstrapLogger('Bot launched successfully and polling started.');
 
             return; // Success
         } catch (error) {
-            logger.log(`Bot launch attempt ${attempt} failed. Reason: ${error.message}. Full Error:`, error);
+            bootstrapLogger(`Bot launch attempt ${attempt} failed. Reason: ${error.message}. Full Error:`, error);
             if (attempt >= maxAttempts) {
-                logger.log(`Max bot launch retries (${maxAttempts}) reached. Giving up.`);
+                bootstrapLogger(`Max bot launch retries (${maxAttempts}) reached. Giving up.`);
                 return;
             }
             const generalInternetStillOk = await checkConnectivity(config.pingTargetGeneral);
             if (!generalInternetStillOk) {
-                logger.log(
+                bootstrapLogger(
                     'CRITICAL: General internet connectivity lost during bot launch retries. Stopping retries.'
                 );
                 return;
             }
-            logger.log(`Will retry bot launch in ${config.botLaunchRetryDelay / 1000} seconds.`);
+            bootstrapLogger(`Will retry bot launch in ${config.botLaunchRetryDelay / 1000} seconds.`);
             await new Promise((resolve) => setTimeout(resolve, config.botLaunchRetryDelay));
         }
     }
 }
 
 async function sigHandler(signal) {
-    logger.log(
+    bootstrapLogger(
         `Exiting due to ${signal} after ${+(process.uptime() / 3600).toFixed(2)} hours. Memory: ${Math.floor(process.memoryUsage().rss / (1024 * 1024))} MB`
     );
     if (timerIntervalId) {
         clearInterval(timerIntervalId);
-        logger.log('Timer interval cleared.');
+        bootstrapLogger('Timer interval cleared.');
     }
     if (globalBotInstance && typeof globalBotInstance.stop === 'function') {
-        logger.log('Stopping Telegram bot...');
+        bootstrapLogger('Stopping Telegram bot...');
         try {
             await globalBotInstance.stop(signal.toString());
-            logger.log('Telegram bot stopped.');
+            bootstrapLogger('Telegram bot stopped.');
         } catch (e) {
-            logger.log('Error stopping Telegram bot:', e);
+            bootstrapLogger('Error stopping Telegram bot:', e);
         }
     }
-    logger.log('Shutdown sequence complete. Exiting process.');
+    bootstrapLogger('Shutdown sequence complete. Exiting process.');
     process.exit(0);
 }
 
 process.on('SIGTERM', () => sigHandler('SIGTERM'));
 process.on('SIGINT', () => sigHandler('SIGINT'));
 process.on('uncaughtException', (err, origin) => {
-    logger.log(`CRITICAL: Uncaught Exception at: ${origin}`, err);
+    bootstrapLogger(`CRITICAL: Uncaught Exception at: ${origin}`, err);
     sigHandler('uncaughtException').catch(() => process.exit(1));
 });
 process.on('unhandledRejection', (reason, promise) => {
-    logger.log('CRITICAL: Unhandled Rejection at:', promise);
-    logger.log('Reason:', reason);
+    bootstrapLogger('CRITICAL: Unhandled Rejection at:', promise);
+    bootstrapLogger('Reason:', reason);
     sigHandler('unhandledRejection').catch(() => process.exit(1));
 });
 
 export async function startApp() {
     try {
-        logger.log('Application startup sequence initiated...');
+        bootstrapLogger('Application startup sequence initiated...');
         startExpressServer();
-        logger.log('Express server startup initiated.');
+        bootstrapLogger('Express server startup initiated.');
 
         let dbConnected = false;
         let dbAttempt = 0;
         while (!dbConnected) {
             dbAttempt++;
-            logger.log(`Attempting to connect to database (attempt ${dbAttempt})...`);
+            bootstrapLogger(`Attempting to connect to database (attempt ${dbAttempt})...`);
             try {
                 await connectDB();
                 dbConnected = true;
-                logger.log('Database connected successfully.');
+                bootstrapLogger('Database connected successfully.');
             } catch (dbError) {
-                logger.log(`Database connection attempt ${dbAttempt} failed: ${dbError.message}`);
-                logger.log(`Retrying database connection in ${config.botLaunchRetryDelay / 1000} seconds...`);
+                bootstrapLogger(`Database connection attempt ${dbAttempt} failed: ${dbError.message}`);
+                bootstrapLogger(`Retrying database connection in ${config.botLaunchRetryDelay / 1000} seconds...`);
                 await new Promise((resolve) => setTimeout(resolve, config.botLaunchRetryDelay));
             }
         }
@@ -247,27 +247,27 @@ export async function startApp() {
         let internetAttempt = 0;
         while (!internetConnected) {
             internetAttempt++;
-            logger.log(`Checking general internet connectivity (attempt ${internetAttempt})...`);
-            logger.log(`Attempting primary connectivity check: ${config.pingTargetGeneral}`);
+            bootstrapLogger(`Checking general internet connectivity (attempt ${internetAttempt})...`);
+            bootstrapLogger(`Attempting primary connectivity check: ${config.pingTargetGeneral}`);
             if (await checkConnectivity(config.pingTargetGeneral)) {
                 internetConnected = true;
-                logger.log(
+                bootstrapLogger(
                     `General internet connectivity established via primary target: ${config.pingTargetGeneral}`
                 );
             } else {
-                logger.log(
+                bootstrapLogger(
                     `Primary connectivity check failed: ${config.pingTargetGeneral}. Attempting alternative: ${config.pingTargetAlternative}`
                 );
                 if (await checkConnectivity(config.pingTargetAlternative)) {
                     internetConnected = true;
-                    logger.log(
+                    bootstrapLogger(
                         `General internet connectivity established via alternative target: ${config.pingTargetAlternative}`
                     );
                 } else {
-                    logger.log(
+                    bootstrapLogger(
                         `Both primary and alternative general connectivity checks failed (attempt ${internetAttempt}).`
                     );
-                    logger.log(
+                    bootstrapLogger(
                         `Retrying internet connectivity check in ${config.botLaunchRetryDelay / 1000} seconds...`
                     );
                     await new Promise((resolve) => setTimeout(resolve, config.botLaunchRetryDelay));
@@ -277,14 +277,14 @@ export async function startApp() {
 
         // No need for separate Telegram API reachability check here, initializeBot will do getMe.
 
-        logger.log('All critical prerequisites met. Proceeding to bot launch and setup sequence...');
+        bootstrapLogger('All critical prerequisites met. Proceeding to bot launch and setup sequence...');
         await attemptBotLaunchAndSetup(); // This now handles initializeBot, registerHandlers, and bot.launch with retries
 
-        logger.log(
+        bootstrapLogger(
             'Main startup sequence complete. Express server is running. Bot launch process initiated/completed.'
         );
     } catch (error) {
-        logger.log('CRITICAL: Application startup failed in main sequence due to an unexpected error:', error);
+        bootstrapLogger('CRITICAL: Application startup failed in main sequence due to an unexpected error:', error);
         await sigHandler('startupError');
     }
 }

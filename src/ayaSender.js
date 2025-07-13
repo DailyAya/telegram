@@ -1,5 +1,5 @@
 // src/ayaSender.js
-import logger from './logger.js';
+import { logger } from './logger.js';
 import config from './config.js'; // Import config
 
 /**
@@ -42,22 +42,22 @@ export async function sendAyaText(dependencies, chatId, ayaId, reciter, lang, tr
         ayaId2suraAyaFn, // Added for helperAMenuButtonsFn
     } = dependencies;
 
-    logger.log(`Formatting Aya ${ayaId} for chat ${chatId}`);
+    logger(`Formatting Aya ${ayaId} for chat ${chatId}`);
     const currentReciter = reciter || 'None';
 
     if (!botUsername) {
         const msg = 'sendAyaText: botUsername is not available for prepareAya. Using fallback.';
         if (config.debugging) {
-            logger.log(msg, new Error('botUsername missing for prepareAya'));
+            logger(msg, new Error('botUsername missing for prepareAya'));
         } else {
-            logger.log(msg);
+            logger(msg);
         }
         botUsername = 'DailyAyaBot'; // Fallback
     }
     const preparedAya = prepareAyaFn(ayaId, reciter || 'system');
 
     if (preparedAya.arText.startsWith('Error:')) {
-        logger.log(`sendAyaText: Error preparing Aya ${ayaId}: ${preparedAya.arText}`);
+        logger(`sendAyaText: Error preparing Aya ${ayaId}: ${preparedAya.arText}`);
         await helperSendSorryFn(botTelegram, chatId, 'text');
         return null;
     }
@@ -75,9 +75,9 @@ export async function sendAyaText(dependencies, chatId, ayaId, reciter, lang, tr
         await helperSuccessSendFn(sentMessageCtx, ayaId, lang, trigger, lastAyaTimeDbFn);
         return sentMessageCtx;
     } catch (e) {
-        logger.log(`Error in sendAyaText sending message to chat ${chatId} for Aya ${ayaId}:`, e);
+        logger(`Error in sendAyaText sending message to chat ${chatId} for Aya ${ayaId}:`, e);
         if (e.response && e.response.description && e.response.description.includes('upgraded to a supergroup')) {
-            logger.log(`Chat ${chatId} upgraded to supergroup ${e.response.parameters.migrate_to_chat_id}. Retrying.`);
+            logger(`Chat ${chatId} upgraded to supergroup ${e.response.parameters.migrate_to_chat_id}. Retrying.`);
             await lastAyaTimeDbFn(chatId, 'blocked');
             // Recursive call needs to pass dependencies again
             return sendAyaText(dependencies, e.response.parameters.migrate_to_chat_id, ayaId, reciter, lang, trigger);
@@ -127,7 +127,7 @@ export async function sendAyaRecitation(dependencies, chatId, messageId, _fromId
 
     // chatId is now a direct parameter. The following validation ensures it's usable.
     if (!chatId) {
-        logger.log(`sendAyaRecitation: Received null or undefined chatId. Cannot send recitation.`, {
+        logger(`sendAyaRecitation: Received null or undefined chatId. Cannot send recitation.`, {
             ayaId,
             reciterIdentifier,
         });
@@ -143,7 +143,7 @@ export async function sendAyaRecitation(dependencies, chatId, messageId, _fromId
         } else {
             finalReciter = getRandomReciterIdentifierFn();
             if (!finalReciter) {
-                logger.log(
+                logger(
                     `sendAyaRecitation: Could not determine a valid reciter for chat ${chatId}.`,
                     new Error('No reciter available')
                 );
@@ -152,7 +152,7 @@ export async function sendAyaRecitation(dependencies, chatId, messageId, _fromId
             }
         }
     }
-    logger.log(`sendAyaRecitation: Chat ${chatId} using reciter: ${finalReciter} for Aya ${ayaId}`);
+    logger(`sendAyaRecitation: Chat ${chatId} using reciter: ${finalReciter} for Aya ${ayaId}`);
 
     try {
         const recitationUrl = await getRecitationFn(ayaId, finalReciter);
@@ -174,14 +174,14 @@ export async function sendAyaRecitation(dependencies, chatId, messageId, _fromId
             if (sentAudioCtx.message_id === messageId + 1) {
                 await botTelegram
                     .editMessageReplyMarkup(chatId, messageId, undefined, undefined)
-                    .catch((e) => logger.log('Warning: Message not modified (remove markup text):', e));
+                    .catch((e) => logger('Warning: Message not modified (remove markup text):', e));
                 await botTelegram
                     .editMessageReplyMarkup(chatId, sentAudioCtx.message_id, undefined, buttons)
-                    .catch((e) => logger.log('Warning: Message not modified (add markup audio):', e));
+                    .catch((e) => logger('Warning: Message not modified (add markup audio):', e));
             } else {
                 await botTelegram
                     .deleteMessage(chatId, sentAudioCtx.message_id)
-                    .catch((e) => logger.log('Warning: Message ID invalid (delete initial audio):', e));
+                    .catch((e) => logger('Warning: Message ID invalid (delete initial audio):', e));
                 await botTelegram.sendAudio(chatId, recitationUrl, {
                     reply_to_message_id: messageId, // Use messageId here
                     caption: recitationCaption,
@@ -191,15 +191,15 @@ export async function sendAyaRecitation(dependencies, chatId, messageId, _fromId
                 });
                 await botTelegram
                     .editMessageReplyMarkup(chatId, messageId, undefined, undefined) // And here
-                    .catch((e) => logger.log('Warning: Message not modified (remove markup text reply):', e));
+                    .catch((e) => logger('Warning: Message not modified (remove markup text reply):', e));
             }
         } else {
             await botTelegram
                 .editMessageReplyMarkup(chatId, sentAudioCtx.message_id, undefined, buttons)
-                .catch((e) => logger.log('Warning: Message not modified (add markup direct audio):', e));
+                .catch((e) => logger('Warning: Message not modified (add markup direct audio):', e));
         }
     } catch (error) {
-        logger.log(`Error in sendAyaRecitation for aya ${ayaId} by ${finalReciter} to chat ${chatId}:`, error);
+        logger(`Error in sendAyaRecitation for aya ${ayaId} by ${finalReciter} to chat ${chatId}:`, error);
         if (error.response && error.response.description) {
             const errorDesc = error.response.description.toLowerCase();
             if (
