@@ -90,6 +90,12 @@ function initializeTimer() {
         bootstrapLogger('Timer: Cleared existing timer interval.');
     }
 
+    // Run the first timer immediately
+    bootstrapLogger('Timer: Triggering immediate first run of runTimerSend.');
+    runTimerSend().catch((e) => {
+        bootstrapLogger('Error during initial runTimerSend():', e);
+    });
+
     const timerCheckMillis = config.timerCheckMinutes * 60 * 1000;
     const timerNow = new Date();
     const minutesIntoCycle = timerNow.getMinutes() % config.timerCheckMinutes;
@@ -104,19 +110,14 @@ function initializeTimer() {
     }
 
     bootstrapLogger(
-        `Timer: Initializing. timerCheckMinutes: ${config.timerCheckMinutes}, timerCheckMillis: ${timerCheckMillis}, timerFirstDelay: ${timerFirstDelay}ms (${+(timerFirstDelay / 1000 / 60).toFixed(2)} minutes).`
+        `Timer: Scheduling subsequent runs. timerCheckMinutes: ${config.timerCheckMinutes}, timerCheckMillis: ${timerCheckMillis}, nextRunDelay: ${timerFirstDelay}ms (${+(timerFirstDelay / 1000 / 60).toFixed(2)} minutes).`
     );
 
     setTimeout(() => {
-        bootstrapLogger('Timer: Initial setTimeout for first runTimerSend triggered.');
-        if (getDB() && globalBotInstance) {
-            // Ensure DB and Bot are ready for timer
-            runTimerSend().catch((e) => {
-                bootstrapLogger('Error during initial runTimerSend():', e);
-            });
-        } else {
-            bootstrapLogger('Timer: DB or Bot not ready, skipping initial runTimerSend.');
-        }
+        bootstrapLogger('Timer: First scheduled runTimerSend triggered.');
+        runTimerSend().catch((e) => {
+            bootstrapLogger('Error during scheduled runTimerSend():', e);
+        });
         timerIntervalId = setInterval(runTimerSend, timerCheckMillis);
         bootstrapLogger('Timer: setInterval for subsequent runTimerSend calls established.');
     }, timerFirstDelay);

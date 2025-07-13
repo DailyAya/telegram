@@ -15,3 +15,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Refactored logging to provide more detailed information.
 - Cleaned up `AGENT_PROGRESS.md` and `CHANGELOG.md`.
+- Corrected the timer logic to run immediately on startup and then on the hour.
