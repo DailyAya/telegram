@@ -1,5 +1,5 @@
 // [TELEGRAMBOT_SUT] Importing dependencies... (Original log)
-import { Telegraf, Markup } from 'telegraf';
+import { Markup } from 'telegraf';
 // [TELEGRAMBOT_SUT] Telegraf (Markup) imported. (Original log)
 import config from './config.js';
 import { logger, bootstrapLogger } from './logger.js';

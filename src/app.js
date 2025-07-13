@@ -1,5 +1,5 @@
 import os from 'os';
-import { Telegraf, Markup } from 'telegraf'; // Import Markup here if needed by registerHandlers
+import { Markup } from 'telegraf';
 import config from './config.js';
 import { logger, bootstrapLogger } from './logger.js';
 import { connectDB, getDB } from './database.js';
@@ -10,7 +10,7 @@ import {
     performBotPreLaunchChecks,
     sendAya, // Direct import of sendAya
 } from './telegramBot.js';
-import { checkConnectivity, maskTokenInUrl } from './utils.js';
+import { checkConnectivity } from './utils.js';
 
 bootstrapLogger(`Number of CPUs: ${os.cpus().length}`);
 bootstrapLogger(`Starting DailyAya Telegram Bot - Version ${config.codeVer}`);
@@ -157,19 +157,17 @@ async function attemptBotLaunchAndSetup() {
         try {
             // No need to check Telegram API again here, initializeBot already did getMe
 
+            // Initialize timer before launch, as launch is a blocking call
+            if (getDB()) {
+                bootstrapLogger('DB available, initializing timer...');
+                initializeTimer();
+            } else {
+                bootstrapLogger('DB not available, skipping timer initialization.');
+            }
+
             await globalBotInstance.launch(); // Actual Telegraf launch
             bootstrapLogger('Bot launched successfully and polling started.');
 
-            // Initialize timer only after successful launch
-            if (getDB()) {
-                bootstrapLogger('Calling initial runTimerSend() after successful bot launch.');
-                await runTimerSend().catch((e) => {
-                    bootstrapLogger('Error during initial runTimerSend():', e);
-                });
-            } else {
-                bootstrapLogger('DB not available after bot launch, cannot run initial timer send.');
-            }
-            initializeTimer();
             return; // Success
         } catch (error) {
             bootstrapLogger(`Bot launch attempt ${attempt} failed. Reason: ${error.message}. Full Error:`, error);
@@ -223,7 +221,7 @@ process.on('unhandledRejection', (reason, promise) => {
     sigHandler('unhandledRejection').catch(() => process.exit(1));
 });
 
-async function startApp() {
+export async function startApp() {
     try {
         bootstrapLogger('Application startup sequence initiated...');
         startExpressServer();
