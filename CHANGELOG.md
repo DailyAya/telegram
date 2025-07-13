@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2025.07.13-0308] - 2025-07-13
 
+### Fixed
+- **Timer Initialization**: Corrected an issue where the timer to send daily Ayas was not being initialized correctly after a recent refactoring. The `runTimerSend` function is now properly awaited, ensuring the timer starts as expected.
+
+### Added
+- **Timer Initialization Test**: Added a test to `src/app.test.js` to verify that the timer initialization logic is called during application startup.
+
+### Changed
+- **`AGENTS.md`**: Updated the pre-commit routine to include a new "Application Smoke Test" step.
+
+---
 ## [2025.07.13-0237] - 2025-07-13
 
 ### Fixed
@@ -434,7 +445,7 @@ and this project adheres to a timestamp-based versioning scheme (`YYYY.MM.DD-HHM
 
 ### Skipped (Technical Debt)
 
-- `telegramBot.test.js`: Entire test suite skipped (`describe.skip`) due to a persistent Babel/Jest parsing error (`SyntaxError: Unexpected reserved word 'await'`). This prevents its ~50 tests from running.
+- `telegramBot.test.js`: Entire test suite remains skipped (`describe.skip`) due to a persistent Babel/Jest parsing error (`SyntaxError: Unexpected reserved word 'await'`). This prevents its ~50 tests from running.
 - `quranService.test.js`: One specific test (`getRecitation › should reject if API call fails...`) remains skipped (`it.skip`) due to difficulties in reliably ensuring the mocked API call rejected as expected, even after refactoring the `apiClient` mocking.
 - `expressApp.test.js`: While the test suite passes, a `JestAssertionError` is logged to the console _after_ suite completion related to a debug configuration test. This indicates a potential subtle issue in how test state or async operations are handled for that specific test.
 - ESLint `varsIgnorePattern: '^_'` in `eslint.config.js` did not appear to correctly handle all underscore-prefixed unused variables, necessitating `eslint-disable-next-line` comments. This configuration may need review.

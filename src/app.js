@@ -163,7 +163,7 @@ async function attemptBotLaunchAndSetup() {
             // Initialize timer only after successful launch
             if (getDB()) {
                 bootstrapLogger('Calling initial runTimerSend() after successful bot launch.');
-                runTimerSend().catch((e) => {
+                await runTimerSend().catch((e) => {
                     bootstrapLogger('Error during initial runTimerSend():', e);
                 });
             } else {

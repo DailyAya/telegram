@@ -91,4 +91,18 @@ describe('App Startup', () => {
         expect(mockRegisterHandlers).toHaveBeenCalled();
         expect(mockPerformBotPreLaunchChecks).toHaveBeenCalled();
     });
+
+    it('should initialize the timer on startup', async () => {
+        // Dynamically import app.js to trigger its execution
+        await import('./app.js');
+
+        // Check that the timer initialization function was called
+        // This is a bit tricky because it's called inside an async function
+        // that we don't have direct access to. We'll have to rely on the
+        // side effects of the timer initialization.
+        // For now, we'll just check if the logger was called with the
+        // timer initialization message.
+        const { bootstrapLogger } = await import('./logger.js');
+        expect(bootstrapLogger).toHaveBeenCalledWith(expect.stringContaining('Timer: Initializing.'));
+    });
 });
