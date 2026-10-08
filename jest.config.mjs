@@ -4,8 +4,8 @@ export default {
     collectCoverage: true,
     // The directory where Jest should output its coverage files
     coverageDirectory: 'coverage',
-    // A list of paths to directories that Jest should use to search for files in
-    roots: ['<rootDir>/src'],
+    // Keep test discovery within the centralized test directory.
+    roots: ['<rootDir>/test'],
     // The test environment that will be used for testing
     testEnvironment: 'node',
     // The file extensions your modules use

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026.10.09-0029] - 2026-10-09
+
+### Changed
+
+- Centralized all Jest suites under `test/unit`, grouped bot handler suites together, and restricted Jest discovery to the `test` directory.
+- Updated moved suites to import production modules from `src`, and updated the README with the centralized layout and focused test command.
+- Added a Windows-compatible Jest test and watch command, documented the TDD test loop, and set Prettier line endings to `auto`.
+- Replaced the unused plain-object context builder with a Telegraf `Context` test helper that validates its inputs and supports fixture-backed API method results.
+
+### Fixed
+
+- Recognize Telegram `CHAT_RESTRICTED` responses when marking blocked chats, and normalize matched error tokens before comparison.
+
+### Removed
+
+- Removed unused placeholder constants and action-handler initialization code, placeholder assertions, stale comments, and redundant fixture-directory `.gitkeep` files.
+
 ## [2025.07.10-2026] - 2025-07-10
 
 ### Changed

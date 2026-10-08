@@ -1,15 +1,6 @@
 // src/botHandlers/actionHandlers.js
-// import { Markup } from 'telegraf'; // Removed unused import
 import { logger } from '../logger.js';
-import config from '../config.js'; // Import config
-// ayaId2suraAya, nextAya are imported by functions that use these handlers (e.g. in telegramBot.js) and passed as Fn dependencies
-// import { getQuranData, ayaId2suraAya, nextAya } from '../quranService.js'; // Not needed directly here
-// import { setFavReciter } from '../database.js'; // Not needed directly here
-
-export function initializeActionHandlers(/*dependencies*/) {
-    // Removed unused parameter
-    logger('Action handlers initialized with dependencies (or rather, this function is a placeholder).');
-}
+import config from '../config.js';
 
 /**
  * Handles the 'groupkhatma' callback query for selecting a Juz.

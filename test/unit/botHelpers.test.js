@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 
 // --- Mock Logger ---
 const mockLoggerLog = jest.fn(); // Renamed to avoid conflict
-jest.unstable_mockModule('./logger.js', () => ({
+jest.unstable_mockModule('../../src/logger.js', () => ({
     // Corrected path
     __esModule: true,
     logger: mockLoggerLog,
@@ -22,7 +22,7 @@ let adminChecker,
 
 beforeAll(async () => {
     jest.resetModules();
-    const botHelpersModule = await import('./botHelpers.js');
+    const botHelpersModule = await import('../../src/botHelpers.js');
     adminChecker = botHelpersModule.adminChecker;
     instructions = botHelpersModule.instructions;
     successSend = botHelpersModule.successSend;

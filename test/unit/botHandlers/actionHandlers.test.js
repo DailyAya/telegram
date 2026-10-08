@@ -26,7 +26,7 @@ let currentConfigMock = {
         maxBotLaunchRetries: 1,
     },
 };
-jest.unstable_mockModule('../config.js', () => {
+jest.unstable_mockModule('../../../src/config.js', () => {
     // console.log( // Kept for debugging if needed
     //     `****** ACTION_HANDLERS_TEST: unstable_mockModule for ../config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
     // );
@@ -35,7 +35,7 @@ jest.unstable_mockModule('../config.js', () => {
 
 // Mock ../logger.js
 const mockLoggerLog = jest.fn();
-jest.unstable_mockModule('../logger.js', () => ({
+jest.unstable_mockModule('../../../src/logger.js', () => ({
     __esModule: true,
     logger: mockLoggerLog,
 }));
@@ -70,7 +70,7 @@ const mockHelperInstructions = jest.fn();
 // Now, set up the mock for the module
 const mockHelperAdminConditionalAction = jest.fn(); // This will be the default mock for most tests
 
-jest.unstable_mockModule('../botHelpers.js', () => ({
+jest.unstable_mockModule('../../../src/botHelpers.js', () => ({
     __esModule: true,
     helperAdminConditionalAction: mockHelperAdminConditionalAction, // Default to jest.fn()
     helperAdminProtectedAction: mockHelperAdminProtectedAction,
@@ -84,7 +84,7 @@ jest.unstable_mockModule('../botHelpers.js', () => ({
 
 // --- Mock ../database.js ---
 const mockDbSetFavReciter = jest.fn();
-jest.unstable_mockModule('../database.js', () => ({
+jest.unstable_mockModule('../../../src/database.js', () => ({
     __esModule: true,
     setFavReciter: mockDbSetFavReciter,
 }));
@@ -94,7 +94,7 @@ const mockGetQuranDataFn = jest.fn();
 const mockAyaId2suraAyaFn = jest.fn();
 const mockNextAyaFn = jest.fn();
 
-jest.unstable_mockModule('../quranService.js', () => ({
+jest.unstable_mockModule('../../../src/quranService.js', () => ({
     __esModule: true,
     getQuranData: mockGetQuranDataFn,
     ayaId2suraAya: mockAyaId2suraAyaFn,
@@ -115,8 +115,7 @@ jest.unstable_mockModule('telegraf', () => ({
 }));
 
 // --- Declare module-scoped variables for actionHandlers.js exports ---
-let initializeActionHandlers,
-    handleGroupKhatmaAction,
+let handleGroupKhatmaAction,
     handleRecitersNavPageAction,
     handleInstructionsAction,
     handleSurpriseAyaAction,
@@ -133,12 +132,11 @@ let mockBotTelegramDependency;
 
 beforeAll(async () => {
     jest.resetModules();
-    const globalMockDefault = (await import('../__mocks__/config.mock.js')).default;
+    const globalMockDefault = (await import('../../../src/__mocks__/config.mock.js')).default;
     currentConfigMock = { __esModule: true, default: globalMockDefault };
     // console.log('****** ACTION_HANDLERS_TEST: Set currentConfigMock to GLOBAL MOCK values ******');
 
-    const actionHandlersModule = await import('./actionHandlers.js');
-    initializeActionHandlers = actionHandlersModule.initializeActionHandlers;
+    const actionHandlersModule = await import('../../../src/botHandlers/actionHandlers.js');
     handleGroupKhatmaAction = actionHandlersModule.handleGroupKhatmaAction;
     handleRecitersNavPageAction = actionHandlersModule.handleRecitersNavPageAction;
     handleInstructionsAction = actionHandlersModule.handleInstructionsAction;
@@ -186,9 +184,6 @@ beforeEach(() => {
 
 describe('Bot Action Handlers', () => {
     describe('handleGroupKhatmaAction', () => {
-        // ... existing tests for handleGroupKhatmaAction ...
-        // These should be unaffected as they don't involve the refactored parts.
-        // (Copying one for brevity - assume others are similar and were passing)
         let mockCtx;
         beforeEach(() => {
             mockCtx = {
@@ -426,11 +421,6 @@ describe('Bot Action Handlers', () => {
             expect(mockSendAyaRecitationFn).not.toHaveBeenCalled();
         });
 
-        // This test is obsolete because JSON.parse of raw callback_data is now handled
-        // in the telegramBot.js wrapper *before* handleReciteAction is called.
-        // handleReciteAction receives already parsed `callbackQueryData`.
-        // it.skip('SKIPPED: handleReciteAction itself does not parse JSON for callback_data', () => {});
-
         // Test using COPIED helperAdminConditionalAction and ACTUAL sendAyaRecitation
         it('should have sendAyaRecitation log error if its direct chatId parameter is null (using COPIED helpers)', async () => {
             const TEST_NON_ADMINS_ALERT_LOCAL = 'Local test non-admins alert';
@@ -494,7 +484,7 @@ describe('Bot Action Handlers', () => {
                 }
             }
 
-            const { sendAyaRecitation: actualSendAyaRecitation } = await import('../ayaSender.js');
+            const { sendAyaRecitation: actualSendAyaRecitation } = await import('../../../src/ayaSender.js');
             mockAdminChecker.mockResolvedValue(true); // Global mock, for testLocalAdminChecker if it somehow uses it.
             // testLocalAdminChecker uses passed botTelegram.getChatMember.
             // mockBotTelegramDependency.getChatMember is set in main beforeEach.
@@ -619,8 +609,6 @@ describe('Bot Action Handlers', () => {
         });
     });
 
-    // ... other describe blocks for handleAMenuAction, handleCurrAyaAction etc. should be fine ...
-    // (Copying one for brevity)
     describe('handleAMenuAction', () => {
         let mockCtx;
         let dependencies;
@@ -658,7 +646,6 @@ describe('Bot Action Handlers', () => {
     });
 
     it('should make all action handler functions available', () => {
-        expect(typeof initializeActionHandlers).toBe('function');
         expect(typeof handleGroupKhatmaAction).toBe('function');
         expect(typeof handleRecitersNavPageAction).toBe('function');
         expect(typeof handleInstructionsAction).toBe('function');

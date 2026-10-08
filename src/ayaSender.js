@@ -86,8 +86,6 @@ export async function sendAyaText(dependencies, chatId, ayaId, reciter, lang, tr
     }
 }
 
-// sendAyaRecitation will be added next.
-
 /**
  * Sends the audio recitation of an Aya to a chat.
  * @async

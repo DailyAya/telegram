@@ -28,7 +28,7 @@ let currentConfigMock = {
         maxBotLaunchRetries: 1,
     },
 };
-jest.unstable_mockModule('./config.js', () => {
+jest.unstable_mockModule('../../src/config.js', () => {
     return currentConfigMock;
 });
 
@@ -143,7 +143,7 @@ jest.unstable_mockModule('telegraf', () => {
 const mockLogger = jest.fn();
 const mockSetBotInstance = jest.fn();
 const mockBootstrapLogger = jest.fn();
-jest.unstable_mockModule('./logger.js', () => ({
+jest.unstable_mockModule('../../src/logger.js', () => ({
     __esModule: true,
     logger: mockLogger,
     setBotInstance: mockSetBotInstance,
@@ -152,14 +152,14 @@ jest.unstable_mockModule('./logger.js', () => ({
 
 // --- Mock other direct module dependencies ---
 const mockDbLastAyaTime = jest.fn();
-jest.unstable_mockModule('./database.js', () => ({
+jest.unstable_mockModule('../../src/database.js', () => ({
     /* ... existing full mock ... */ __esModule: true,
     lastAyaTime: mockDbLastAyaTime,
     setFavReciter: jest.fn(),
     getFavReciter: jest.fn(),
 }));
 const mockHandleStartCommand = jest.fn();
-jest.unstable_mockModule('./botHandlers/commandHandlers.js', () => ({
+jest.unstable_mockModule('../../src/botHandlers/commandHandlers.js', () => ({
     /* ... existing full mock ... */ __esModule: true,
     handleStartCommand: mockHandleStartCommand,
     handleHelpCommand: jest.fn(),
@@ -170,7 +170,10 @@ jest.unstable_mockModule('./botHandlers/commandHandlers.js', () => ({
     handleKhatmaCommand: jest.fn(),
     handleCommandsCommand: jest.fn(),
 }));
-jest.unstable_mockModule('./botFeatures/khatmaService.js', () => ({ __esModule: true, khatmaUpdate: jest.fn() }));
+jest.unstable_mockModule('../../src/botFeatures/khatmaService.js', () => ({
+    __esModule: true,
+    khatmaUpdate: jest.fn(),
+}));
 const mockPrepareAya = jest.fn();
 const mockGetRecitation = jest.fn();
 const mockIsValidReciter = jest.fn();
@@ -184,7 +187,7 @@ const mockGetQuranData = jest.fn(() => ({
     enQuran: [{ ayahs: [], name: 'Al-Fatiha', englishName: 'Al-Fatiha' }],
 }));
 const mockCheckSource = jest.fn().mockResolvedValue(undefined); // Ensure it returns a promise
-jest.unstable_mockModule('./quranService.js', () => ({
+jest.unstable_mockModule('../../src/quranService.js', () => ({
     /* ... existing full mock ... */ __esModule: true,
     prepareAya: mockPrepareAya,
     getRecitation: mockGetRecitation,
@@ -199,13 +202,13 @@ jest.unstable_mockModule('./quranService.js', () => ({
     checkSource: mockCheckSource,
 }));
 const mockRecitersNavPage = jest.fn();
-jest.unstable_mockModule('./botFeatures/reciterService.js', () => ({
+jest.unstable_mockModule('../../src/botFeatures/reciterService.js', () => ({
     /* ... existing full mock ... */ __esModule: true,
     populateRecitersButtons: jest.fn(),
     recitersNavPage: mockRecitersNavPage,
 }));
 const mockRandomAyaNumber = jest.fn();
-jest.unstable_mockModule('./utils.js', () => ({
+jest.unstable_mockModule('../../src/utils.js', () => ({
     /* ... existing full mock ... */ __esModule: true,
     randomAyaNumber: mockRandomAyaNumber,
     numArabicToEnglish: jest.fn((text) => text),
@@ -245,7 +248,7 @@ let botTelegramGetMeSpy,
 
 beforeAll(async () => {
     jest.resetModules();
-    const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
+    const globalMockDefault = (await import('../../src/__mocks__/config.mock.js')).default;
     currentConfigMock = { __esModule: true, default: globalMockDefault }; // Re-apply config mock after reset
 
     // NOTE: Prototype spies removed to prevent OOM.
@@ -306,7 +309,7 @@ beforeAll(async () => {
     mswServer.listen({ onUnhandledRequest: 'warn' });
 
     // Re-import SUT after config mock is set AND prototype spies are set up
-    const telegramBotModule = await import('./telegramBot.js');
+    const telegramBotModule = await import('../../src/telegramBot.js');
     bot = telegramBotModule.bot; // This is now the REAL bot instance from SUT
     launchBot = telegramBotModule.launchBot;
     sendAya = telegramBotModule.sendAya;
@@ -464,7 +467,7 @@ describe('launchBot', () => {
             )
         );
         await jest.resetModules(); // Re-import SUT to pick up new MSW handler for getMe
-        const tempTelegramBotModule = await import('./telegramBot.js');
+        const tempTelegramBotModule = await import('../../src/telegramBot.js');
         await tempTelegramBotModule.botUsernameReady; // wait for the new getMe
         tempTelegramBotModule.bot.options.username = null; // Force it for the check in launchBot
 
@@ -498,16 +501,30 @@ describe('launchBot', () => {
 // Further test suites need similar adaptation if they relied on bot.telegram.xyz jest.fn() mocks
 // Now they will be interacting with MSW handlers for those calls.
 
-// For brevity, I will skip fully refactoring all other tests in this overwrite
-// and focus on ensuring the PoC for launchBot with MSW is structurally sound.
-// The rest of the file would follow the patterns established (e.g. for command handlers).
-
-// Placeholder for the rest of the tests, which would need similar review
 describe('sendAya', () => {
-    it('placeholder', () => expect(true).toBe(true));
-});
-describe('surpriseAya', () => {
-    it('placeholder', () => expect(true).toBe(true));
+    it('marks a CHAT_RESTRICTED chat blocked after Telegram rejects its timed Aya', async () => {
+        const chatId = -1001234567890;
+        mockDbLastAyaTime.mockClear();
+        mockPrepareAya.mockReset().mockReturnValue({ arText: 'Mocked Arabic Text', enText: 'Mocked English Text' });
+        botTelegramSendMessageSpy.mockClear();
+        const mockRestrictedSendMessage = jest.fn(() =>
+            HttpResponse.json(
+                { ok: false, error_code: 400, description: 'Bad Request: CHAT_RESTRICTED' },
+                { status: 400 }
+            )
+        );
+        mswServer.use(
+            http.post(
+                `https://api.telegram.org/bot${currentConfigMock.default.telegramToken}/sendMessage`,
+                mockRestrictedSendMessage
+            )
+        );
+        await sendAya(chatId, 1421, null, undefined, 'timer', false);
+        expect(mockPrepareAya).toHaveBeenCalledWith(1421, bot.options.username);
+        expect(botTelegramSendMessageSpy).toHaveBeenCalledTimes(1);
+        expect(mockRestrictedSendMessage).toHaveBeenCalledTimes(1);
+        expect(mockDbLastAyaTime).toHaveBeenCalledWith(chatId, 'blocked');
+    });
 });
 
 describe('MSW - Incoming /getUpdates', () => {
@@ -559,21 +576,7 @@ describe('MSW - Incoming /getUpdates', () => {
     }, 1000); // Increased timeout for this test due to launch + async update processing
 });
 
-describe('handleText (direct test of exported function)', () => {
-    it('placeholder', () => expect(true).toBe(true));
-});
-describe('Command Handler Registrations and Admin Checks', () => {
-    it('placeholder', () => expect(true).toBe(true));
-});
-describe('Text Handler Registration and Admin Check', () => {
-    it('placeholder', () => expect(true).toBe(true));
-});
-describe('MyChatMember Handler Logic', () => {
-    it('placeholder', () => expect(true).toBe(true));
-});
 describe('Action Handler Integration for "recite" button', () => {
-    it('placeholder', () => expect(true).toBe(true));
-
     it('should process a valid "recite" callback query via MSW and attempt to send audio', async () => {
         const ayaIdToRecite = 777;
         const reciterId = 'ar.alafasy';
