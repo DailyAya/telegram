@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals'; // Explicitly import jest
 
 // --- Manage config.js mock manually ---
-// config.js is imported by database.js as './config.js'
+// config.js is imported by database.js as '../../src/config.js'
 let currentConfigMock = {
     __esModule: true,
     default: {
@@ -28,7 +28,7 @@ let currentConfigMock = {
         maxBotLaunchRetries: 1,
     },
 };
-jest.unstable_mockModule('./config.js', () => {
+jest.unstable_mockModule('../../src/config.js', () => {
     // Path relative to database.test.js
     console.log(
         `****** unstable_mockModule for ./config.js (database.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
@@ -59,7 +59,7 @@ jest.unstable_mockModule('mongodb', () => ({
     ServerApiVersion: { v1: '1' }, // This remains the same, affects how ServerApiVersion.v1 is resolved
 }));
 
-jest.unstable_mockModule('./logger.js', () => ({
+jest.unstable_mockModule('../../src/logger.js', () => ({
     __esModule: true,
     logger: jest.fn(),
     bootstrapLogger: jest.fn(),
@@ -74,12 +74,12 @@ beforeAll(async () => {
     jest.resetModules(); // Reset modules before setting config and importing SUT
 
     // Set currentConfigMock to use values from the global mock file
-    // Path from src/database.test.js to src/__mocks__/config.mock.js is './__mocks__/config.mock.js'
-    const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
+    // Path from src/database.test.js to src/__mocks__/config.mock.js is '../../src/__mocks__/config.mock.js'
+    const globalMockDefault = (await import('../../src/__mocks__/config.mock.js')).default;
     currentConfigMock = { __esModule: true, default: globalMockDefault };
     console.log('****** Set currentConfigMock to GLOBAL MOCK values for database.test.js ******');
 
-    const dbModule = await import('./database.js');
+    const dbModule = await import('../../src/database.js');
     connectDB = dbModule.connectDB;
     getDB = dbModule.getDB; // This should now be defined
     lastAyaTime = dbModule.lastAyaTime;
@@ -89,7 +89,7 @@ beforeAll(async () => {
     const mongodbMock = await import('mongodb');
     ActualMongoClient = mongodbMock.MongoClient; // This is the mocked constructor
 
-    const loggerMock = await import('./logger.js');
+    const loggerMock = await import('../../src/logger.js');
     actualLogger = loggerMock.logger;
     actualBootstrapLogger = loggerMock.bootstrapLogger;
 });
@@ -119,7 +119,7 @@ describe('Database Service Tests', () => {
 
             const db = await connectDB();
 
-            const { default: resolvedMockedConfig } = await import('./config.js'); // get it again here for the assertion value
+            const { default: resolvedMockedConfig } = await import('../../src/config.js'); // get it again here for the assertion value
 
             expect(ActualMongoClient).toHaveBeenCalledTimes(1);
             // The actual call includes maxPoolSize and serverApi resolves to '1' due to the mock of ServerApiVersion
@@ -139,7 +139,7 @@ describe('Database Service Tests', () => {
 
         it('should handle MongoDB connection failure', async () => {
             jest.resetModules(); // Reset modules to get fresh database.js state
-            const dbModuleFresh = await import('./database.js');
+            const dbModuleFresh = await import('../../src/database.js');
             const freshConnectDB = dbModuleFresh.connectDB;
             // Mocks for mongodb and logger are top-level and should apply to the fresh import.
             // We use the globally defined mockMongoClientInstance for setting mock behavior.
@@ -151,7 +151,7 @@ describe('Database Service Tests', () => {
             // We also need to re-import ActualMongoClient and actualBootstrapLogger if they were module-scoped after reset
             // Re-import (or rather, get handles to) the mocks as they would be seen by freshDbModule
             const { MongoClient: FreshActualMongoClient } = await import('mongodb');
-            const { bootstrapLogger: freshActualBootstrapLogger } = await import('./logger.js');
+            const { bootstrapLogger: freshActualBootstrapLogger } = await import('../../src/logger.js');
 
             const connectionErrorInstance = new Error('Mock DB connection error'); // Use a different name
             mockMongoClientInstance.connect.mockReset();
@@ -166,10 +166,10 @@ describe('Database Service Tests', () => {
 
         it('getDB should throw error if called before connectDB (or after connection failed)', async () => {
             jest.resetModules();
-            const freshDbModule = await import('./database.js');
+            const freshDbModule = await import('../../src/database.js');
             const freshConnectDB = freshDbModule.connectDB;
             const freshGetDB = freshDbModule.getDB;
-            const { logger: freshActualLogger } = await import('./logger.js');
+            const { logger: freshActualLogger } = await import('../../src/logger.js');
 
             mockMongoClientInstance.connect.mockReset();
             freshActualLogger.mockClear();

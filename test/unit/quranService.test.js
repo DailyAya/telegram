@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals'; // Explicitly import jest
 
 // --- Manage config.js mock manually ---
-// config.js is imported by quranService.js as './config.js'
+// config.js is imported by quranService.js as '../../src/config.js'
 let currentConfigMock = {
     __esModule: true,
     default: {
@@ -28,7 +28,7 @@ let currentConfigMock = {
         maxBotLaunchRetries: 1,
     },
 };
-jest.unstable_mockModule('./config.js', () => {
+jest.unstable_mockModule('../../src/config.js', () => {
     // Path relative to quranService.test.js
     console.log(
         `****** unstable_mockModule for ./config.js (quranService.test.js) using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
@@ -60,13 +60,13 @@ beforeAll(async () => {
     jest.resetModules(); // Reset modules before setting config and importing SUT
 
     // Set currentConfigMock to use values from the global mock file
-    // Path from src/quranService.test.js to src/__mocks__/config.mock.js is './__mocks__/config.mock.js'
-    const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
+    // Path from src/quranService.test.js to src/__mocks__/config.mock.js is '../../src/__mocks__/config.mock.js'
+    const globalMockDefault = (await import('../../src/__mocks__/config.mock.js')).default;
     currentConfigMock = { __esModule: true, default: globalMockDefault };
     console.log('****** Set currentConfigMock to GLOBAL MOCK values for quranService.test.js ******');
 
     // Dynamically import the module under test AFTER mocks are set up
-    const quranServiceModule = await import('./quranService.js');
+    const quranServiceModule = await import('../../src/quranService.js');
     rasmifize = quranServiceModule.rasmifize;
     actualGetQuranDataOriginal = quranServiceModule.getQuranData; // This is fine
     normalizedSurasArNames = quranServiceModule.normalizedSurasArNames;
@@ -95,7 +95,7 @@ beforeAll(async () => {
     }
 });
 
-// import config from './config.js'; // REMOVED
+// import config from '../../src/config.js'; // REMOVED
 
 // mockApiGet and mockApiHead are initialized at module scope.
 
@@ -321,7 +321,7 @@ describe('Quran Service Tests', () => {
             mockApiGet.mockRejectedValue(new Error('Simulated API Error'));
 
             await jest.isolateModulesAsync(async () => {
-                const isolatedQuranService = await import('./quranService.js');
+                const isolatedQuranService = await import('../../src/quranService.js');
                 const freshGetRecitation = isolatedQuranService.getRecitation;
                 const freshSetApiClientForTest = isolatedQuranService.__setApiClientForTest;
 

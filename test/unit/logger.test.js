@@ -7,14 +7,14 @@ const mockConfig = {
     devChatId: 'dev-chat-id-123',
     telegramToken: 'mock-token', // for bootstrapLogger's sendEmergencyNotification
 };
-jest.unstable_mockModule('./config.js', () => ({
+jest.unstable_mockModule('../../src/config.js', () => ({
     default: mockConfig,
 }));
 
 // Mock utils for sendEmergencyNotification
 // Ensure it returns a promise to prevent .catch is not a function error
 const mockSendEmergencyNotification = jest.fn().mockResolvedValue(undefined);
-jest.unstable_mockModule('./utils.js', () => ({
+jest.unstable_mockModule('../../src/utils.js', () => ({
     sendEmergencyNotification: mockSendEmergencyNotification,
     // Add any other utils exports if logger starts using them, keeping it minimal for now
 }));
@@ -33,10 +33,12 @@ describe('Logger Module', () => {
 
         // Re-import config and utils mocks if necessary, or ensure they are applied correctly
         // Forcing re-evaluation of the config mock for each test if needed:
-        jest.unstable_mockModule('./config.js', () => ({ default: mockConfig }));
-        jest.unstable_mockModule('./utils.js', () => ({ sendEmergencyNotification: mockSendEmergencyNotification }));
+        jest.unstable_mockModule('../../src/config.js', () => ({ default: mockConfig }));
+        jest.unstable_mockModule('../../src/utils.js', () => ({
+            sendEmergencyNotification: mockSendEmergencyNotification,
+        }));
 
-        const loggerModule = await import('./logger.js');
+        const loggerModule = await import('../../src/logger.js');
         logger = loggerModule.logger;
         setBotInstance = loggerModule.setBotInstance;
         bootstrapLogger = loggerModule.bootstrapLogger;

@@ -4,7 +4,7 @@ import { jest } from '@jest/globals'; // Explicit import for clarity
 // within the 'checkConnectivity' describe block's beforeAll/beforeEach.
 
 // --- Manage config.js mock manually ---
-// config.js is imported by utils.js as './config.js'
+// config.js is imported by utils.js as '../../src/config.js'
 let currentConfigMock = {
     __esModule: true,
     default: {
@@ -31,7 +31,7 @@ let currentConfigMock = {
         maxBotLaunchRetries: 1,
     },
 };
-jest.unstable_mockModule('./config.js', () => {
+jest.unstable_mockModule('../../src/config.js', () => {
     return currentConfigMock;
 });
 
@@ -42,10 +42,10 @@ let checkConnectivity;
 
 beforeAll(async () => {
     jest.resetModules();
-    const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
+    const globalMockDefault = (await import('../../src/__mocks__/config.mock.js')).default;
     currentConfigMock = { __esModule: true, default: globalMockDefault };
 
-    const utilsModule = await import('./utils.js');
+    const utilsModule = await import('../../src/utils.js');
     toBoolean = utilsModule.toBoolean;
     randomAyaNumber = utilsModule.randomAyaNumber;
     numArabicToEnglish = utilsModule.numArabicToEnglish;
@@ -166,9 +166,9 @@ describe('Utils Tests', () => {
             });
 
             // Re-mock config specifically for this scope if needed, though top-level should be fine
-            // jest.unstable_mockModule('./config.js', () => ({ __esModule: true, default: currentConfigMock.default }));
+            // jest.unstable_mockModule('../../src/config.js', () => ({ __esModule: true, default: currentConfigMock.default }));
 
-            const utilsModule = await import('./utils.js');
+            const utilsModule = await import('../../src/utils.js');
             checkConnectivity = utilsModule.checkConnectivity;
         });
 

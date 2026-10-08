@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 
 // --- Manage config.js mock manually ---
-// Config.js is imported by commandHandlers.js as '../config.js'
+// Config.js is imported by commandHandlers.js as '../../../src/config.js'
 let currentConfigMock = {
     __esModule: true,
     default: {
@@ -27,7 +27,7 @@ let currentConfigMock = {
         maxBotLaunchRetries: 1,
     },
 };
-jest.unstable_mockModule('../config.js', () => {
+jest.unstable_mockModule('../../../src/config.js', () => {
     console.log(
         `****** unstable_mockModule for ../config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
     );
@@ -38,7 +38,7 @@ jest.unstable_mockModule('../config.js', () => {
 
 // Mock ../logger.js
 const mockLogger = jest.fn();
-jest.unstable_mockModule('../logger.js', () => ({
+jest.unstable_mockModule('../../../src/logger.js', () => ({
     __esModule: true,
     logger: mockLogger,
 }));
@@ -49,7 +49,7 @@ const mockGetDB = jest.fn().mockReturnValue({
     countDocuments: jest.fn().mockResolvedValue(0),
 });
 const mockLastAyaTimeDbFn = jest.fn().mockResolvedValue({ success: true });
-jest.unstable_mockModule('../database.js', () => ({
+jest.unstable_mockModule('../../../src/database.js', () => ({
     __esModule: true,
     getDB: mockGetDB,
     lastAyaTime: mockLastAyaTimeDbFn,
@@ -58,7 +58,7 @@ jest.unstable_mockModule('../database.js', () => ({
 // Mock ../botHelpers.js
 const mockHelperSuccessSend = jest.fn(); // This is the mock function instance
 const mockHelperInstructions = jest.fn();
-jest.unstable_mockModule('../botHelpers.js', () => ({
+jest.unstable_mockModule('../../../src/botHelpers.js', () => ({
     __esModule: true,
     successSend: mockHelperSuccessSend, // Mock exports 'successSend', which SUT aliases to helperSuccessSend
     instructions: mockHelperInstructions,
@@ -100,11 +100,11 @@ beforeAll(async () => {
 
     // Set currentConfigMock to a standard mock configuration (e.g., from config.mock.js)
     // Corrected path: from src/botHandlers/ to src/__mocks__/ is ../__mocks__/
-    const globalMockDefault = (await import('../__mocks__/config.mock.js')).default;
+    const globalMockDefault = (await import('../../../src/__mocks__/config.mock.js')).default;
     currentConfigMock = { __esModule: true, default: globalMockDefault };
     console.log('****** Set currentConfigMock to GLOBAL MOCK values for commandHandlers.test.js ******');
 
-    const commandHandlersModule = await import('./commandHandlers.js');
+    const commandHandlersModule = await import('../../../src/botHandlers/commandHandlers.js');
     handleStartCommand = commandHandlersModule.handleStartCommand;
     handleHelpCommand = commandHandlersModule.handleHelpCommand;
     handleSurpriseMeCommand = commandHandlersModule.handleSurpriseMeCommand;

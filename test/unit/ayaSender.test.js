@@ -26,13 +26,13 @@ let currentConfigMock = {
         maxBotLaunchRetries: 1,
     },
 };
-jest.unstable_mockModule('./config.js', () => {
+jest.unstable_mockModule('../../src/config.js', () => {
     return currentConfigMock;
 });
 
 // --- Mock Logger ---
 const mockLogger = jest.fn();
-jest.unstable_mockModule('./logger.js', () => ({
+jest.unstable_mockModule('../../src/logger.js', () => ({
     __esModule: true,
     logger: mockLogger,
 }));
@@ -60,7 +60,7 @@ beforeAll(async () => {
     jest.resetModules(); // Ensure fresh modules for each test suite run
 
     // Dynamically import the SUT after mocks are set up
-    const ayaSenderModule = await import('./ayaSender.js');
+    const ayaSenderModule = await import('../../src/ayaSender.js');
     sendAyaText = ayaSenderModule.sendAyaText;
     sendAyaRecitation = ayaSenderModule.sendAyaRecitation;
 });

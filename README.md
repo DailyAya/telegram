@@ -67,7 +67,12 @@ This project is a Node.js application using the Telegraf.js library for Telegram
     ```bash
     npm test
     ```
-    Tests are written using Jest and cover various modules.
+    Jest suites are centralized under `test/unit`, with handler suites grouped in `test/unit/botHandlers`. Shared fixtures and test helpers are under `test/__fixtures__` and `test/test_helpers`.
+- **Use the TDD watch loop:**
+    ```bash
+    npm run test:watch
+    ```
+    Start with a failing test for the behavior being changed, implement the smallest change that makes it pass, then refactor while keeping the suite green (red-green-refactor). For a focused test run, use `npm test -- --runInBand test/unit/ayaSender.test.js`.
 
 ### Logging:
 

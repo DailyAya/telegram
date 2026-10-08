@@ -1,14 +1,14 @@
 import request from 'supertest';
 import { jest } from '@jest/globals'; // Explicitly import jest
-// import app from './expressApp.js'; // Import will be dynamic
+// import app from '../../src/expressApp.js'; // Import will be dynamic
 
 // Config mock removed - will be handled by moduleNameMapper in jest.config.mjs
-// jest.unstable_mockModule('./config.js', () => ({ ... }));
+// jest.unstable_mockModule('../../src/config.js', () => ({ ... }));
 
 // Mock logger using unstable_mockModule
 const mockLoggerFn = jest.fn();
 const mockBootstrapLoggerFn = jest.fn();
-jest.unstable_mockModule('./logger.js', () => ({
+jest.unstable_mockModule('../../src/logger.js', () => ({
     __esModule: true,
     logger: mockLoggerFn,
     bootstrapLogger: mockBootstrapLoggerFn,
@@ -42,7 +42,7 @@ let currentConfigMock = {
 };
 
 // unstable_mockModule's factory will return the content of currentConfigMock
-jest.unstable_mockModule('./config.js', () => {
+jest.unstable_mockModule('../../src/config.js', () => {
     console.log(
         `****** unstable_mockModule for ./config.js using currentConfigMock (branch: ${currentConfigMock.default.branch}) ******`
     );
@@ -58,11 +58,11 @@ describe('Express App Tests', () => {
                 jest.resetModules(); // Crucial: reset module cache before setting new mock state
 
                 // Set currentConfigMock to the global mock values
-                const globalMockDefault = (await import('./__mocks__/config.mock.js')).default;
+                const globalMockDefault = (await import('../../src/__mocks__/config.mock.js')).default;
                 currentConfigMock = { __esModule: true, default: globalMockDefault };
                 console.log('****** Set currentConfigMock to GLOBAL MOCK values (branch: global-mock-branch) ******');
 
-                const app = (await import('./expressApp.js')).default;
+                const app = (await import('../../src/expressApp.js')).default;
                 const response = await request(app).get('/');
 
                 expect(response.status).toBe(200);
@@ -109,7 +109,7 @@ describe('Express App Tests', () => {
                 currentConfigMock = { __esModule: true, default: mockDebugConfigData };
                 console.log('****** Set currentConfigMock to DEBUG values (branch: debug-branch) ******');
 
-                const app = (await import('./expressApp.js')).default;
+                const app = (await import('../../src/expressApp.js')).default;
                 const response = await request(app).get('/');
 
                 expect(response.status).toBe(200);
@@ -131,8 +131,8 @@ describe('Express App Tests', () => {
     //         // Need a way to make getInstStateMsg throw an error.
     //         // This might involve deeper mocking or specific setup.
     //         // For example, if config was structured to be problematic.
-    //         jest.mock('./config.js', () => ({ /* ... problematic config ... */ }));
-    //         const appWithBadConfig = require('./expressApp.js').default; // Re-import
+    //         jest.mock('../../src/config.js', () => ({ /* ... problematic config ... */ }));
+    //         const appWithBadConfig = require('../../src/expressApp.js').default; // Re-import
     //         const response = await request(appWithBadConfig).get('/');
     //         expect(response.status).toBe(500);
     //         expect(response.text).toBe('Error generating instance status.');
