@@ -237,7 +237,7 @@ async function sendAya(chatId, ayaId, reciter, lang, trigger, withRecitation = f
         logger(`sendAya: Error caught while sending Aya ${targetAyaId} to chat ${chatId}. Trigger: ${trigger}`, e);
         const errorDesc = e.response?.description?.toLowerCase() || '';
         const blockKeywords =
-            /blocked by the user|user is deactivated|need administrator rights|not enough rights|chat not found|TOPIC_CLOSED|bot was kicked|CHAT_SEND_PLAIN_FORBIDDEN/;
+            /blocked by the user|user is deactivated|need administrator rights|not enough rights|chat not found|chat_restricted|TOPIC_CLOSED|bot was kicked|CHAT_SEND_PLAIN_FORBIDDEN/;
         if (blockKeywords.test(errorDesc)) {
             await lastAyaTime(chatId, 'blocked');
         }

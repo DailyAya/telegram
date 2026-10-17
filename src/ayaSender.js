@@ -205,7 +205,8 @@ export async function sendAyaRecitation(dependencies, chatId, messageId, _fromId
             if (
                 errorDesc.includes('blocked by the user') ||
                 errorDesc.includes('user is deactivated') ||
-                errorDesc.includes('chat not found')
+                errorDesc.includes('chat not found') ||
+                errorDesc.includes('chat_restricted')
             ) {
                 await lastAyaTimeDbFn(chatId, 'blocked');
             } else {
