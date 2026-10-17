@@ -342,6 +342,24 @@ describe('sendAyaRecitation', () => {
         expect(mockHelperSendSorryFn).not.toHaveBeenCalled();
     });
 
+    it('should handle Telegram API "CHAT_RESTRICTED" error during sendAudio by blocking the chat', async () => {
+        const restrictedError = new Error('Chat restricted');
+        restrictedError.response = { description: 'Bad Request: CHAT_RESTRICTED' };
+        mockBotTelegram.sendAudio.mockRejectedValueOnce(restrictedError);
+
+        await sendAyaRecitation(
+            mockDependencies,
+            mockCtx.chat.id,
+            mockCtx.update.callback_query.message?.message_id,
+            mockCtx.from?.id,
+            ayaId,
+            initialReciter
+        );
+
+        expect(mockLastAyaTimeDbFn).toHaveBeenCalledWith(mockCtx.chat.id, 'blocked');
+        expect(mockHelperSendSorryFn).not.toHaveBeenCalled();
+    });
+
     it('should call sendSorryFn for other Telegram API errors during sendAudio', async () => {
         const apiError = new Error('Some API error');
         apiError.response = { description: 'Internal server error' };
