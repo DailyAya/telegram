@@ -504,7 +504,38 @@ describe('launchBot', () => {
 
 // Placeholder for the rest of the tests, which would need similar review
 describe('sendAya', () => {
-    it('placeholder', () => expect(true).toBe(true));
+    it('marks the chat blocked when sending fails with TOPIC_CLOSED (uppercase Telegram error)', async () => {
+        mockDbLastAyaTime.mockClear();
+        const topicClosedError = new Error('Forbidden');
+        topicClosedError.response = { description: 'Bad Request: TOPIC_CLOSED' };
+        botTelegramSendMessageSpy.mockRejectedValueOnce(topicClosedError);
+
+        await sendAya(123456789, 1, 'ar.alafasy', 'en', 'timer');
+
+        expect(mockDbLastAyaTime).toHaveBeenCalledWith(123456789, 'blocked');
+    });
+
+    it('marks the chat blocked when sending fails with CHAT_SEND_PLAIN_FORBIDDEN (uppercase Telegram error)', async () => {
+        mockDbLastAyaTime.mockClear();
+        const plainForbiddenError = new Error('Forbidden');
+        plainForbiddenError.response = { description: 'Forbidden: CHAT_SEND_PLAIN_FORBIDDEN' };
+        botTelegramSendMessageSpy.mockRejectedValueOnce(plainForbiddenError);
+
+        await sendAya(123456789, 1, 'ar.alafasy', 'en', 'timer');
+
+        expect(mockDbLastAyaTime).toHaveBeenCalledWith(123456789, 'blocked');
+    });
+
+    it('does not mark the chat blocked on an unrelated send error', async () => {
+        mockDbLastAyaTime.mockClear();
+        const otherError = new Error('boom');
+        otherError.response = { description: 'Internal Server Error' };
+        botTelegramSendMessageSpy.mockRejectedValueOnce(otherError);
+
+        await sendAya(123456789, 1, 'ar.alafasy', 'en', 'timer');
+
+        expect(mockDbLastAyaTime).not.toHaveBeenCalledWith(123456789, 'blocked');
+    });
 });
 describe('surpriseAya', () => {
     it('placeholder', () => expect(true).toBe(true));
